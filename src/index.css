@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #04011C;
+  color: white;
+}
+
+html {
+  background-color: #04011C
+}
+
+/* Global Smooth Transition */
+* {
+  @apply transition-all-smooth duration-smooth-fast ease-smooth-ease;
+}
