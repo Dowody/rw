@@ -98,12 +98,11 @@ const Home: React.FC = () => {
       <Products />
       
       {/* Dark-Themed Reviews Section */}
-      <section 
+      {/* <section 
         className="py-16 bg-[#04011C] relative overflow-hidden"
         id="community-reviews"
       >
         <div className="container mx-auto px-4 relative z-10">
-          {/* Section Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -118,13 +117,12 @@ const Home: React.FC = () => {
             <h2 className="text-4xl font-bold mb-4 
               text-transparent bg-clip-text 
               bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
-              {/* Clients Reviews */}
+
             </h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
             Verified stories from clients who withdrew funds smoothly with our script.            </p>
           </motion.div>
 
-          {/* Reviews Carousel */}
           <Swiper
             modules={[Autoplay, Pagination]}
             spaceBetween={30}
@@ -201,7 +199,6 @@ const Home: React.FC = () => {
             ))}
           </Swiper>
 
-          {/* Overall Rating */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -222,14 +219,13 @@ const Home: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Decorative Gradient Overlay */}
         <div 
           className="absolute inset-0 pointer-events-none opacity-20"
           style={{
             background: 'radial-gradient(circle at 75% 25%, rgba(138, 79, 255, 0.2), transparent 50%)',
           }}
         />
-      </section>
+      </section> */}
 
       <Features />
       <FAQ />
