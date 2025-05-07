@@ -29,7 +29,7 @@ const AccountSettings: React.FC = () => {
   const [currency, setCurrency] = useState('EUR')
 
   // Feedback & Status
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -308,31 +308,31 @@ const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     >
       {/* Error/Success Notifications */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500 text-red-400 p-4 rounded-xl flex items-center">
-          <AlertTriangle className="mr-3 w-6 h-6" />
+        <div className="bg-red-500/10 border border-red-500 text-red-400 p-3 sm:p-4 rounded-xl flex items-center text-xs sm:text-sm">
+          <AlertTriangle className="mr-2 sm:mr-3 w-4 h-4 sm:w-6 sm:h-6" />
           {error}
         </div>
       )}
       {success && (
-        <div className="bg-green-500/10 border border-green-500 text-green-400 p-4 rounded-xl flex items-center">
-          <CheckCircle className="mr-3 w-6 h-6" />
+        <div className="bg-green-500/10 border border-green-500 text-green-400 p-3 sm:p-4 rounded-xl flex items-center text-xs sm:text-sm">
+          <CheckCircle className="mr-2 sm:mr-3 w-4 h-4 sm:w-6 sm:h-6" />
           {success}
         </div>
       )}
 
       {/* Profile Section */}
-      <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-8 border border-[#8a4fff]/10">
-        <h3 className="text-xl font-semibold text-[#8a4fff] mb-6 flex items-center">
-          <User className="mr-3 w-6 h-6" /> Profile Settings
+      <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-8 border border-[#8a4fff]/10">
+        <h3 className="text-base sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
+          <User className="mr-2 sm:mr-3 w-4 h-4 sm:w-6 sm:h-6" /> Profile Settings
         </h3>
         
         {/* Avatar Upload */}
-        <div className="flex items-center mb-6">
-          <div className="mr-6">
+        <div className="flex items-center mb-4 sm:mb-6">
+          <div className="mr-4 sm:mr-6">
             <img 
               src={'/rw/avatar.jpg'} 
               alt="Profile Avatar" 
-              className="w-24 h-24 rounded-full border-4 border-[#8a4fff] object-cover"
+              className="w-16 h-16 sm:w-24 sm:h-24 rounded-full border-4 border-[#8a4fff] object-cover"
             />
           </div>
           <div>
@@ -345,33 +345,33 @@ const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
             />
             <label 
               htmlFor="avatar-upload" 
-              className="bg-[#8a4fff]/10 text-[#8a4fff] px-4 py-2 rounded-lg 
-              hover:bg-[#8a4fff]/20 transition-colors flex items-center cursor-pointer"
+              className="bg-[#8a4fff]/10 text-[#8a4fff] px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg 
+              hover:bg-[#8a4fff]/20 transition-colors flex items-center cursor-pointer text-xs sm:text-sm"
             >
-              <Upload className="mr-2 w-5 h-5" /> Upload Avatar
+              <Upload className="mr-1 sm:mr-2 w-4 h-4 sm:w-5 sm:h-5" /> Upload Avatar
             </label>
           </div>
         </div>
 
         {/* Username and Currency Input */}
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Username</label>
+            <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Username</label>
             <input 
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full p-3 bg-[#2c1b4a] rounded-xl text-white 
+              className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
               border border-[#8a4fff]/20 focus:border-[#8a4fff] 
               transition-colors"
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Preferred Currency</label>
+            <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Preferred Currency</label>
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full p-3 bg-[#2c1b4a] rounded-xl text-white 
+              className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
               border border-[#8a4fff]/20 focus:border-[#8a4fff] 
               transition-colors"
             >
@@ -385,11 +385,11 @@ const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         </div>
 
         {/* Profile Update Button */}
-        <div className="mt-6">
+        <div className="mt-4 sm:mt-6">
           <button 
             onClick={handleProfileUpdate}
-            className="bg-[#8a4fff] text-white px-6 py-3 rounded-lg 
-            hover:bg-[#7a3ddf] transition-colors"
+            className="bg-[#8a4fff] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg 
+            hover:bg-[#7a3ddf] transition-colors text-xs sm:text-sm"
           >
             Update Profile
           </button>
@@ -397,54 +397,54 @@ const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       </div>
 
       {/* Password Change Section */}
-      <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-8 border border-[#8a4fff]/10">
-        <h3 className="text-xl font-semibold text-[#8a4fff] mb-6 flex items-center">
-          <Lock className="mr-3 w-6 h-6" /> Change Password
+      <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-8 border border-[#8a4fff]/10">
+        <h3 className="text-base sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
+          <Lock className="mr-2 sm:mr-3 w-4 h-4 sm:w-6 sm:h-6" /> Change Password
         </h3>
         
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-2 gap-3 sm:gap-4">
           <div className="relative">
-            <label className="block text-sm text-gray-400 mb-2">New Password</label>
+            <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">New Password</label>
             <input 
               type={showNewPassword ? "text" : "password"}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full p-3 bg-[#2c1b4a] rounded-xl text-white 
+              className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
               border border-[#8a4fff]/20 focus:border-[#8a4fff] 
               transition-colors pr-10"
             />
             <button 
               onClick={() => setShowNewPassword(!showNewPassword)}
-              className="absolute right-3 top-11 text-gray-400"
+              className="absolute right-3 top-9 sm:top-11 text-gray-400"
             >
-              {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showNewPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
           </div>
           <div className="relative">
-            <label className="block text-sm text-gray-400 mb-2">Confirm New Password</label>
+            <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Confirm New Password</label>
             <input 
               type={showNewPassword ? "text" : "password"}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full p-3 bg-[#2c1b4a] rounded-xl text-white 
+              className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
               border border-[#8a4fff]/20 focus:border-[#8a4fff] 
               transition-colors pr-10"
             />
             <button 
               onClick={() => setShowNewPassword(!showNewPassword)}
-              className="absolute right-3 top-11 text-gray-400"
+              className="absolute right-3 top-9 sm:top-11 text-gray-400"
             >
-              {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showNewPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
           </div>
         </div>
 
         {/* Password Change Button */}
-        <div className="mt-6">
+        <div className="mt-4 sm:mt-6">
           <button 
             onClick={handlePasswordChange}
-            className="bg-[#8a4fff] text-white px-6 py-3 rounded-lg 
-            hover:bg-[#7a3ddf] transition-colors"
+            className="bg-[#8a4fff] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg 
+            hover:bg-[#7a3ddf] transition-colors text-xs sm:text-sm"
           >
             Change Password
           </button>
