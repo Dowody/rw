@@ -68,49 +68,52 @@ const RefundPolicy: React.FC = () => {
       animate="in"
       exit="out"
       variants={pageVariants}
-      className="min-h-screen bg-[#0a0415] text-white py-16 px-4"
+      className="min-h-screen bg-[#0a0415] text-white py-8 sm:py-16 px-4"
     >
       {/* Back to Home Button */}
-      <div className="container mx-auto max-w-4xl mb-8 mt-10">
+      <div className="container mx-auto max-w-4xl pt-4 mb-6 sm:mb-8 mt-6 sm:mt-10">
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleBackToHome}
           className="flex items-center text-gray-300 hover:text-[#8a4fff] transition-colors"
         >
-          <ArrowLeft className="mr-2 w-5 h-5" /> Back to Home
+          <ArrowLeft className="mr-2 w-5 h-5 sm:w-6 sm:h-6" /> 
+          <span className="text-[14px] sm:text-base">Back to Home</span>
         </motion.button>
       </div>
 
       <div className="container mx-auto max-w-4xl">
-        <div className="text-center mb-12">
-          <div className="flex justify-center mb-6">
-            <div className="bg-[#8a4fff]/20 p-4 rounded-full">
-              <DollarSign className="w-12 h-12 text-[#8a4fff]" />
+        <div className="text-center mb-8 sm:mb-12">
+          <div className="flex justify-center mb-4 sm:mb-6">
+            <div className="bg-[#8a4fff]/20 p-3 sm:p-4 rounded-full">
+              <CreditCard className="w-8 h-8 sm:w-12 sm:h-12 text-[#8a4fff]" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold mb-4 
+          <h1 className="text-[28px] sm:text-4xl font-bold mb-3 sm:mb-4 
             text-transparent bg-clip-text 
             bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
             Refund Policy
           </h1>
-          <p className="text-gray-400 max-w-2xl mx-auto">
+          <p className="text-[14px] sm:text-base text-gray-400 max-w-2xl mx-auto">
             Last Updated: {new Date().toLocaleDateString()}
           </p>
         </div>
 
-        <div className="bg-[#1a0b2e] rounded-2xl p-8 space-y-8">
+        <div className="bg-[#1a0b2e] rounded-2xl p-4 sm:p-8 space-y-4 sm:space-y-8">
           {refundSection.map((section, index) => (
             <div 
               key={index} 
-              className="flex items-start space-x-4 bg-[#2c1b4a] p-6 rounded-xl"
+              className="flex items-start space-x-3 sm:space-x-4 bg-[#2c1b4a] p-4 sm:p-6 rounded-xl"
             >
-              <div className="mt-1">{section.icon}</div>
+              <div className="mt-1">{React.cloneElement(section.icon, { 
+                className: "w-5 h-5 sm:w-6 sm:h-6" 
+              })}</div>
               <div>
-                <h2 className="text-xl font-semibold text-[#8a4fff] mb-3">
+                <h2 className="text-[16px] sm:text-xl font-semibold text-[#8a4fff] mb-2 sm:mb-3">
                   {section.title}
                 </h2>
-                <p className="text-gray-300">
+                <p className="text-[14px] sm:text-base text-gray-300">
                   {section.description}
                 </p>
               </div>
@@ -118,11 +121,11 @@ const RefundPolicy: React.FC = () => {
           ))}
         </div>
 
-        <div className="text-center mt-12">
-          <div className="flex justify-center mb-4">
-            <CreditCard className="w-12 h-12 text-green-500" />
+        <div className="text-center mt-8 sm:mt-12">
+          <div className="flex justify-center mb-3 sm:mb-4">
+            <CreditCard className="w-8 h-8 sm:w-12 sm:h-12 text-green-500" />
           </div>
-          <p className="text-gray-400 max-w-2xl mx-auto">
+          <p className="text-[14px] sm:text-base text-gray-400 max-w-2xl mx-auto">
             We prioritize customer satisfaction and transparency in our refund process.
           </p>
         </div>

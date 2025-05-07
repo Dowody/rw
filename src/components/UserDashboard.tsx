@@ -457,11 +457,11 @@ const UserDashboard: React.FC = () => {
                 <img 
                   src={'/rw/avatar.jpg'} 
                   alt={userData?.username || 'User'}
-                  className="w-16 h-16 sm:w-24 sm:h-24 rounded-full border-4 border-[#8a4fff] mb-3 sm:mb-4 object-cover"
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-[#8a4fff] mb-3 sm:mb-4 object-cover"
                 />
               </div>
-              <h2 className="text-base sm:text-xl font-bold text-white">{userData?.username}</h2>
-              <p className="text-xs sm:text-sm text-gray-400">{userData?.email}</p>
+              <h2 className="text-xl mb-1 sm:text-xl font-bold text-white">{userData?.username}</h2>
+              <p className="text-sm sm:text-sm text-gray-400">{userData?.email}</p>
             </div>
 
             <div className="space-y-1 sm:space-y-2">
@@ -493,7 +493,7 @@ const UserDashboard: React.FC = () => {
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setActiveSection(item.section as any)}
                   className={`
-                    w-full flex items-center p-2 sm:p-3 rounded-xl transition-colors text-xs sm:text-sm
+                    w-full flex items-center p-2 sm:p-3 rounded-xl transition-colors text-sm lg:text-base sm:text-sm
                     ${activeSection === item.section 
                       ? 'bg-[#8a4fff]/20 text-[#8a4fff]' 
                       : 'text-gray-400 hover:bg-[#8a4fff]/10'}
@@ -510,9 +510,9 @@ const UserDashboard: React.FC = () => {
               whileTap={{ scale: 0.95 }}
               onClick={handleLogout}
               className="w-full mt-6 sm:mt-8 py-2 sm:py-3 bg-red-500/10 text-red-400 
-              rounded-xl hover:bg-red-500/20 transition-colors flex items-center justify-center text-xs sm:text-sm"
+              rounded-xl hover:bg-red-500/20 transition-colors flex items-center justify-center text-sm lg:text-base sm:text-sm"
             >
-              <LogOut className="mr-1 sm:mr-2 w-4 h-4 sm:w-5 sm:h-5" /> Logout
+              <LogOut className="mr-2 sm:mr-2 w-4 h-4 sm:w-5 sm:h-5" /> Logout
             </motion.button>
           </div>
 
@@ -629,7 +629,7 @@ const UserDashboard: React.FC = () => {
                         <h3 className="text-lg sm:text-xl font-semibold text-[#8a4fff] flex items-center mb-2">
                           <Zap className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" /> Bot Configuration
                         </h3>
-                        <p className="text-gray-400 text-xs sm:text-sm">
+                        <p className="text-gray-400 text-sm lg:text-base sm:text-sm">
                           Set up your withdrawal bot
                         </p>
                       </div>
@@ -637,7 +637,7 @@ const UserDashboard: React.FC = () => {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setActiveSection('purchases')}
-                        className="w-full sm:w-auto bg-[#8a4fff] text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl 
+                        className="w-full sm:w-auto bg-[#8a4fff] text-[14px] sm:text-base text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl 
                         hover:bg-[#7a3ddf] transition-colors flex items-center justify-center"
                       >
                         <Play className="mr-2 w-4 h-4 sm:w-5 sm:h-5" /> 
@@ -751,11 +751,11 @@ const UserDashboard: React.FC = () => {
 
                     {/* Subscription Benefits Highlight */}
                     <div className="mt-4 bg-[#2c1b4a] rounded-xl p-4">
-                      <h5 className="text-sm font-semibold text-[#8a4fff] mb-3 flex items-center">
+                      <h5 className="text-sx lg:text-base font-semibold text-[#8a4fff] mb-3 flex items-center">
                         <Shield className="mr-2 w-5 h-5" /> 
                         Subscription Benefits
                       </h5>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-300">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-300">
                         <div className="flex items-center">
                           <CheckCircle className="mr-2 w-4 h-4 text-green-500" />
                           Unlimited Withdrawals

@@ -55,16 +55,15 @@ const TradeSlider = () => {
   return (
     <div className="relative w-full max-w-md mx-auto overflow-hidden">
       <AnimatePresence mode="wait">
-      <motion.div 
-        key={currentSlide}
-        initial={{ x: '600%', opacity: 1 }}
-        animate={{ x: 0, opacity: 1 }}
-        exit={{ x: '-600%'}}
+        <motion.div 
+          key={currentSlide}
+          initial={{ x: '600%', opacity: 1 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: '-600%'}}
           transition={{ duration: 0.5 }}
-        
-        className="feather-mask flex flex-col items-center text-center"
+          className="feather-mask flex flex-col items-center text-center"
         >
-          <div className="w-64 h-64 mb-4 flex items-center justify-center">
+          <div className="w-48 h-48 sm:w-64 sm:h-64 mb-3 sm:mb-4 flex items-center justify-center">
             <motion.img 
               src={tradeItems[currentSlide].image} 
               alt={tradeItems[currentSlide].name} 
@@ -72,19 +71,19 @@ const TradeSlider = () => {
                 transform transition-transform duration-300 
                 hover:scale-110"
             />
-          </div>q
+          </div>
           
           <div>
-            <p className="text-sm text-gray-400 uppercase tracking-wider">
+            <p className="text-xs sm:text-sm text-gray-400 uppercase tracking-wider">
               {tradeItems[currentSlide].condition}
             </p>
-            <h3 className="text-2xl font-bold text-white mb-1">
+            <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-1">
               {tradeItems[currentSlide].name}
             </h3>
-            <p className="text-lg text-gray-300 mb-2">
+            <p className="text-sm sm:text-base md:text-lg text-gray-300 mb-2">
               {tradeItems[currentSlide].type}
             </p>
-            <p className="text-2xl font-bold text-[#8a4fff]">
+            <p className="text-lg sm:text-xl md:text-2xl font-bold text-[#8a4fff]">
               ${tradeItems[currentSlide].price}
             </p>
           </div>
@@ -200,7 +199,7 @@ const Hero: React.FC = () => {
             ease: "easeInOut"
           }
         }}
-        className="absolute top-[1200px]  lg:top-1/2 lg:right-[400px] transform -translate-y-1/2 
+        className="absolute top-[1000px]  lg:top-1/2 lg:right-[400px] transform -translate-y-1/2 
         w-[500px] h-[500px] bg-[#8a4fff] rounded-full opacity-10 blur-3xl"
       />
 
@@ -213,7 +212,7 @@ const Hero: React.FC = () => {
             transition={{ duration: 0.1 }}
             className="text-center md:text-left"
           >
-            <h1 className="text-5xl pt-32 md:text-6xl font-bold text-white mb-6 leading-tight lg:pt-0">
+            <h1 className="text-4xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 mt-10 sm:mb-6 leading-tight pt-16 sm:pt-32 lg:pt-0">
               Intelligent <br />
               <span className="text-transparent bg-clip-text 
                 bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
@@ -221,13 +220,13 @@ const Hero: React.FC = () => {
               </span>
             </h1>
             
-            <p className="text-lg text-gray-300 max-w-xl mb-10 leading-relaxed">
+            <p className="text-sm sm:text-base md:text-lg text-gray-300 max-w-xl mb-6 sm:mb-10 leading-relaxed">
               Revolutionize your trading with cutting-edge AI-driven withdrawal strategies 
               designed for maximum efficiency and precision.
             </p>
             
             {/* Features */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-10">
               {features.map((feature, index) => (
                 <motion.div 
                   key={index}
@@ -238,14 +237,16 @@ const Hero: React.FC = () => {
                     duration: 0.2,
                     ease: "easeInOut"
                   }}
-                  className="bg-[#2c1b4a]/50 backdrop-blur-sm p-4 rounded-lg 
+                  className="bg-[#2c1b4a]/50 backdrop-blur-sm p-3 sm:p-4 rounded-lg 
                   flex flex-col items-center text-center border border-[#8a4fff]/20 
                   hover:border-[#8a4fff]/50 transition-all"
                 >
-                  <div className="mb-3 text-[#8a4fff]">
-                    {feature.icon}
+                  <div className="mb-2 sm:mb-3 text-[#8a4fff]">
+                    {React.cloneElement(feature.icon, {
+                      className: "w-4 h-4 sm:w-5 sm:h-5"
+                    })}
                   </div>
-                  <h3 className="text-sm font-semibold text-white mb-2">
+                  <h3 className="text-xs sm:text-sm font-semibold text-white mb-1 sm:mb-2">
                     {feature.title}
                   </h3>
                   <p className="text-xs text-gray-300">
@@ -256,20 +257,20 @@ const Hero: React.FC = () => {
             </div>
             
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 
+            <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 md:space-x-6 
               justify-center md:justify-start">
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleGetStarted}
-                className="bg-[#8a4fff] text-white px-10 w-full sm:w-80 py-5 
+                className="bg-[#8a4fff] text-white px-6 sm:px-10 w-full sm:w-80 py-3 sm:py-5 
                   rounded-lg hover:bg-[#7a3ddf] flex items-center justify-center 
-                  transform transition-transform duration-300 text-lg 
+                  transform transition-transform duration-300 text-sm sm:text-base md:text-lg 
                   relative overflow-hidden group"
               >
                 <span className="absolute inset-0 bg-white opacity-0 
                   group-hover:opacity-10 transition-opacity"></span>
-                <Gamepad2 className="mr-3 w-6 h-6" /> Get Started
+                <Gamepad2 className="mr-2 sm:mr-3 w-4 h-4 sm:w-5 sm:h-5" /> Get Started
               </motion.button>
               
               <motion.button 
@@ -277,9 +278,9 @@ const Hero: React.FC = () => {
                 whileTap={{ scale: 0.95 }}
                 onClick={handleLearnMoreClick}
                 className="bg-transparent w-full sm:w-80 border border-[#8a4fff] 
-                  text-[#8a4fff] px-10 py-5 rounded-lg 
+                  text-[#8a4fff] px-6 sm:px-10 py-3 sm:py-5 rounded-lg 
                   hover:bg-[#8a4fff]/10 flex items-center justify-center 
-                  transform transition-transform duration-300 text-lg"
+                  transform transition-transform duration-300 text-sm sm:text-base md:text-lg"
               >
                 Learn More
               </motion.button>
@@ -302,7 +303,7 @@ const Hero: React.FC = () => {
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="feather-mask max-w-xl mx-auto md:hidden mb-12"
+          className="feather-mask max-w-xl mx-auto md:hidden mb-8 sm:mb-12"
         >
           <TradeSlider />
         </motion.div>

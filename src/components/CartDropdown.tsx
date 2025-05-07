@@ -59,16 +59,6 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ isOpen, onClose }) => {
         duration: 0.3,
         ease: 'easeOut'
       }
-    },
-    exit: { 
-      opacity: 1, 
-      x: 10,
-      scale: 0.98,
-      transition: {
-        type: 'tween',
-        duration: 0.2,
-        ease: 'easeIn'
-      }
     }
   }
 

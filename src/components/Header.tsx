@@ -41,9 +41,9 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
   // Navigation Items
   const navItems = [
     { name: 'Home', href: '/', scrollTo: '#hero' },
-    { name: 'Features', href: '/', scrollTo: '#features' },
     { name: 'How It Works', href: '/', scrollTo: '#how-it-works' },
-    { name: 'Pricing', href: '/', scrollTo: '#products' },
+    { name: 'Plans', href: '/', scrollTo: '#products' },
+    { name: 'Features', href: '/', scrollTo: '#features' },
   ]
 
   // Check Authentication Status
@@ -153,70 +153,57 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
         ${isScrolled 
           ? 'bg-[#1a0b2e]/70 backdrop-blur-xl shadow-lg' 
           : 'bg-transparent'}
-        py-6
+        py-4 sm:py-6
       `}
     >
-      <div className="container mx-auto px-6 flex justify-between items-center relative">
+      <div className="container mx-auto px-4 sm:px-6 flex justify-between items-center relative">
         {/* Logo */}
         <div 
           onClick={() => handleNavigation('/', '#hero')}
-          className="flex items-center space-x-4 cursor-pointer hover:scale-105 transition-transform"
+          className="flex items-center space-x-2 sm:space-x-4 cursor-pointer hover:scale-105 transition-transform"
         >
-          <Gamepad2 className="text-[#8a4fff] w-8 h-8 md:w-10 md:h-10" />
-          <span className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
+          <Gamepad2 className="text-[#8a4fff] w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10" />
+          <span className="text-[24px] sm:text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
             RollWithdraw
           </span>
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-10">
+        <nav className="hidden md:flex items-center space-x-8 sm:space-x-10">
           {navItems.map((item, index) => (
             <motion.button 
               key={index} 
               onClick={() => handleNavigation(item.href, item.scrollTo)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="text-lg text-gray-300 hover:text-[#8a4fff] transition-colors cursor-pointer"
+              className="text-[16px] sm:text-lg text-gray-300 hover:text-[#8a4fff] transition-colors cursor-pointer"
             >
               {item.name}
             </motion.button>
           ))}
           
           {/* Desktop Action Buttons */}
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-4 sm:space-x-6">
             <div className="relative">
               <button 
                 onClick={onCartToggle}
-                className="text-gray-300 mr-5 hover:text-[#8a4fff] transition-colors relative"
+                className="text-gray-300 mr-4 sm:mr-5 hover:text-[#8a4fff] transition-colors relative"
               >
-                <ShoppingCart className="w-6 h-6" />
+                <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
                 {cart.length > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] sm:text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
                     {cart.reduce((total: number, item: CartItem) => total + item.quantity, 0)}
                   </span>
                 )}
               </button>
-              <AnimatePresence>
-                {isCartOpen && (
-                  <motion.div
-                    initial={{ opacity: 1, scale: 0.8, y: -10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 1, scale: 0.8, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute z-50 right-0 top-full mt-2 bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-lg shadow-lg p-2 w-72"
-                  >
-                    {/* Cart content */}
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
             <a 
               href="https://discord.gg/rollwithdraw" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="bg-[#5865F2] text-white px-6 py-3 rounded-xl hover:bg-[#4752C4] transition-colors flex items-center"
+              className="bg-[#5865F2] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:bg-[#4752C4] transition-colors flex items-center text-[14px] sm:text-base"
             >
-              <SiDiscord className="w-5 h-5 mr-2" /> Contact
+              <SiDiscord className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> Contact
             </a>
             
             {/* Authentication Button */}
@@ -225,7 +212,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                 <img 
                   src={userAvatar} 
                   alt="User Avatar" 
-                  className="w-10 h-10 rounded-full cursor-pointer border-2 border-[#8a4fff]"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full cursor-pointer border-2 border-[#8a4fff]"
                   onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
                 />
                 <AnimatePresence>
@@ -235,11 +222,11 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 1, scale: 0.8, y: -10 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute z-50 right-0 top-full mt-2 bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-lg shadow-lg p-2 w-56"
+                      className="absolute z-50 right-0 top-full mt-2 bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-lg shadow-lg p-2 w-48 sm:w-56"
                     >
-                      <div className="px-4 py-2 border-b border-[#8a4fff]/10 mb-2">
-                        <p className="text-sm text-gray-300">Signed in as</p>
-                        <p className="font-semibold text-white truncate">
+                      <div className="px-3 sm:px-4 py-2 border-b border-[#8a4fff]/10 mb-2">
+                        <p className="text-xs sm:text-sm text-gray-300">Signed in as</p>
+                        <p className="font-semibold text-white truncate text-[14px] sm:text-base">
                           {userEmail}
                         </p>
                       </div>
@@ -248,24 +235,24 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                           navigate('/dashboard')
                           setIsAccountDropdownOpen(false)
                         }}
-                        className="flex items-center w-full text-left px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-gray-300 hover:text-white"
+                        className="flex items-center w-full text-left px-3 sm:px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-gray-300 hover:text-white text-[14px] sm:text-base"
                       >
-                        <BarChart2 className="mr-3 w-4 h-4" /> Dashboard
+                        <BarChart2 className="mr-2 sm:mr-3 w-4 h-4" /> Dashboard
                       </button>
                       <button 
                         onClick={() => {
                           navigate('/dashboard?section=settings')
                           setIsAccountDropdownOpen(false)
                         }}
-                        className="flex items-center w-full text-left px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-gray-300 hover:text-white"
+                        className="flex items-center w-full text-left px-3 sm:px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-gray-300 hover:text-white text-[14px] sm:text-base"
                       >
-                        <Settings className="mr-3 w-4 h-4" /> Account Settings
+                        <Settings className="mr-2 sm:mr-3 w-4 h-4" /> Account Settings
                       </button>
                       <button 
                         onClick={handleLogout}
-                        className="flex items-center w-full text-left px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-red-400 hover:text-red-500"
+                        className="flex items-center w-full text-left px-3 sm:px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-red-400 hover:text-red-500 text-[14px] sm:text-base"
                       >
-                        <LogOut className="mr-3 w-4 h-4" /> Logout
+                        <LogOut className="mr-2 sm:mr-3 w-4 h-4" /> Logout
                       </button>
                     </motion.div>
                   )}
@@ -274,23 +261,23 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
             ) : (
               <button 
                 onClick={() => navigate('/signin', { state: { from: location.pathname } })}
-                className="bg-[#6a3de3] text-white px-6 py-3 rounded-xl hover:bg-[#5a2cc2] transition-colors flex items-center"
+                className="bg-[#6a3de3] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:bg-[#5a2cc2] transition-colors flex items-center text-[14px] sm:text-base"
               >
-                <User className="w-5 h-5 mr-2" /> Sign In
+                <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> Sign In
               </button>
             )}
           </div>
         </nav>
 
         {/* Mobile Menu Toggle */}
-        <div className="md:hidden flex items-center space-x-4">
+        <div className="md:hidden flex items-center space-x-3 sm:space-x-4">
           <button 
             onClick={onCartToggle}
-            className="text-gray-300 hover:text-[#8a4fff] transition-colors relative"
+            className="text-gray-300 hover:text-[#8a4fff] mr-2 transition-colors relative"
           >
-            <ShoppingCart className="w-6 h-6 mr-1" />
+            <ShoppingCart className="w-6 h-6 sm:w-6 sm:h-6 mr-0" />
             {cart.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] sm:text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
                 {cart.reduce((total: number, item: CartItem) => total + item.quantity, 0)}
               </span>
             )}
@@ -299,7 +286,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="text-gray-300 hover:text-[#8a4fff] transition-colors"
           >
-            {isMobileMenuOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
+            {isMobileMenuOpen ? <X className="w-7 h-7 sm:w-7 sm:h-7" /> : <Menu className="w-7 h-7 sm:w-7 sm:h-7" />}
           </button>
         </div>
 
@@ -307,30 +294,29 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              initial={{ opacity: 1, y: 20 }}
-              animate={{ opacity: 1, y: 20 }}
-              exit={{ opacity: 1, y: 20 }}
+              initial={{ opacity: 1, y: 10 }}
+              animate={{ opacity: 1, y: 14 }}
               className="absolute top-full left-0 w-full bg-[#2c1b4a]/90 backdrop-blur-xl shadow-lg overflow-hidden md:hidden"
             >
-              <div className="container mx-auto px-6 py-8">
-                <div className="flex flex-col space-y-6">
+              <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
+                <div className="flex flex-col space-y-4 sm:space-y-6">
                   {/* Authenticated User Section */}
                   {isAuthenticated && (
-                    <div className="flex flex-col space-y-4 mb-4 border-b border-[#8a4fff]/10 pb-4">
-                      <div className="flex items-center space-x-4">
+                    <div className="flex flex-col space-y-3 sm:space-y-4 pb-8 mb-2 border-b border-[#8a4fff]/10 pb-4">
+                      <div className="flex items-center space-x-3 sm:space-x-4">
                         <img 
                           src={userAvatar} 
                           alt="User Avatar" 
-                          className="w-16 h-16 rounded-full border-4 border-[#8a4fff] object-cover"
+                          className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-4 border-[#8a4fff] object-cover"
                         />
                         <div>
-                          <p className="text-xl font-semibold text-white">{userEmail}</p>
-                          <p className="text-gray-400 text-sm">Verified User</p>
+                          <p className="text-[16px] sm:text-xl font-semibold text-white">{userEmail}</p>
+                          <p className="text-[12px] sm:text-sm text-gray-400">Verified User</p>
                         </div>
                       </div>
 
                       {/* Prominent Account Action Buttons */}
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-3 sm:gap-4">
                         <motion.button 
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
@@ -339,9 +325,9 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                             setIsMobileMenuOpen(false)
                           }}
                           className="flex items-center justify-center space-x-2 bg-[#8a4fff]/20 text-[#8a4fff] 
-                          py-3 rounded-xl hover:bg-[#8a4fff]/30 transition-colors"
+                          py-2 sm:py-3 rounded-xl hover:bg-[#8a4fff]/30 transition-colors text-[14px] sm:text-base"
                         >
-                          <BarChart2 className="w-5 h-5" />
+                          <BarChart2 className="w-4 h-4 sm:w-5 sm:h-5" />
                           <span>Dashboard</span>
                         </motion.button>
 
@@ -350,9 +336,9 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                           whileTap={{ scale: 0.95 }}
                           onClick={handleLogout}
                           className="flex items-center justify-center space-x-2 bg-red-500/10 text-red-400 
-                          py-3 rounded-xl hover:bg-red-500/20 transition-colors"
+                          py-2 sm:py-3 rounded-xl hover:bg-red-500/20 transition-colors text-[14px] sm:text-base"
                         >
-                          <LogOut className="w-5 h-5" />
+                          <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
                           <span>Logout</span>
                         </motion.button>
                       </div>
@@ -364,24 +350,24 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                     <motion.button
                       key={index}
                       onClick={() => handleNavigation(item.href, item.scrollTo)}
-                      initial={{ opacity: 1, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 1, x: -10 }}
+                      animate={{ opacity: 1, x: 5 }}
                       transition={{ delay: index * 0.1 }}
-                      className="text-lg text-gray-300 hover:text-[#8a4fff] transition-colors cursor-pointer text-left"
+                      className="text-[16px] sm:text-lg text-gray-300 hover:text-[#8a4fff] transition-colors cursor-pointer text-left"
                     >
                       {item.name}
                     </motion.button>
                   ))}
 
                   {/* Mobile Action Buttons */}
-                  <div className="flex flex-col space-y-4">
+                  <div className="flex flex-col space-y-3 sm:space-y-4">
                     <a 
                       href="https://discord.gg/rollwithdraw"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 bg-[#5865F2] text-white px-6 py-3 rounded-xl hover:bg-[#4752C4] transition-colors flex items-center justify-center"
+                      className="flex-1 bg-[#5865F2] text-white px-4 sm:px-6 py-2 mt-1 sm:py-3 rounded-xl hover:bg-[#4752C4] transition-colors flex items-center justify-center text-[14px] sm:text-base"
                     >
-                      <SiDiscord className="w-5 h-5 mr-2" /> Contact
+                      <SiDiscord className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> Contact
                     </a>
                     
                     {/* Conditional Sign In Button */}
@@ -391,9 +377,9 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                           navigate('/signin', { state: { from: location.pathname } })
                           setIsMobileMenuOpen(false)
                         }}
-                        className="flex-1 bg-[#6a3de3] text-white px-6 py-3 rounded-xl hover:bg-[#5a2cc2] transition-colors flex items-center justify-center"
+                        className="flex-1 bg-[#6a3de3] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:bg-[#5a2cc2] transition-colors flex items-center justify-center text-[14px] sm:text-base"
                       >
-                        <User className="w-5 h-5 mr-2" /> Sign In
+                        <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> Sign In
                       </button>
                     )}
                   </div>

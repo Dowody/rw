@@ -432,7 +432,7 @@ const SignInPage: React.FC = () => {
         />
       </div>
       
-      <div className="relative z-10 min-h-screen w-full flex items-center justify-center px-4 py-16">
+      <div className="relative z-10 min-h-screen w-full flex items-center justify-center px-4 py-8 sm:py-16">
         <motion.div 
           initial="initial"
           animate="in"
@@ -447,7 +447,7 @@ const SignInPage: React.FC = () => {
                 initial={{ opacity: 1, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 1, y: -20 }}
-                className={`absolute ${mode === 'signup' ? '-top-20' : '-top-20'} left-0 right-0 p-4 rounded-xl flex items-center justify-center ${
+                className={`absolute ${mode === 'signup' ? '-top-16 sm:-top-20' : '-top-16 sm:-top-20'} left-0 right-0 p-3 sm:p-4 rounded-xl flex items-center justify-center ${
                   error.includes('Log In or Sign Up')
                     ? 'bg-purple-500/10 border border-purple-500 text-purple-400'
                     : error.includes('Account created successfully')
@@ -455,8 +455,8 @@ const SignInPage: React.FC = () => {
                     : 'bg-red-500/10 border border-red-500 text-red-400'
                 }`}
               >
-                <Info className="mr-3 w-6 h-6" />
-                <span className="text-center">{error}</span>
+                <Info className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" />
+                <span className="text-[14px] sm:text-base text-center">{error}</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -479,7 +479,7 @@ const SignInPage: React.FC = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className={`
-                    flex-1 py-4 text-lg font-semibold transition-all duration-300
+                    flex-1 py-3 sm:py-4 text-[16px] sm:text-lg font-semibold transition-all duration-300
                     ${mode === authMode 
                       ? 'bg-[#8a4fff]/10 text-[#8a4fff]' 
                       : 'text-gray-400 hover:bg-[#8a4fff]/5'}
@@ -493,13 +493,13 @@ const SignInPage: React.FC = () => {
             </motion.div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+            <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-4 sm:space-y-6 ">
               {/* Conditional Rendering Based on Mode */}
               {mode !== 'forgot-password' && (
                 <>
                   {/* Email Input */}
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70" />
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70 w-4 h-4 sm:w-5 sm:h-5 " />
                     <input 
                       type="email" 
                       placeholder="Email Address" 
@@ -509,7 +509,7 @@ const SignInPage: React.FC = () => {
                         setEmail(e.target.value)
                         setError(null)
                       }}
-                      className="w-full pl-10 pr-4 py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white 
+                      className="w-full pl-10 sm:pl-10 pr-4 py-2.5 sm:py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white text-[14px] sm:text-base
                         focus:outline-none focus:border-[#8a4fff] transition-all duration-300"
                     />
                   </div>
@@ -517,7 +517,7 @@ const SignInPage: React.FC = () => {
                   {/* Username Input for Signup */}
                   {mode === 'signup' && (
                     <div className="relative">
-                      <AtSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70" />
+                      <AtSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70 w-4 h-4 sm:w-5 sm:h-5" />
                       <input 
                         type="text" 
                         placeholder="Username" 
@@ -527,7 +527,7 @@ const SignInPage: React.FC = () => {
                           setUsername(e.target.value)
                           setError(null)
                         }}
-                        className="w-full pl-10 pr-4 py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white 
+                        className="w-full pl-10 sm:pl-10 pr-4 py-2.5 sm:py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white text-[14px] sm:text-base
                           focus:outline-none focus:border-[#8a4fff] transition-all duration-300"
                       />
                     </div>
@@ -535,7 +535,7 @@ const SignInPage: React.FC = () => {
 
                   {/* Password Input */}
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70 w-4 h-4 sm:w-5 sm:h-5" />
                     <input 
                       type={showPassword ? "text" : "password"} 
                       placeholder="Password" 
@@ -545,24 +545,23 @@ const SignInPage: React.FC = () => {
                         setPassword(e.target.value)
                         setError(null)
                       }}
-                      className="w-full pl-10 pr-10 py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white 
+                      className="w-full pl-10 sm:pl-10 pr-10 py-2.5 sm:py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white text-[14px] sm:text-base
                         focus:outline-none focus:border-[#8a4fff] transition-all duration-300"
                     />
                     <motion.button 
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       whileHover={{ scale: 1.2 }}
-                      whileTap={{ scale: 0.9 }}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      whileTap={{ scale: 1.2 }}
+                      className="absolute right-3 bottom-3 text-[#8a4fff] opacity-70"       >
+                      {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
                     </motion.button>
                   </div>
 
                   {/* Confirm Password for Signup */}
                   {mode === 'signup' && (
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70" />
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70 w-4 h-4 sm:w-5 sm:h-5" />
                       <input 
                         type="password" 
                         placeholder="Confirm Password" 
@@ -572,7 +571,7 @@ const SignInPage: React.FC = () => {
                           setConfirmPassword(e.target.value)
                           setError(null)
                         }}
-                        className="w-full pl-10 pr-4 py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white 
+                        className="w-full pl-10 sm:pl-10 pr-4 py-2.5 sm:py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white text-[14px] sm:text-base
                           focus:outline-none focus:border-[#8a4fff] transition-all duration-300"
                       />
                     </div>
@@ -583,7 +582,7 @@ const SignInPage: React.FC = () => {
               {/* Forgot Password Mode */}
               {mode === 'forgot-password' && (
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70" />
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70 w-4 h-4 sm:w-5 sm:h-5" />
                   <input 
                     type="email" 
                     placeholder="Enter your email" 
@@ -593,7 +592,7 @@ const SignInPage: React.FC = () => {
                       setEmail(e.target.value)
                       setError(null)
                     }}
-                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white 
+                    className="w-full pl-10 sm:pl-10 pr-4 py-2.5 sm:py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white text-[14px] sm:text-base
                       focus:outline-none focus:border-[#8a4fff] transition-all duration-300"
                   />
                 </div>
@@ -606,7 +605,7 @@ const SignInPage: React.FC = () => {
                 disabled={loading}
                 className={`
                   w-full bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b] 
-                  text-white py-3 rounded-lg 
+                  text-white py-2.5 sm:py-3 rounded-lg text-[14px] sm:text-base
                   flex items-center justify-center
                   hover:opacity-90 transition-opacity
                   ${loading ? 'opacity-50 cursor-not-allowed' : ''}
@@ -616,7 +615,7 @@ const SignInPage: React.FC = () => {
                  mode === 'signin' ? 'Sign In' : 
                  mode === 'signup' ? 'Create Account' : 
                  'Send Reset Link'}
-                {!loading && <ArrowRight className="ml-2 w-5 h-5" />}
+                {!loading && <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />}
               </motion.button>
 
               {/* Forgot Password Link */}
@@ -625,7 +624,7 @@ const SignInPage: React.FC = () => {
                   <button 
                     type="button"
                     onClick={() => setMode('forgot-password')}
-                    className="text-[#8a4fff] hover:underline text-sm"
+                    className="text-[#8a4fff] hover:underline text-[14px] sm:text-base"
                   >
                     Forgot Password?
                   </button>
@@ -638,10 +637,10 @@ const SignInPage: React.FC = () => {
               initial={{ opacity: 1 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="bg-[#2c1b4a] border-t border-[#8a4fff]/10 p-4 text-center"
+              className="bg-[#2c1b4a] border-t border-[#8a4fff]/10 p-4 sm:p-4 text-center"
             >
               {mode === 'signin' && (
-                <p className="text-gray-400">
+                <p className="text-gray-400 text-[14px] sm:text-base">
                   Don't have an account?{' '}
                   <motion.button 
                     whileHover={{ scale: 1.05 }}
@@ -654,7 +653,7 @@ const SignInPage: React.FC = () => {
                 </p>
               )}
               {mode === 'signup' && (
-                <p className="text-gray-400">
+                <p className="text-gray-400 text-[14px] sm:text-base">
                   Already have an account?{' '}
                   <motion.button 
                     whileHover={{ scale: 1.05 }}
@@ -667,7 +666,7 @@ const SignInPage: React.FC = () => {
                 </p>
               )}
               {mode === 'forgot-password' && (
-                <p className="text-gray-400">
+                <p className="text-gray-400 text-[13px] sm:text-base">
                   Remember your password?{' '}
                   <motion.button 
                     whileHover={{ scale: 1.05 }}

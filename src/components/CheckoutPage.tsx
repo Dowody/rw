@@ -90,25 +90,25 @@ const CheckoutPage: React.FC = () => {
     { 
       id: 'bitcoin', 
       name: 'Bitcoin', 
-      icon: <SiBitcoin className="w-10 h-10 text-[#F7931A]" />,
+      icon: <SiBitcoin className="lg:w-10 lg:h-10 w-7 h-7 text-[#F7931A]" />,
       type: 'crypto'
     },
     { 
       id: 'ethereum', 
       name: 'Ethereum', 
-      icon: <SiEthereum className="w-10 h-10 text-[#627EEA]" />,
+      icon: <SiEthereum className="lg:w-10 lg:h-10 w-7 h-7 text-[#627EEA]" />,
       type: 'crypto'
     },
     { 
       id: 'tether', 
       name: 'Tether', 
-      icon: <SiTether className="w-10 h-10 text-[#26A17B]" />,
+      icon: <SiTether className="lg:w-10 lg:h-10 w-7 h-7 text-[#26A17B]" />,
       type: 'crypto'
     },
     { 
       id: 'skins', 
       name: 'Skins', 
-      icon: <SiSteam className="w-10 h-10 text-[#1B2838]" />,
+      icon: <SiSteam className="w-7 h-7 text-[#1B2838]" />,
       type: 'skin'
     }
   ]
@@ -476,32 +476,25 @@ const CheckoutPage: React.FC = () => {
       <motion.div 
         initial={{ opacity: 1, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-[#0a0415] rounded-2xl p-8 max-w-3xl w-full border border-[#8a4fff]/10 my-8"
+        className="bg-[#0a0415] rounded-2xl p-4 sm:p-8 max-w-3xl w-full border border-[#8a4fff]/10 my-4 sm:my-8"
       >
-        <div className="flex items-center mb-6 sticky top-0 bg-[#0a0415] z-10">
-          <Gamepad2 className="w-8 h-8 text-[#8a4fff] mr-4" />
-          <h2 className="text-2xl font-semibold text-[#8a4fff]">Skin Transfer Marketplaces</h2>
+        <div className="flex items-center mb-4 sm:mb-6 sticky top-0 bg-[#0a0415] z-10">
+          {/* <Gamepad2 className="w-6 h-6 sm:w-8 sm:h-8 text-[#8a4fff] mr-3 sm:mr-4" /> */}
+          <h2 className="text-[20px] sm:text-2xl font-semibold text-[#8a4fff] m-auto">Skin Transfer Marketplaces</h2>
         </div>
         
-        <div className="mb-6 text-gray-300 space-y-4">
-          <p className="text-center">
+        <div className="mb-4 sm:mb-6 text-gray-300 space-y-3 sm:space-y-4">
+          <p className="text-center text-[14px] sm:text-base">
             Select a marketplace to transfer your skins seamlessly.
           </p>
           
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-3 gap-3 sm:gap-4">
             {[
-              {
-                id: 'skinport',
-                name: 'Skinport',
-                logo: <SiTradingview className="w-6 h-6 text-green-500" />,
-                description: "Popular skin trading platform",
-                url: "https://skinport.com/trade",
-                status: 'active'
-              },
+             
               {
                 id: 'bitskins',
                 name: 'BitSkins',
-                logo: <SiTradingview className="w-6 h-6 text-purple-500" />,
+                logo: <SiTradingview className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />,
                 description: "Trusted skin trading platform",
                 url: "https://bitskins.com/",
                 status: 'active'
@@ -509,7 +502,7 @@ const CheckoutPage: React.FC = () => {
               {
                 id: 'tradeit',
                 name: 'TradeIt.gg',
-                logo: <SiSteam className="w-6 h-6 text-[#1B2838]" />,
+                logo: <SiSteam className="w-5 h-5 sm:w-6 sm:h-6 text-[#1B2838]" />,
                 description: "Instant skin trading platform",
                 url: "https://tradeit.gg/",
                 status: 'active'
@@ -520,18 +513,18 @@ const CheckoutPage: React.FC = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className={`
-                  bg-[#2c1b4a] rounded-xl p-6 text-center relative
+                  bg-[#2c1b4a] rounded-xl p-4 sm:p-6 text-center relative
                   transition-all duration-300 
                   ${marketplace.status === 'active' 
                     ? 'hover:border-[#8a4fff] border border-transparent' 
                     : 'opacity-50 cursor-not-allowed'}
                 `}
               >
-                <div className="flex justify-center mb-4">
+                <div className="flex justify-center mb-3 sm:mb-4">
                   {marketplace.logo}
                 </div>
-                <h3 className="text-white font-semibold mb-2">{marketplace.name}</h3>
-                <p className="text-gray-400 text-sm mb-4">{marketplace.description}</p>
+                <h3 className="text-[16px] sm:text-lg font-semibold mb-2 text-white">{marketplace.name}</h3>
+                <p className="text-gray-400 text-[12px] sm:text-sm mb-3 sm:mb-4">{marketplace.description}</p>
                 
                 <button
                   onClick={() => {
@@ -541,7 +534,7 @@ const CheckoutPage: React.FC = () => {
                   }}
                   disabled={marketplace.status !== 'active'}
                   className={`
-                    w-full py-3 rounded-lg transition-colors
+                    w-full py-2 sm:py-3 rounded-lg transition-colors text-[12px] sm:text-sm
                     ${marketplace.status === 'active' 
                       ? 'bg-[#8a4fff] text-white hover:bg-[#7a3ddf]' 
                       : 'bg-gray-500 text-gray-300 cursor-not-allowed'}
@@ -554,17 +547,17 @@ const CheckoutPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 bg-[#2c1b4a] p-4 rounded-xl mb-6">
-          <ShieldCheck className="w-6 h-6 text-green-500" />
-          <p className="text-sm text-gray-300">
+        <div className="flex items-center space-x-2 bg-[#2c1b4a] p-3 sm:p-4 rounded-xl mb-4 sm:mb-6">
+          <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
+          <p className="text-[12px] sm:text-sm text-gray-300">
             We recommend using trusted marketplaces and verifying trade details.
           </p>
         </div>
 
-        <div className="flex space-x-4">
+        <div className="flex space-x-3 sm:space-x-4">
           <button 
             onClick={() => setShowSkinPaymentModal(false)}
-            className="flex-1 py-3 bg-transparent border border-[#8a4fff]/30 text-[#8a4fff] rounded-lg"
+            className="flex-1 py-2 sm:py-3 bg-transparent border border-[#8a4fff]/30 text-[#8a4fff] rounded-lg text-[14px] sm:text-sm"
           >
             Close
           </button>
@@ -573,7 +566,7 @@ const CheckoutPage: React.FC = () => {
               window.open('/contact', '_blank')
               setShowSkinPaymentModal(false)
             }}
-            className="flex-1 py-3 bg-[#8a4fff] text-white rounded-lg hover:bg-[#7a3ddf]"
+            className="flex-1 py-2 sm:py-3 bg-[#8a4fff] text-white rounded-lg hover:bg-[#7a3ddf] text-[14px] sm:text-sm"
           >
             Contact Support
           </button>
@@ -664,100 +657,101 @@ const CheckoutPage: React.FC = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-[#04011C] py-16 px-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="min-h-screen bg-[#04011C] py-8 sm:py-16 px-4">
+        <div className="max-w-4xl mx-auto">
           {/* Error Handling */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500 text-red-400 p-4 rounded-xl mb-6 flex items-center">
-              <AlertTriangle className="mr-3 w-6 h-6" />
-              {error}
+            <div className="bg-red-500/10 border border-red-500 text-red-400 p-3 sm:p-4 rounded-xl mb-4 sm:mb-6 flex items-center">
+              <AlertTriangle className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-[14px] sm:text-base">{error}</span>
             </div>
           )}
 
-        {/* Header */}
-        <motion.div 
-          initial={{ opacity: 1, y: 0 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-            className="flex items-center mt-10"
-        >
-          <button 
-            onClick={() => navigate('/')}
-              className="text-gray-400 hover:text-[#8a4fff] flex items-center mr-auto mb-20"
-          >
-            <ChevronLeft className="mr-2 w-6 h-6" /> Back
-          </button>
-            <h1 className="text-3xl font-bold text-white absolute left-1/2 transform -translate-x-1/2 pt-0">
-            Checkout
-          </h1>
-        </motion.div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-          {/* Left Column - Order Details */}
+          {/* Header */}
           <motion.div 
-            initial={{ opacity: 1, x: 0 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="space-y-8"
+            initial={{ opacity: 1, y: 0 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="flex items-center mt-6 sm:mt-10"
           >
-            {/* Cart Items */}
-              <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-8 border border-[#000000]/10">
-              <h2 className="text-xl font-semibold text-[#8a4fff] mb-6 flex items-center">
-                <CreditCard className="mr-3 w-6 h-6" /> Your Items
-              </h2>
-              <div className="space-y-4">
-                {cart.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className="flex justify-between items-center pb-4 border-b border-[#8a4fff]/10 last:border-b-0"
-                  >
-                    <div>
-                      <h3 className="text-lg font-bold text-white">{item.name}</h3>
-                      <p className="text-gray-400 text-sm">
-                        {item.id === 'monthly' && 'Monthly Subscription'}
+            <button 
+              onClick={() => navigate('/')}
+              className="text-gray-400 hover:text-[#8a4fff] flex items-center mr-auto mb-12 sm:mb-20"
+            >
+              <ChevronLeft className="mr-2  w-5 h-5 mt-5 sm:w-6 sm:h-6" /> 
+              <span className="text-[14px] sm:text-base mt-5">Back</span>
+            </button>
+            <h1 className="text-[24px] sm:text-3xl font-bold text-white absolute  mt-2 left-1/2 transform -translate-x-1/2 pt-4">
+              Checkout
+            </h1>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-4 sm:gap-8">
+            {/* Left Column - Order Details */}
+            <motion.div 
+              initial={{ opacity: 1, x: 0 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="space-y-4 sm:space-y-8"
+            >
+              {/* Cart Items */}
+              <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-[#000000]/10">
+                <h2 className="text-[18px] sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
+                  <CreditCard className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" /> Your Items
+                </h2>
+                <div className="space-y-3 sm:space-y-4">
+                  {cart.map((item) => (
+                    <div 
+                      key={item.id} 
+                      className="flex justify-between items-center pb-3 sm:pb-4 border-b border-[#8a4fff]/10 last:border-b-0"
+                    >
+                      <div>
+                        <h3 className="text-[16px] sm:text-lg font-bold text-white">{item.name}</h3>
+                        <p className="text-gray-400 text-[12px] sm:text-sm">
+                          {item.id === 'monthly' && 'Monthly Subscription'}
                           {item.id === '6-months' && 'CSGORoll Script'}
-                        {item.id === 'annual' && 'Annual Subscription'}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center bg-[#1a0b2e] rounded-full">
+                          {item.id === 'annual' && 'Annual Subscription'}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2 sm:space-x-4">
+                        <div className="flex items-center bg-[#1a0b2e] rounded-full">
+                          <button 
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="p-1.5 sm:p-2 text-gray-400 hover:text-[#8a4fff]"
+                          >
+                            <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </button>
+                          <span className="px-2 sm:px-3 text-[14px] sm:text-base text-white">{item.quantity}</span>
+                          <button 
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="p-1.5 sm:p-2 text-gray-400 hover:text-[#8a4fff]"
+                          >
+                            <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </button>
+                        </div>
+                        <span className="text-[16px] sm:text-lg font-bold text-[#8a4fff]">
+                          €{(item.price * item.quantity).toFixed(2)}
+                        </span>
                         <button 
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="p-2 text-gray-400 hover:text-[#8a4fff]"
+                          onClick={() => removeFromCart(item.id)}
+                          className="text-red-500 hover:text-red-400"
                         >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <span className="px-3 text-white">{item.quantity}</span>
-                        <button 
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="p-2 text-gray-400 hover:text-[#8a4fff]"
-                        >
-                          <Plus className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
                       </div>
-                      <span className="text-lg font-bold text-[#8a4fff]">
-                        €{(item.price * item.quantity).toFixed(2)}
-                      </span>
-                      <button 
-                        onClick={() => removeFromCart(item.id)}
-                        className="text-red-500 hover:text-red-400"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Payment Method */}
-              <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-8 border border-[#8a4fff]/10">
-              <h2 className="text-xl font-semibold text-[#8a4fff] mb-6 flex items-center">
-                <Lock className="mr-3 w-6 h-6" /> Payment Method
-              </h2>
-              <div className="grid grid-cols-3 gap-4">
+              {/* Payment Method */}
+              <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-[#8a4fff]/10">
+                <h2 className="text-[18px] sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
+                  <Lock className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" /> Payment Method
+                </h2>
+                <div className="grid grid-cols-3 gap-2 sm:gap-4">
                   {paymentOptions.slice(0, 3).map((payment) => (
-                  <button
+                    <button
                       key={payment.id}
                       onClick={() => {
                         setSelectedPayment({
@@ -766,111 +760,111 @@ const CheckoutPage: React.FC = () => {
                           type: payment.type
                         })
                       }}
-                    className={`
-                      flex flex-col items-center justify-center p-4 rounded-xl
+                      className={`
+                        flex flex-col items-center justify-center p-2 sm:p-4 rounded-xl
                         ${selectedPayment.id === payment.id 
-                        ? 'bg-[#8a4fff]/10 border-2 border-[#8a4fff]' 
-                        : 'bg-[#1a0b2e] border-2 border-transparent'}
-                      transition-all duration-300 hover:bg-[#8a4fff]/10
-                    `}
-                  >
-                      {payment.icon}
-                      <span className="mt-3 text-sm text-white">{payment.name}</span>
+                          ? 'bg-[#8a4fff]/10 border-2 border-[#8a4fff]' 
+                          : 'bg-[#1a0b2e] border-2 border-transparent'}
+                        transition-all duration-300 hover:bg-[#8a4fff]/10
+                      `}
+                    >
+                      <div className="w-6 h-6 sm:w-10 sm:h-10 mr-1 lg:mr-[-1px]">{payment.icon}</div>
+                      <span className="mt-2 sm:mt-3 text-[12px] sm:text-sm text-white">{payment.name}</span>
                     </button>
                   ))}
                 </div>
 
                 {/* Separate Skin Payment Section */}
-                <div className="mt-6 bg-[#2c1b4a] rounded-xl p-4 border border-[#8a4fff]/20">
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="flex items-center space-x-3">
-                      <SiSteam className="w-8 h-8 text-[#8a4fff]" />
-                      <h3 className="text-lg font-semibold text-[#8a4fff]">Skin Payment</h3>
+                <div className="mt-4 sm:mt-6 bg-[#2c1b4a] rounded-xl p-4 sm:p-4 border border-[#8a4fff]/20">
+                  <div className="flex justify-between items-center mb-2 sm:mb-3">
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <SiSteam className="w-5 h-5 sm:w-6 sm:h-6 text-[#8a4fff]" />
+                      <h3 className="text-[18px] sm:text-[20px] font-semibold text-[#8a4fff]">Skin Payment</h3>
                     </div>
-                    <span className="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-1 rounded-full">
+                    <span className="bg-yellow-500/20 text-yellow-400 text-[10px] sm:text-xs px-2 py-1 rounded-full">
                       Coming Soon
                     </span>
                   </div>
                   
-                  <p className="text-gray-300 mb-4 text-sm">
+                  <p className="text-gray-300 mb-2 sm:mb-3 text-[14px] sm:text-base">
                     We're working on integrating multiple skin marketplaces for seamless trading.
                   </p>
                   
                   <button
                     onClick={() => setShowSkinPaymentModal(true)}
                     className="w-full bg-[#8a4fff]/10 text-[#8a4fff] 
-                    py-3 rounded-lg hover:bg-[#8a4fff]/20 
-                    transition-colors flex items-center justify-center"
+                    py-2 sm:py-3 rounded-lg hover:bg-[#8a4fff]/20 
+                    transition-colors mt-4 flex items-center justify-center text-[14px] sm:text-base"
                   >
-                    <Gamepad2 className="mr-2 w-5 h-5" />
+                    <Gamepad2 className="mr-2 w-4 h-4 sm:w-5 sm:h-5" />
                     Learn More About Skin Payments
                   </button>
                 </div>
-            </div>
-          </motion.div>
+              </div>
+            </motion.div>
 
-          {/* Right Column - Order Summary */}
-          <motion.div 
-            initial={{ opacity: 1, x: 0 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-              className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-8 border border-[#8a4fff]/10 h-fit"
-          >
-            <h2 className="text-xl font-semibold text-[#8a4fff] mb-6 flex items-center">
-              <CreditCard className="mr-3 w-6 h-6" /> Order Summary
-            </h2>
-            
-            <div className="space-y-4 mb-8">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400">Subtotal</span>
-                <span className="text-white font-semibold">
+            {/* Right Column - Order Summary */}
+            <motion.div 
+              initial={{ opacity: 1, x: 0 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-[#8a4fff]/10 h-fit"
+            >
+              <h2 className="text-[18px] sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
+                <CreditCard className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" /> Order Summary
+              </h2>
+              
+              <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-[14px] sm:text-base">Subtotal</span>
+                  <span className="text-white font-semibold text-[14px] sm:text-base">
                     €{subtotal.toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400">Tax (10%)</span>
-                <span className="text-white">
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-[14px] sm:text-base">Tax (10%)</span>
+                  <span className="text-white text-[14px] sm:text-base">
                     €{taxAmount.toFixed(2)}
-                </span>
-              </div>
-              <div className="border-t border-[#8a4fff]/10 my-4"></div>
-              <div className="flex justify-between items-center">
-                <span className="text-xl font-bold text-white">Total</span>
-                <span className="text-2xl font-bold text-[#8a4fff]">
+                  </span>
+                </div>
+                <div className="border-t border-[#8a4fff]/10 my-3 sm:my-4"></div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[16px] sm:text-xl font-bold text-white">Total</span>
+                  <span className="text-[18px] sm:text-2xl font-bold text-[#8a4fff]">
                     €{total.toFixed(2)}
-                </span>
+                  </span>
+                </div>
               </div>
-            </div>
 
-            {/* Email Input */}
-            <div className="mb-8">
-              <label className="block text-sm text-gray-400 mb-2">Email Address</label>
-              <input 
-                type="email"
-                value={email}
+              {/* Email Input */}
+              <div className="mb-6 sm:mb-8">
+                <label className="block text-[12px] sm:text-sm text-gray-400 mb-2">Email Address</label>
+                <input 
+                  type="email"
+                  value={email}
                   onChange={(e) => {
                     setEmail(e.target.value)
                     setError(null)
                   }}
-                placeholder="Enter your email"
-                className="w-full p-3 bg-[#1a0b2e] rounded-xl text-white 
-                border border-[#8a4fff]/20 focus:border-[#8a4fff] 
-                transition-colors"
-              />
-            </div>
+                  placeholder="Enter your email"
+                  className="w-full p-2.5 sm:p-3 bg-[#1a0b2e] rounded-xl text-[14px] sm:text-base text-white 
+                  border border-[#8a4fff]/20 focus:border-[#8a4fff] 
+                  transition-colors"
+                />
+              </div>
 
               {/* Policy Acknowledgment */}
-              <div className="mb-6 flex items-center">
+              <div className="mb-4 sm:mb-6 flex items-center">
                 <input 
                   type="checkbox" 
                   id="policy-checkbox"
                   checked={isPolicyAcknowledged}
                   onChange={() => setIsPolicyAcknowledged(!isPolicyAcknowledged)}
-                  className="mr-3 w-5 h-5 text-[#8a4fff] rounded focus:ring-[#8a4fff]"
+                  className="mr-2 sm:mr-3 w-4 h-4 sm:w-5 sm:h-5 text-[#8a4fff] rounded focus:ring-[#8a4fff]"
                 />
                 <label 
                   htmlFor="policy-checkbox" 
-                  className="text-gray-400 flex items-center"
+                  className="text-gray-400 flex items-center text-[14px] sm:text-sm"
                 >
                   I've read and accept the{' '}
                   <Link 
@@ -882,33 +876,33 @@ const CheckoutPage: React.FC = () => {
                 </label>
               </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-4">
-              <button
-                onClick={handlePlaceOrder}
+              {/* Action Buttons */}
+              <div className="space-y-3 sm:space-y-4">
+                <button
+                  onClick={handlePlaceOrder}
                   disabled={!isPolicyAcknowledged}
                   className={`
-                    w-full py-4 rounded-xl transition-colors text-lg
+                    w-full py-3 sm:py-4 rounded-xl transition-colors text-[14px] sm:text-lg
                     ${isPolicyAcknowledged 
                       ? 'bg-[#8a4fff] text-white hover:bg-[#7a3ddf]' 
                       : 'bg-gray-500 text-gray-300 cursor-not-allowed'}
                   `}
-              >
-                Place Order
-              </button>
-              <button
-                onClick={() => navigate('/')}
-                className="w-full py-4 bg-transparent border border-[#8a4fff]/30 
-                  text-[#00000] rounded-xl hover:bg-[#8a4fff]/10 
-                transition-colors text-lg"
-              >
-                Cancel
-              </button>
-            </div>
-          </motion.div>
+                >
+                  Place Order
+                </button>
+                <button
+                  onClick={() => navigate('/')}
+                  className="w-full py-3 sm:py-4 bg-transparent border border-[#8a4fff]/30 
+                    text-[#8a4fff] rounded-xl hover:bg-[#8a4fff]/10 
+                    transition-colors text-[14px] sm:text-lg"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </div>
-    </div>
 
       {/* Modals */}
       {showPolicyModal && <PolicyModal />}

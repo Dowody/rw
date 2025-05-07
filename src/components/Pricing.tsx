@@ -124,7 +124,7 @@ const ProductCard = ({
       {/* Card Content */}
       <div 
         className={`
-          relative z-10 p-6 
+          relative z-10 p-4 sm:p-6 
           transition-all duration-500 
           ${isHovered 
             ? 'bg-[#2c1b4a]/90 shadow-2xl' 
@@ -135,29 +135,29 @@ const ProductCard = ({
         `}
       >
         {/* Icon and Category */}
-        <div className="flex justify-between items-center mb-4">
-          <div className="p-3 rounded-full bg-[#8a4fff]/20">
+        <div className="flex justify-between items-center mb-3 sm:mb-4">
+          <div className="p-2 sm:p-3 rounded-full bg-[#8a4fff]/20">
             {React.cloneElement(icon, {
-              className: `w-8 h-8 text-[#8a4fff] ${isHovered ? 'animate-pulse' : ''}`
+              className: `w-5 h-5 sm:w-8 sm:h-8 text-[#8a4fff] ${isHovered ? 'animate-pulse' : ''}`
             })}
           </div>
-          <span className="text-sm text-gray-300 opacity-70">{category}</span>
+          <span className="text-[12px] sm:text-sm text-gray-300 opacity-70">{category}</span>
         </div>
 
         {/* Product Name and Price */}
-        <div className="mb-4">
+        <div className="mb-3 sm:mb-4">
           <h3 className={`
-            text-xl font-semibold mb-2 
+            text-[16px] sm:text-xl font-semibold mb-2 
             ${isHovered ? 'text-[#8a4fff]' : 'text-white'}
             transition-colors duration-300
           `}>
             {name}
           </h3>
-          <p className="text-2xl font-bold text-green-400">{priceRange}</p>
+          <p className="text-[16px] sm:text-2xl font-bold text-green-400">{priceRange}</p>
         </div>
 
         {/* Features */}
-        <div className="mb-6 flex-grow">
+        <div className="mb-4 sm:mb-6 flex-grow">
           {features.map((feature, index) => (
             <div 
               key={index} 
@@ -169,12 +169,12 @@ const ProductCard = ({
             >
               <Check 
                 className={`
-                  w-5 h-5 mr-2 
+                  w-4 h-4 sm:w-5 sm:h-5 mr-2 
                   ${isHovered ? 'text-[#8a4fff]' : 'text-green-500'}
                   transition-colors duration-300
                 `} 
               />
-              <span className="text-gray-300">{feature}</span>
+              <span className="text-[14px] sm:text-base text-gray-300">{feature}</span>
             </div>
           ))}
         </div>
@@ -184,8 +184,9 @@ const ProductCard = ({
           onClick={handleAddToCart}
           disabled={isAdded}
           className={`
-            w-full py-3 rounded-lg 
+            w-full py-2 sm:py-3 rounded-lg 
             transition-all duration-300
+            text-[14px] sm:text-base
             ${isAdded 
               ? 'bg-gray-500 text-gray-300 cursor-not-allowed' 
               : (isHovered 
@@ -302,17 +303,17 @@ const Products = () => {
   return (
     <section 
       id="products" 
-      className="py-16 bg-[#04011C] pt-32"
+      className="py-16 bg-[#04011C] pt-20"
     >
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold mb-4 
+          <h2 className="text-[28px] sm:text-4xl font-bold mb-4 
             text-transparent bg-clip-text 
             bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
-            Most Popular Products
+            Most Popular Plans
           </h2>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            Tailored solutions for every trading strategy
+          <p className="text-[16px] sm:text-xl text-gray-400 max-w-2xl mx-auto">
+          Withdraw like a pro – no effort needed          
           </p>
         </div>
         

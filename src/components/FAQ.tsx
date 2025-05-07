@@ -14,17 +14,17 @@ const FAQItem = ({ question, answer }: { question: string, answer: string }) => 
 
   return (
     <div 
-      className="bg-[#2c1b4a] rounded-xl mb-4 overflow-hidden transition-all duration-300 ease-in-out"
+      className="bg-[#2c1b4a] rounded-xl mb-3 sm:mb-4 overflow-hidden transition-all duration-300 ease-in-out"
     >
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex justify-between items-center p-5 text-left focus:outline-none hover:bg-[#3a2b5c] transition-colors"
+        className="w-full flex justify-between items-center p-3 sm:p-5 text-left focus:outline-none hover:bg-[#3a2b5c] transition-colors"
       >
-        <span className="text-lg font-semibold text-[#8a4fff]">{question}</span>
+        <span className="text-[16px] sm:text-lg font-semibold text-[#8a4fff]">{question}</span>
         <div 
           className={`transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
         >
-          <ChevronDown className="text-[#8a4fff]" />
+          <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-[#8a4fff]" />
         </div>
       </button>
       
@@ -37,7 +37,7 @@ const FAQItem = ({ question, answer }: { question: string, answer: string }) => 
       >
         <div 
           ref={contentRef} 
-          className="p-5 text-gray-300"
+          className="p-3 sm:p-5 text-[14px] sm:text-base text-gray-300"
         >
           {answer}
         </div>
@@ -87,7 +87,7 @@ const FAQ = () => {
       }}
     >
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-transparent bg-clip-text bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
+        <h2 className="text-[28px] sm:text-4xl font-bold text-center mb-8 sm:mb-12 text-transparent bg-clip-text bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
           Frequently Asked Questions
         </h2>
         <div className="max-w-3xl mx-auto">

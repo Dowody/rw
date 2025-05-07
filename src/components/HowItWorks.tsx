@@ -51,17 +51,17 @@ const HowItWorks = () => {
 
   return (
     <section 
-      className="py-16 bg-[#04011C] relative overflow-hidden pt-32"
+      className="py-16 bg-[#04011C] relative overflow-hidden pt-20"
       id="how-it-works"
     >
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4 
+          <h2 className="text-[28px] sm:text-4xl font-bold mb-4 
             text-transparent bg-clip-text 
             bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
             How RollWithdraw Works
           </h2>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+          <p className="text-[16px] sm:text-xl text-gray-400 max-w-2xl mx-auto">
             A comprehensive, intelligent trading solution designed for maximum efficiency
           </p>
         </div>
@@ -138,25 +138,25 @@ const HowItWorks = () => {
               >
                 {/* Step Dot */}
                 <div className={`
-                  absolute left-[-2px] top-0
-                  w-12 h-12 rounded-full flex items-center justify-center
+                  absolute left-[2px] top-0
+                  w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center
                   ${step.color} shadow-xl z-10
                   border-4 border-[#04011C]
                 `}>
                   {React.cloneElement(step.icon, {
-                    className: "w-6 h-6 text-white"
+                    className: "w-5 h-5 sm:w-6 sm:h-6 text-white"
                   })}
                 </div>
 
                 {/* Step Content */}
-                <div className="bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-2xl p-5 relative">
-                  <h3 className="text-lg font-semibold mb-3 text-[#8a4fff]">
+                <div className="bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-2xl p-4 sm:p-5 relative">
+                  <h3 className="text-[16px] sm:text-lg font-semibold mb-2 sm:mb-3 text-[#8a4fff]">
                     {step.title}
                   </h3>
-                  <p className="text-base text-gray-300">
+                  <p className="text-[14px] sm:text-base text-gray-300">
                     {step.description}
                   </p>
-                  <div className="absolute bottom-3 right-3 text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b] opacity-20">
+                  <div className="absolute bottom-2 sm:bottom-3 right-2 sm:right-3 text-2xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b] opacity-20">
                     0{index + 1}
                   </div>
                 </div>

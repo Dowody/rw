@@ -51,22 +51,22 @@ const Features = () => {
 
   return (
     <section 
-      className="py-16 bg-[#04011C] pt-32"
+      className="py-16 bg-[#04011C] pt-20"
       id="features"
     >
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold mb-4 
+          <h2 className="text-[28px] sm:text-4xl font-bold mb-4 
             text-transparent bg-clip-text 
             bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
             Advanced Trading Features
           </h2>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+          <p className="text-[16px] sm:text-xl text-gray-400 max-w-2xl mx-auto">
             Cutting-edge technology designed to elevate your trading experience
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-3 gap-4 sm:gap-8">
           {features.map((feature, index) => (
             <motion.div 
               key={index}
@@ -80,7 +80,7 @@ const Features = () => {
               viewport={{ once: true }}
               className={`
                 bg-gradient-to-br ${feature.gradient} 
-                rounded-2xl p-6 
+                rounded-2xl p-4 sm:p-6 
                 transform transition-all duration-300 
                 hover:scale-105 hover:shadow-2xl
                 relative overflow-hidden
@@ -89,17 +89,17 @@ const Features = () => {
             >
               <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
               
-              <div className="flex justify-center mb-4 relative z-10">
+              <div className="flex justify-center mb-3 sm:mb-4 relative z-10">
                 {React.cloneElement(feature.icon, {
-                  className: "w-12 h-12 text-white/90"
+                  className: "w-8 h-8 sm:w-12 sm:h-12 text-white/90"
                 })}
               </div>
               
-              <h3 className="text-xl font-semibold mb-4 text-center text-white relative z-10">
+              <h3 className="text-[16px] sm:text-xl font-semibold mb-2 sm:mb-4 text-center text-white relative z-10">
                 {feature.title}
               </h3>
               
-              <p className="text-white/80 text-center text-sm relative z-10">
+              <p className="text-[14px] text-sm lg:text-base text-white/80 text-center relative z-10">
                 {feature.description}
               </p>
             </motion.div>
