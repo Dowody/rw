@@ -455,7 +455,7 @@ const UserDashboard: React.FC = () => {
             <div className="flex flex-col items-center mb-8">
               <div className="relative">
                 <img 
-                  src={userData?.avatar_url || '/avatar.jpg'} 
+                  src={'/rw/avatar.jpg'} 
                   alt={userData?.username || 'User'}
                   className="w-24 h-24 rounded-full border-4 border-[#8a4fff] mb-4 object-cover"
                 />
@@ -528,7 +528,7 @@ const UserDashboard: React.FC = () => {
                 {/* User Profile Card */}
                 <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-8 border border-[#8a4fff]/10 flex items-center">
                   <img 
-                    src={userData?.avatar_url || '/default-avatar.png'} 
+                    src={'/rw/avatar.jpg'} 
                     alt={userData?.username}
                     className="w-24 h-24 rounded-full mr-6 border-4 border-[#8a4fff]"
                   />
@@ -541,7 +541,7 @@ const UserDashboard: React.FC = () => {
                 </div>
 
                 {/* Subscription Overview */}
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="">
                   {/* Current Subscription Card */}
                   <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-6 border border-[#8a4fff]/10">
                     <div className="flex justify-between items-center mb-4">
@@ -550,7 +550,7 @@ const UserDashboard: React.FC = () => {
                       </h3>
                       <span 
                         className={`
-                          px-3 py-1 rounded-full text-sm font-semibold
+                          px-3 py-1 rounded-full text-sm font-semibold uppercase
                           ${subscriptionStatus === 'active' 
                             ? 'bg-green-500/20 text-green-400' 
                             : 'bg-red-500/20 text-red-400'}
@@ -590,12 +590,31 @@ const UserDashboard: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-gray-400">No active subscription</p>
+                      <div className="flex flex-col">
+                        <p className="text-gray-400 mb-4">No active subscription</p>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            // Navigate to checkout with products section active
+                            navigate('/', {
+                              state: { 
+                                scrollTo: '#products' 
+                              }
+                            })
+                          }}
+                          className="bg-[#8a4fff] text-white px-6 py-3 rounded-lg 
+                          hover:bg-[#7a3ddf] transition-colors flex items-center justify-center"
+                        >
+                          <Zap className="mr-2 w-5 h-5" /> Buy Subscription
+                        </motion.button>
+                      </div>
                     )}
                   </div>
 
+
                   {/* Account Stats Card */}
-                  <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-6 border border-[#8a4fff]/10">
+                  {/* <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-6 border border-[#8a4fff]/10">
                     <h3 className="text-xl font-semibold text-[#8a4fff] flex items-center mb-4">
                       <BarChart2 className="mr-3 w-6 h-6" /> Account Statistics
                     </h3>
@@ -613,7 +632,7 @@ const UserDashboard: React.FC = () => {
                         <span>{new Date(userData?.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
                 {/* Bot Configuration Section */}
@@ -622,14 +641,14 @@ const UserDashboard: React.FC = () => {
                     initial={{ opacity: 1, y: 0 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-6 border border-[#8a4fff]/10"
+                    className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div>
-                        <h3 className="text-xl font-semibold text-[#8a4fff] flex items-center mb-2">
-                          <Zap className="mr-3 w-6 h-6" /> Bot Configuration
+                        <h3 className="text-lg sm:text-xl font-semibold text-[#8a4fff] flex items-center mb-2">
+                          <Zap className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" /> Bot Configuration
                         </h3>
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-gray-400 text-xs sm:text-sm">
                           Set up your withdrawal bot
                         </p>
                       </div>
@@ -637,10 +656,10 @@ const UserDashboard: React.FC = () => {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setActiveSection('purchases')}
-                        className="bg-[#8a4fff] text-white px-6 py-3 rounded-xl 
-                        hover:bg-[#7a3ddf] transition-colors flex items-center"
+                        className="w-full sm:w-auto bg-[#8a4fff] text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl 
+                        hover:bg-[#7a3ddf] transition-colors flex items-center justify-center"
                       >
-                        <Play className="mr-2 w-5 h-5" /> 
+                        <Play className="mr-2 w-4 h-4 sm:w-5 sm:h-5" /> 
                         Activate Bot
                       </motion.button>
                     </div>
@@ -650,10 +669,10 @@ const UserDashboard: React.FC = () => {
 
                 {/* Upcoming Billing Section */}
                 {upcomingBilling && (
-                  <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-6 border border-[#8a4fff]/10 mt-6">
-                    <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-xl font-bold text-[#8a4fff] flex items-center">
-                        <Clock className="mr-3 w-6 h-6" /> Upcoming Billing
+                  <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10 mt-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
+                      <h3 className="text-lg sm:text-xl font-bold text-[#8a4fff] flex items-center">
+                        <Clock className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" /> Upcoming Billing
                       </h3>
                       {subscriptionStatus === 'active' && (
                         <button 
@@ -672,8 +691,8 @@ const UserDashboard: React.FC = () => {
                               })
                             }
                           }}
-                          className="bg-[#8a4fff]/10 text-[#8a4fff] px-4 py-2 rounded-lg 
-                          hover:bg-[#8a4fff]/20 transition-colors flex items-center"
+                          className="w-full sm:w-auto bg-[#8a4fff]/10 text-[#8a4fff] px-4 py-2 rounded-lg 
+                          hover:bg-[#8a4fff]/20 transition-colors flex items-center justify-center"
                         >
                           <RefreshCw className="mr-2 w-4 h-4" /> 
                           Renew Subscription
@@ -682,12 +701,12 @@ const UserDashboard: React.FC = () => {
                     </div>
 
                     <div className="bg-[#2c1b4a] rounded-xl p-4">
-                      <div className="flex justify-between items-center">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                           <h5 className="text-sm font-semibold text-white">
                             Next Billing: {upcomingBilling.subscriptionName}
                           </h5>
-                          <p className="text-xs text-gray-400 flex items-center">
+                          <p className="text-xs text-gray-400 flex items-center mt-1">
                             <Calendar className="mr-2 w-4 h-4" />
                             {upcomingBilling.date.toLocaleDateString('en-US', {
                               month: 'long',
@@ -696,13 +715,13 @@ const UserDashboard: React.FC = () => {
                             })}
                           </p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-left sm:text-right">
                           <p className="text-white font-bold text-lg">
                             €{upcomingBilling.amount.toFixed(2)}
                           </p>
                           <span 
                             className={`
-                              px-2 py-1 rounded-full text-xs
+                              inline-block px-2 py-1 rounded-full text-xs mt-1
                               ${subscriptionStatus === 'active' 
                                 ? 'bg-blue-500/20 text-blue-400' 
                                 : 'bg-red-500/20 text-red-400'}
@@ -715,9 +734,9 @@ const UserDashboard: React.FC = () => {
 
                       {/* Subscription Expiration Warning */}
                       {subscriptionStatus === 'expired' && (
-                        <div className="mt-4 bg-red-500/10 border border-red-500/30 p-3 rounded-lg flex items-center">
-                          <AlertTriangle className="mr-3 w-6 h-6 text-red-500" />
-                          <div>
+                        <div className="mt-4 bg-red-500/10 border border-red-500/30 p-3 rounded-lg flex flex-col sm:flex-row sm:items-center gap-3">
+                          <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-red-500 flex-shrink-0" />
+                          <div className="flex-grow">
                             <p className="text-red-400 text-sm">
                               Your subscription has expired. Renew to continue using RollWithdraw.
                             </p>
@@ -737,7 +756,7 @@ const UserDashboard: React.FC = () => {
                                   })
                                 }
                               }}
-                              className="mt-2 w-full bg-red-500/20 text-red-400 
+                              className="mt-2 w-full sm:w-auto bg-red-500/20 text-red-400 
                               px-4 py-2 rounded-lg hover:bg-red-500/30 
                               transition-colors flex items-center justify-center"
                             >
@@ -755,7 +774,7 @@ const UserDashboard: React.FC = () => {
                         <Shield className="mr-2 w-5 h-5" /> 
                         Subscription Benefits
                       </h5>
-                      <div className="grid grid-cols-2 gap-2 text-xs text-gray-300">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-300">
                         <div className="flex items-center">
                           <CheckCircle className="mr-2 w-4 h-4 text-green-500" />
                           Unlimited Withdrawals

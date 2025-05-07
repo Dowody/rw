@@ -51,7 +51,7 @@ const HowItWorks = () => {
 
   return (
     <section 
-      className="py-16 bg-[#04011C] relative overflow-hidden"
+      className="py-16 bg-[#04011C] relative overflow-hidden pt-32"
       id="how-it-works"
     >
       <div className="container mx-auto px-4">

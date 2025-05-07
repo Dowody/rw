@@ -202,13 +202,8 @@ const SignInPage: React.FC = () => {
             }
           }
   
-          // Navigate based on previous route or default
-          const state = location.state as { from?: string }
-          if (state?.from) {
-            navigate(state.from)
-          } else {
-            navigate('/dashboard')
-          }
+          // Always navigate to dashboard after successful sign in
+          navigate('/dashboard')
   
           // Optional: Dispatch auth change event
           window.dispatchEvent(new Event('authChange'))
@@ -411,7 +406,7 @@ const SignInPage: React.FC = () => {
       <div className="absolute inset-0 h-[100vh]">
         <div
           style={{
-            backgroundImage: 'url(/hero_bg.jpg)',
+            backgroundImage: 'url(/rw/hero_bg.jpg)',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             width: '100%',

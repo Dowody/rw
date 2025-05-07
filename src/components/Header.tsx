@@ -65,7 +65,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
           .eq('id', user.id)
           .single()
 
-        setUserAvatar(userData?.avatar_url || '/avatar.jpg')
+        setUserAvatar(userData?.avatar_url || '/rw/avatar.jpg')
       }
     } else {
       setIsAuthenticated(false)

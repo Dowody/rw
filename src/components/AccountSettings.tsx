@@ -330,7 +330,7 @@ const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         <div className="flex items-center mb-6">
           <div className="mr-6">
             <img 
-              src={avatarPreview || '/default-avatar.png'} 
+              src={'/rw/avatar.jpg'} 
               alt="Profile Avatar" 
               className="w-24 h-24 rounded-full border-4 border-[#8a4fff] object-cover"
             />

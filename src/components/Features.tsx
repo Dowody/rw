@@ -51,7 +51,7 @@ const Features = () => {
 
   return (
     <section 
-      className="py-16 bg-[#04011C]"
+      className="py-16 bg-[#04011C] pt-32"
       id="features"
     >
       <div className="container mx-auto px-4">
