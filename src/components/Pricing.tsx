@@ -1,8 +1,46 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Zap, Star, Crown, Check } from 'lucide-react'
+import { Zap, Star, Crown, Check, Clock, Sparkles } from 'lucide-react'
 import { useCart } from './context/CartContext'
 import confetti from 'canvas-confetti'
+
+const CountdownBadge = () => {
+  const [daysLeft, setDaysLeft] = useState(30)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDaysLeft(prev => Math.max(0, prev - 1))
+    }, 24 * 60 * 60 * 1000) // Simulate daily countdown
+
+    return () => clearInterval(timer)
+  }, [])
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, x: 50, rotate: 40 }}
+      animate={{ opacity: 1, x: 50, rotate: 40 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="absolute top-[6.2rem] lg:top-[6.8rem] right-[5px] lg:right-[10px] z-10 
+        bg-gradient-to-r from-[#ff6a00] to-[#fdd835]
+        text-white 
+        px-14 py-2.5 
+        -skew-x-12
+        lg:text-sm
+        text-xs
+        font-extrabold
+        flex items-center 
+        shadow-2xl
+        transform origin-top-right rotate-[30deg]
+        hover:scale-110 
+        transition-transform 
+        duration-300
+        border-2 border-white/20"
+    >
+      <Clock className="w-4 h-4 mr-2" />
+      {daysLeft} Days Left
+    </motion.div>
+  )
+}
 
 const ProductCard = ({ 
   id,
@@ -33,13 +71,10 @@ const ProductCard = ({
   const cardRef = useRef<HTMLDivElement>(null)
 
   const handleAddToCart = () => {
-    // Prevent adding if already added
     if (isAdded) return
-
-    // Add to cart
     onAddToCart()
     
-    // Card-specific Confetti Effect
+    // Confetti effect
     if (cardRef.current) {
       const cardRect = cardRef.current.getBoundingClientRect()
       
@@ -64,7 +99,6 @@ const ProductCard = ({
       const cardCenterX = cardRect.left + cardRect.width / 2
       const cardCenterY = cardRect.top + cardRect.height / 2
 
-      // Normalize card center position relative to window
       const normalizedX = cardCenterX / window.innerWidth
       const normalizedY = cardCenterY / window.innerHeight
 
@@ -77,7 +111,6 @@ const ProductCard = ({
 
         const particleCount = 50 * (timeLeft / duration)
         
-        // Purple and blue color palette
         const colors = ['#8a4fff', '#5e3c9b', '#6a3de3', '#4a2d8c']
         
         confettiInstance({
@@ -92,6 +125,10 @@ const ProductCard = ({
       }, 250)
     }
   }
+
+  // Extract original price and discount from features
+  const originalPrice = features[0].replace('Original Price: ', '')
+  const discount = features[2].replace('Discount: ', '')
 
   return (
     <motion.div 
@@ -135,30 +172,55 @@ const ProductCard = ({
         `}
       >
         {/* Icon and Category */}
-        <div className="flex justify-between items-center mb-3 sm:mb-4">
+        <div className="flex justify-between items-center mb-3 sm:mb-4 ">
           <div className="p-2 sm:p-3 rounded-full bg-[#8a4fff]/20">
             {React.cloneElement(icon, {
               className: `w-5 h-5 sm:w-8 sm:h-8 text-[#8a4fff] ${isHovered ? 'animate-pulse' : ''}`
             })}
           </div>
-          <span className="text-[12px] sm:text-sm text-gray-300 opacity-70">{category}</span>
+          <span className="text-[13px] sm:text-sm text-gray-300 opacity-70 absolute left-16 lg:left-24">{category}</span>
         </div>
+        
+        {/* Discount Badge */}
+        <div className="absolute top-[24px] opacity-0 lg:opacity-100 lg:top-10 left-[178px]  lg:left-56 z-10 bg-red-500 text-white px-3 py-1 rounded-full text-[10px]">
+          {discount}
+        </div>
+ 
+        {/* <div className="absolute top-0 lg:top-[5.4rem] right-0 lg:right-[-50px] z-10 
+        bg-gradient-to-r from-[#ff6b6b] to-[#ff9a6b]
+        text-white 
+        px-14 py-2 
+        -skew-x-12
+        text-sm
+        flex items-center 
+        shadow-lg
+        transform origin-top-right rotate-[30deg]">
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Limited 30 Days
+      </div> */}
+
+      <CountdownBadge />
 
         {/* Product Name and Price */}
         <div className="mb-3 sm:mb-4">
           <h3 className={`
-            text-[16px] sm:text-xl font-semibold mb-2 
+            text-[24px] lg:text-3xl sm:text-xl font-semibold mb-2 
             ${isHovered ? 'text-[#8a4fff]' : 'text-white'}
             transition-colors duration-300
           `}>
             {name}
           </h3>
-          <p className="text-[16px] sm:text-2xl font-bold text-green-400">{priceRange}</p>
+          <div className="flex items-center space-x-3">
+            <p className="text-[16px] sm:text-2xl font-bold text-green-400">{priceRange}</p>
+            <p className="text-[12px] sm:text-sm text-red-400 line-through">{originalPrice}</p>
+          </div>
         </div>
 
         {/* Features */}
         <div className="mb-4 sm:mb-6 flex-grow">
-          {features.map((feature, index) => (
+          {features.slice(3).map((feature, index) => (
             <div 
               key={index} 
               className={`
@@ -202,7 +264,6 @@ const ProductCard = ({
     </motion.div>
   )
 }
-
 const Products = () => {
   const { 
     cart, 
@@ -214,7 +275,6 @@ const Products = () => {
   // Close cart on scroll
   useEffect(() => {
     const handleScroll = () => {
-      // Dispatch a custom event to close the cart
       window.dispatchEvent(new Event('closeCart'))
     }
 
@@ -226,7 +286,6 @@ const Products = () => {
 
   // Track cart changes and update added products
   useEffect(() => {
-    // Remove products from addedProducts that are no longer in the cart
     const currentCartProductIds = cart.map(item => item.id)
     setAddedProducts(prev => 
       prev.filter(productId => currentCartProductIds.includes(productId))
@@ -234,10 +293,8 @@ const Products = () => {
   }, [cart])
 
   const handleAddToCart = (product: any) => {
-    // Prevent adding the same product multiple times
     if (addedProducts.includes(product.id)) return
 
-    // Add to cart
     addToCart({ 
       id: product.id, 
       name: product.name, 
@@ -245,10 +302,7 @@ const Products = () => {
       quantity: 1 
     })
 
-    // Mark product as added
     setAddedProducts(prev => [...prev, product.id])
-
-    // Dispatch a custom event to open the cart
     window.dispatchEvent(new Event('openCart'))
   }
 
@@ -256,12 +310,15 @@ const Products = () => {
     {
       id: 'monthly',
       name: "1 Month Licence",
-      priceRange: "€249.99",
+      priceRange: "€49.99",
       category: "RollWithdraw Bot",
       icon: <Zap />,
-      price: 249.99,
+      price: 49.99,
       image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/f02b1965126337.6021db766416d.jpg",
       features: [
+        "Original Price: €249.99",
+        "You Save: €200",
+        "Discount: 80% off",
         "No Withdrawals Limit",
         "Automated Withdrawals",
         "Custom Price Ranges",
@@ -271,12 +328,15 @@ const Products = () => {
     {
       id: '6-months',
       name: "6 Months Licence",
-      priceRange: "€1349.99",
+      priceRange: "€269.99",
       category: "RollWithdraw Bot",
       icon: <Star />,
-      price: 1349.99,
+      price: 269.99,
       image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/8bf05765126337.6002d0c795c64.jpg",
       features: [
+        "Original Price: €1349.99",
+        "You Save: €1080",
+        "Discount: 80% off",
         "No Withdrawals Limit",
         "Daily Case Collection",
         "No Cost",
@@ -284,18 +344,21 @@ const Products = () => {
       ]
     },
     {
-      id: 'annual',
+      id: 'yearly',
       name: "12 Months Licence",
-      priceRange: "€2399.99",
+      priceRange: "€479.99",
       category: "RollWithdraw Bot",
       icon: <Crown />,
-      price: 2399.99,
-      image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/08ce9a65126337.5b4c8ac9c4b3b.jpg",
+      price: 539.99,
+      image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/08ce9a65126337.5b4c8ac9c4b3b.jpg ",
       features: [
+        "Original Price: €2399.99",
+        "You Save: €1860",
+        "Discount: 80% off",
         "No Withdrawals Limit",
-        "Roulette Strategy",
-        "Multiple Bet Types",
-        "Risk Management"
+        "Unlimited Updates",
+        "Priority Support",
+        "Best Value Package"
       ]
     }
   ]
@@ -313,7 +376,7 @@ const Products = () => {
             Most Popular Plans
           </h2>
           <p className="text-[16px] sm:text-xl text-gray-400 max-w-2xl mx-auto">
-          Withdraw like a pro – no effort needed          
+            Withdraw like a pro – no effort needed          
           </p>
         </div>
         
