@@ -427,18 +427,18 @@ const UserDashboard: React.FC = () => {
           className="mb-8 w-full max-w-md mx-auto"
         >
           <div className={`
-            ${error.includes('successfully') 
-              ? 'bg-green-500/20 border border-green-500 text-green-400' 
-              : 'bg-red-500/10 border border-red-500 text-red-400'} 
-            p-4 rounded-xl flex items-center
-          `}>
-            {error.includes('successfully') ? (
-              <CheckCircle className="mr-3 w-6 h-6" />
-            ) : (
-              <AlertTriangle className="mr-3 w-6 h-6" />
-            )}
-        {error}
-          </div>
+          ${error.includes('successfully') 
+            ? 'bg-green-500/20 border border-green-500 text-green-400 text-sm text-center lg:text-base w-[90%] mx-auto' 
+            : 'bg-red-500/10 border border-red-500 text-red-400 text-sm lg:text-base w-[90%] mx-auto'} 
+          p-4 rounded-xl flex flex-col items-center
+        `}>
+          {error.includes('successfully') ? (
+            <CheckCircle className="mb-2 w-5 h-5 lg:w-6 lg:h-6 " />
+          ) : (
+            <AlertTriangle className="mb-2 w-6 h-6" />
+          )}
+          <p>{error}</p>
+        </div>
         </motion.div>
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-[#8a4fff]"></div>
       </div>
@@ -862,7 +862,7 @@ const UserDashboard: React.FC = () => {
                     <motion.div 
                       initial={{ opacity: 1, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="bg-green-500/20 border border-green-500/30 text-green-400 p-3 sm:p-4 rounded-xl text-xs sm:text-sm"
+                      className="bg-green-500/20 border border-green-500/30 text-green-400 p-3 sm:p-4 rounded-xl text-sm sm:text-sm"
                     >
                       {success}
                     </motion.div>
