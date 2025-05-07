@@ -1,11 +1,11 @@
 import React, { Suspense, useState, useCallback, useEffect } from 'react'
-import { 
-  BrowserRouter as Router, 
-  Routes, 
-  Route, 
-  Navigate, 
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
   useLocation,
-  useNavigate 
+  useNavigate,
 } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { CartProvider } from './components/context/CartContext'
@@ -13,7 +13,7 @@ import Header from './components/Header'
 import CartDropdown from './components/CartDropdown'
 import { supabase } from './lib/supabaseClient'
 
-// Lazy load components for better performance
+// Lazy load components
 const Home = React.lazy(() => import('./components/Home'))
 const SignInPage = React.lazy(() => import('./components/SignInPage'))
 const CheckoutPage = React.lazy(() => import('./components/CheckoutPage'))
@@ -23,14 +23,14 @@ const RefundPolicy = React.lazy(() => import('./components/RefundPolicy'))
 const PolicyPage = React.lazy(() => import('./components/PolicyPage'))
 const UserDashboard = React.lazy(() => import('./components/UserDashboard'))
 
-// Loading Spinner Component
+// Loading spinner
 const LoadingSpinner = () => (
   <div className="fixed inset-0 flex items-center justify-center bg-[#0a0415] z-50">
     <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-[#8a4fff]"></div>
   </div>
 )
 
-// Authentication Wrapper Component
+// Private route
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -48,8 +48,8 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
           navigate('/signin', { 
             state: { 
               from: location.pathname,
-              message: 'Please sign in to access this page' 
-            }
+              message: 'Please sign in to access this page',
+            },
           })
         }
       } catch (error) {
@@ -63,41 +63,24 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
     checkAuth()
   }, [navigate, location])
 
-  if (isLoading) {
-    return <LoadingSpinner />
-  }
-
+  if (isLoading) return <LoadingSpinner />
   return isAuthenticated ? <>{children}</> : null
 }
 
-// Page Transition Wrapper
-const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const location = useLocation()
-
-  return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        {children}
-      </Routes>
-    </AnimatePresence>
-  )
-}
-
-function App() {
+// Main App Component with Routes
+const AppContent: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const location = useLocation()
 
-  // Toggle Cart
   const toggleCart = useCallback(() => {
     setIsCartOpen(prev => !prev)
   }, [])
 
-  // Close Cart
   const closeCart = useCallback(() => {
     setIsCartOpen(false)
   }, [])
 
-  // Check authentication status
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
@@ -111,14 +94,12 @@ function App() {
 
     checkAuthStatus()
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         setIsAuthenticated(!!session)
       }
     )
 
-    // Cart event listeners
     const openCartHandler = () => setIsCartOpen(true)
     const closeCartHandler = () => setIsCartOpen(false)
 
@@ -133,49 +114,52 @@ function App() {
   }, [])
 
   return (
+    <div className="bg-[#0a0415] text-white min-h-screen">
+      <Header onCartToggle={toggleCart} />
+      <CartDropdown isOpen={isCartOpen} onClose={closeCart} />
+
+      <AnimatePresence mode="wait" initial={false}>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<Home />} />
+          <Route 
+            path="/signin" 
+            element={
+              isAuthenticated ? <Navigate to="/" replace /> : <SignInPage />
+            } 
+          />
+          <Route 
+            path="/checkout" 
+            element={
+              <PrivateRoute>
+                <CheckoutPage />
+              </PrivateRoute>
+            } 
+          />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/refund" element={<RefundPolicy />} />
+          <Route path="/policy" element={<PolicyPage />} />
+          <Route 
+            path="/dashboard" 
+            element={
+              <PrivateRoute>
+                <UserDashboard />
+              </PrivateRoute>
+            } 
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// Root App with Router and Context
+const App: React.FC = () => {
+  return (
     <Router>
       <CartProvider>
-        <div className="bg-[#0a0415] text-white min-h-screen">
-          <Header onCartToggle={toggleCart} />
-          <CartDropdown 
-            isOpen={isCartOpen} 
-            onClose={closeCart} 
-          />
-          
-          <Suspense fallback={<LoadingSpinner />}>
-            <PageTransition>
-              <Route path="/" element={<Home />} />
-              <Route 
-                path="/signin" 
-                element={
-                  isAuthenticated ? <Navigate to="/" replace /> : <SignInPage />
-                } 
-              />
-              <Route 
-                path="/checkout" 
-                element={
-                  <PrivateRoute>
-                    <CheckoutPage />
-                  </PrivateRoute>
-                } 
-              />
-              <Route path="/terms" element={<TermsOfService />} />
-              <Route path="/privacy" element={<PrivacyPolicy />} />
-              <Route path="/refund" element={<RefundPolicy />} />
-              <Route path="/policy" element={<PolicyPage />} />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <PrivateRoute>
-                    <UserDashboard />
-                  </PrivateRoute>
-                } 
-              />
-              {/* 404 Route */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </PageTransition>
-          </Suspense>
-        </div>
+        <AppContent />
       </CartProvider>
     </Router>
   )
