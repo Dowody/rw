@@ -21,7 +21,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ isOpen, onClose }) => {
 
   const dropdownVariants = {
     hidden: { 
-      opacity: 0, 
+      opacity: 1, 
       y: -10,
       scale: 0.98,
       boxShadow: '0 0 0 rgba(138, 79, 255, 0)',
@@ -46,7 +46,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ isOpen, onClose }) => {
 
   const itemVariants = {
     hidden: { 
-      opacity: 0, 
+      opacity: 1, 
       x: -10,
       scale: 0.98
     },
@@ -61,7 +61,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ isOpen, onClose }) => {
       }
     },
     exit: { 
-      opacity: 0, 
+      opacity: 1, 
       x: 10,
       scale: 0.98,
       transition: {
@@ -115,7 +115,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ isOpen, onClose }) => {
       {/* Empty Cart State */}
       {cart.length === 0 && (
         <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 1, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
           className="p-8 text-center"
@@ -187,7 +187,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ isOpen, onClose }) => {
       {/* Cart Summary */}
       {cart.length > 0 && (
         <motion.div 
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 1, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ 
             duration: 0.4, 

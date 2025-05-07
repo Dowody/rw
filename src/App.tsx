@@ -12,6 +12,7 @@ import { CartProvider } from './components/context/CartContext'
 import Header from './components/Header'
 import CartDropdown from './components/CartDropdown'
 import { supabase } from './lib/supabaseClient'
+import { motion } from 'framer-motion'
 
 // Lazy load components
 const Home = React.lazy(() => import('./components/Home'))
@@ -30,7 +31,34 @@ const LoadingSpinner = () => (
   </div>
 )
 
-// Private route
+// Initial Load Wrapper
+const InitialLoadWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false)
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (isInitialLoad) {
+    return <LoadingSpinner />
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+// Authentication Wrapper Component
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -71,6 +99,7 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
 const AppContent: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
   const location = useLocation()
 
   const toggleCart = useCallback(() => {
@@ -89,6 +118,8 @@ const AppContent: React.FC = () => {
       } catch (error) {
         console.error('Failed to check authentication:', error)
         setIsAuthenticated(false)
+      } finally {
+        setIsInitialized(true)
       }
     }
 
@@ -112,6 +143,10 @@ const AppContent: React.FC = () => {
       window.removeEventListener('closeCart', closeCartHandler)
     }
   }, [])
+
+  if (!isInitialized) {
+    return <LoadingSpinner />
+  }
 
   return (
     <div className="bg-[#0a0415] text-white min-h-screen">
@@ -159,7 +194,9 @@ const App: React.FC = () => {
   return (
     <Router>
       <CartProvider>
-        <AppContent />
+        <InitialLoadWrapper>
+          <AppContent />
+        </InitialLoadWrapper>
       </CartProvider>
     </Router>
   )

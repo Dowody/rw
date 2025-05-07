@@ -420,9 +420,9 @@ const UserDashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#04011C] flex flex-col items-center justify-center p-4">
         <motion.div 
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 1, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
+          exit={{ opacity: 1, y: -20 }}
           transition={{ duration: 0.3 }}
           className="mb-8 w-full max-w-md mx-auto"
         >
@@ -520,7 +520,7 @@ const UserDashboard: React.FC = () => {
           <div className="md:col-span-9 space-y-8">
             {activeSection === 'overview' && (
               <motion.div 
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 1, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
                 className="space-y-8"
@@ -619,7 +619,7 @@ const UserDashboard: React.FC = () => {
                 {/* Bot Configuration Section */}
                 {subscriptionStatus === 'active' && (
                   <motion.div
-                    initial={{ opacity: 0, y: 0 }}
+                    initial={{ opacity: 1, y: 0 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
                     className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-6 border border-[#8a4fff]/10"
@@ -630,7 +630,7 @@ const UserDashboard: React.FC = () => {
                           <Zap className="mr-3 w-6 h-6" /> Bot Configuration
                         </h3>
                         <p className="text-gray-400 text-sm">
-                          Set up and activate your automated withdrawal bot
+                          Set up your withdrawal bot
                         </p>
                       </div>
                       <motion.button
@@ -781,7 +781,7 @@ const UserDashboard: React.FC = () => {
 
             {activeSection === 'purchases' && (
               <motion.div 
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 1, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
                 className="space-y-8"
@@ -818,7 +818,7 @@ const UserDashboard: React.FC = () => {
                 </h2>
                       <div className="flex items-center space-x-4">
                         <motion.span 
-                          initial={{ scale: 0.8, opacity: 0 }}
+                          initial={{ scale: 0.8, opacity: 1}}
                           animate={{ scale: 1, opacity: 1 }}
                           className={`
                             px-4 py-2 rounded-full text-sm font-semibold uppercase tracking-wider
@@ -860,7 +860,7 @@ const UserDashboard: React.FC = () => {
                   {/* Success/Error Messages */}
                   {success && (
                     <motion.div 
-                      initial={{ opacity: 0, y: -10 }}
+                      initial={{ opacity: 1, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="bg-green-500/20 border border-green-500/30 text-green-400 p-4 rounded-xl"
                     >
@@ -1089,7 +1089,7 @@ const UserDashboard: React.FC = () => {
 
             {activeSection === 'invoices' && (
               <motion.div 
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 1, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
                 className="space-y-8"
@@ -1132,7 +1132,7 @@ const UserDashboard: React.FC = () => {
                       {billingHistory.slice(0, showAllBilling ? undefined : 3).map((purchase, index) => (
                         <motion.div
                           key={purchase.id}
-                          initial={{ opacity: 0, x: -20 }}
+                          initial={{ opacity: 1, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ 
                             duration: 0.3, 

@@ -199,8 +199,9 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
               <AnimatePresence>
                 {isCartOpen && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.8, y: -10 }}
+                    initial={{ opacity: 1, scale: 0.8, y: -10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 1, scale: 0.8, y: -10 }}
                     transition={{ duration: 0.2 }}
                     className="absolute z-50 right-0 top-full mt-2 bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-lg shadow-lg p-2 w-72"
                   >
@@ -230,8 +231,9 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                 <AnimatePresence>
                   {isAccountDropdownOpen && (
                     <motion.div 
-                      initial={{ opacity: 0, scale: 0.8, y: -10 }}
+                      initial={{ opacity: 1, scale: 0.8, y: -10 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 1, scale: 0.8, y: -10 }}
                       transition={{ duration: 0.2 }}
                       className="absolute z-50 right-0 top-full mt-2 bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-lg shadow-lg p-2 w-56"
                     >
@@ -305,10 +307,11 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 1, y: 20 }}
               animate={{ opacity: 1, y: 20 }}
+              exit={{ opacity: 1, y: 20 }}
               className="absolute top-full left-0 w-full bg-[#2c1b4a]/90 backdrop-blur-xl shadow-lg overflow-hidden md:hidden"
-              >
+            >
               <div className="container mx-auto px-6 py-8">
                 <div className="flex flex-col space-y-6">
                   {/* Authenticated User Section */}
@@ -361,7 +364,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                     <motion.button
                       key={index}
                       onClick={() => handleNavigation(item.href, item.scrollTo)}
-                      initial={{ opacity: 0, x: -20 }}
+                      initial={{ opacity: 1, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
                       className="text-lg text-gray-300 hover:text-[#8a4fff] transition-colors cursor-pointer text-left"

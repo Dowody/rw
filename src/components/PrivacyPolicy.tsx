@@ -16,7 +16,7 @@ const PrivacyPolicy: React.FC = () => {
   const navigate = useNavigate()
 
   const pageVariants = {
-    initial: { opacity: 0, y: 50 },
+    initial: { opacity: 1, y: 50 },
     in: { 
       opacity: 1, 
       y: 0,
@@ -26,7 +26,7 @@ const PrivacyPolicy: React.FC = () => {
       }
     },
     out: { 
-      opacity: 0, 
+      opacity: 1, 
       y: 50,
       transition: {
         duration: 0.5,

@@ -25,7 +25,7 @@ const PolicyPage: React.FC = () => {
   const [activePolicy, setActivePolicy] = useState<PolicyType>('privacy')
 
   const pageVariants = {
-    initial: { opacity: 0, y: 50 },
+    initial: { opacity: 1, y: 50 },
     in: { 
       opacity: 1, 
       y: 0,
@@ -35,7 +35,7 @@ const PolicyPage: React.FC = () => {
       }
     },
     out: { 
-      opacity: 0, 
+      opacity: 1, 
       y: 50,
       transition: {
         duration: 0.5,

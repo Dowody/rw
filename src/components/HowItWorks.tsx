@@ -71,7 +71,7 @@ const HowItWorks = () => {
           {steps.map((step, index) => (
             <motion.div 
               key={index}
-              initial={{ opacity: 0, y: 50 }}
+              initial={{ opacity: 1, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ 
                 duration: 0.4, 
@@ -123,7 +123,7 @@ const HowItWorks = () => {
             {steps.map((step, index) => (
               <motion.div 
                 key={index}
-                initial={{ opacity: 0, x: 0, y: 30 }}
+                initial={{ opacity: 1, x: 0, y: 30 }}
                 whileInView={{ opacity: 1, x: 0, y: 0 }}
                 transition={{ 
                   duration: 0.8, 

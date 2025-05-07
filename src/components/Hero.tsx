@@ -55,16 +55,14 @@ const TradeSlider = () => {
   return (
     <div className="relative w-full max-w-md mx-auto overflow-hidden">
       <AnimatePresence mode="wait">
-        <motion.div 
-          key={currentSlide}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          transition={{ 
-            type: "tween",
-            duration: 0.5
-          }}
-          className="flex flex-col items-center text-center"
+      <motion.div 
+        key={currentSlide}
+        initial={{ x: '600%', opacity: 1 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: '-600%'}}
+          transition={{ duration: 0.5 }}
+        
+        className="feather-mask flex flex-col items-center text-center"
         >
           <div className="w-64 h-64 mb-4 flex items-center justify-center">
             <motion.img 
@@ -74,7 +72,7 @@ const TradeSlider = () => {
                 transform transition-transform duration-300 
                 hover:scale-110"
             />
-          </div>
+          </div>q
           
           <div>
             <p className="text-sm text-gray-400 uppercase tracking-wider">
@@ -193,7 +191,7 @@ const Hero: React.FC = () => {
 
       {/* Glowing Accent */}
       <motion.div 
-        initial={{ opacity: 0 }}
+        initial={{ opacity: 1 }}
         animate={{ 
           opacity: [0.2, 0.4, 0.2],
           transition: {
@@ -202,7 +200,7 @@ const Hero: React.FC = () => {
             ease: "easeInOut"
           }
         }}
-        className="absolute top-[1200px]  lg:top-1/2 lg:right-[320px] transform -translate-y-1/2 
+        className="absolute top-[1200px]  lg:top-1/2 lg:right-[400px] transform -translate-y-1/2 
         w-[500px] h-[500px] bg-[#8a4fff] rounded-full opacity-10 blur-3xl"
       />
 
@@ -210,7 +208,7 @@ const Hero: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-16 items-center">
           {/* Left Content */}
           <motion.div 
-            initial={{ opacity: 0, x: 0, y: 0 }}
+            initial={{ opacity: 1, x: 0, y: 0 }}
             animate={{ opacity: 1, x: 0, y:0 }}
             transition={{ duration: 0.1 }}
             className="text-center md:text-left"
@@ -233,11 +231,12 @@ const Hero: React.FC = () => {
               {features.map((feature, index) => (
                 <motion.div 
                   key={index}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 1, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ 
-                    delay: index * 0.2,
-                    duration: 0.6
+                    delay: index * 0.1,
+                    duration: 0.2,
+                    ease: "easeInOut"
                   }}
                   className="bg-[#2c1b4a]/50 backdrop-blur-sm p-4 rounded-lg 
                   flex flex-col items-center text-center border border-[#8a4fff]/20 
@@ -289,10 +288,10 @@ const Hero: React.FC = () => {
 
           {/* Right Side - Trade Slider */}
           <motion.div 
-            initial={{ opacity: 0, x: 50 }}
+            initial={{ opacity: 1, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
-            className="hidden md:flex justify-center items-center"
+            className="feather-mask hidden md:flex justify-center items-center"
           >
             <TradeSlider />
           </motion.div>
@@ -300,10 +299,10 @@ const Hero: React.FC = () => {
 
         {/* Mobile Trade Slider */}
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="max-w-xl mx-auto md:hidden mb-12"
+          transition={{ duration: 0.8 }}
+          className="feather-mask max-w-xl mx-auto md:hidden mb-12"
         >
           <TradeSlider />
         </motion.div>

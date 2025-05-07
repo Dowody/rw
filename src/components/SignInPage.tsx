@@ -384,7 +384,7 @@ const SignInPage: React.FC = () => {
   // Page Transition Variants
   const pageVariants = {
     initial: { 
-      opacity: 0, 
+      opacity: 1, 
       scale: 0.95 
     },
     in: { 
@@ -396,7 +396,7 @@ const SignInPage: React.FC = () => {
       }
     },
     out: { 
-      opacity: 0, 
+      opacity: 1, 
       scale: 0.95,
       transition: {
         duration: 0.2,
@@ -449,9 +449,9 @@ const SignInPage: React.FC = () => {
           <AnimatePresence>
             {error && (
               <motion.div 
-                initial={{ opacity: 0, y: -20 }}
+                initial={{ opacity: 1, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+                exit={{ opacity: 1, y: -20 }}
                 className={`absolute ${mode === 'signup' ? '-top-20' : '-top-20'} left-0 right-0 p-4 rounded-xl flex items-center justify-center ${
                   error.includes('Log In or Sign Up')
                     ? 'bg-purple-500/10 border border-purple-500 text-purple-400'
@@ -469,7 +469,7 @@ const SignInPage: React.FC = () => {
           <div className="bg-gradient-to-br from-[#1a0b2e] to-[#130428] rounded-2xl shadow-2xl overflow-hidden">
             {/* Header Tabs */}
             <motion.div 
-              initial={{ opacity: 0 }}
+              initial={{ opacity: 1 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
               className="flex border-b border-[#8a4fff]/10"
@@ -640,7 +640,7 @@ const SignInPage: React.FC = () => {
 
             {/* Mode Switch */}
             <motion.div 
-              initial={{ opacity: 0 }}
+              initial={{ opacity: 1 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
               className="bg-[#2c1b4a] border-t border-[#8a4fff]/10 p-4 text-center"

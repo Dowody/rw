@@ -383,7 +383,7 @@ const CheckoutPage: React.FC = () => {
   const PolicyModal = () => (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 1, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-[#0a0415] rounded-2xl p-8 max-w-md w-full border border-[#8a4fff]/10"
       >
@@ -474,7 +474,7 @@ const CheckoutPage: React.FC = () => {
   const SkinPaymentModal = () => (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 1, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-[#0a0415] rounded-2xl p-8 max-w-3xl w-full border border-[#8a4fff]/10 my-8"
       >
@@ -607,7 +607,7 @@ const CheckoutPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#04011C] flex items-center justify-center px-4 py-16">
         <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 1, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
           className="max-w-md w-full text-center bg-[#0a0415] rounded-3xl p-12 border border-[#8a4fff]/10"
@@ -636,7 +636,7 @@ const CheckoutPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#04011C] flex items-center justify-center px-4 py-16">
         <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 1, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
           className="max-w-md w-full text-center bg-[#0a0415] rounded-3xl p-12 border border-[#8a4fff]/10"
@@ -676,18 +676,18 @@ const CheckoutPage: React.FC = () => {
 
         {/* Header */}
         <motion.div 
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
             className="flex items-center mt-10"
         >
           <button 
             onClick={() => navigate('/')}
-              className="text-gray-400 hover:text-[#8a4fff] flex items-center mr-auto mb-28"
+              className="text-gray-400 hover:text-[#8a4fff] flex items-center mr-auto mb-20"
           >
             <ChevronLeft className="mr-2 w-6 h-6" /> Back
           </button>
-            <h1 className="text-3xl font-bold text-white absolute left-1/2 transform -translate-x-1/2 pt-10">
+            <h1 className="text-3xl font-bold text-white absolute left-1/2 transform -translate-x-1/2 pt-0">
             Checkout
           </h1>
         </motion.div>
@@ -695,7 +695,7 @@ const CheckoutPage: React.FC = () => {
           <div className="grid md:grid-cols-2 gap-8">
           {/* Left Column - Order Details */}
           <motion.div 
-            initial={{ opacity: 0, x: -30 }}
+            initial={{ opacity: 1, x: 0 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             className="space-y-8"
@@ -811,7 +811,7 @@ const CheckoutPage: React.FC = () => {
 
           {/* Right Column - Order Summary */}
           <motion.div 
-            initial={{ opacity: 0, x: 30 }}
+            initial={{ opacity: 1, x: 0 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
               className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-8 border border-[#8a4fff]/10 h-fit"

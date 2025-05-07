@@ -167,7 +167,7 @@ const InvoicesSection: React.FC = () => {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 1, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       className="backdrop-blur-xl rounded-3xl p-8 border border-[#8a4fff]/10"

@@ -75,7 +75,7 @@ const StatCard = ({
   return (
     <motion.div 
       ref={cardRef}
-      initial={{ opacity: 0, y: 50 }}
+      initial={{ opacity: 1, y: 50 }}
       animate={isVisible ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.6, ease: "easeOut" }}
       className="bg-[#2c1b4a] 
