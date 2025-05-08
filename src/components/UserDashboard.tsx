@@ -407,7 +407,8 @@ const UserDashboard: React.FC = () => {
   }
 
   // Format date helper
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | null | undefined) => {
+    if (!date) return 'N/A';
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
