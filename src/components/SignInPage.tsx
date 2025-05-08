@@ -97,7 +97,7 @@ const SignInPage: React.FC = () => {
   }
 
   // Forgot Password Handler
-  const handleForgotPassword = async () => {
+    const handleForgotPassword = async () => {
     // Validate email
     if (!validateEmail(email)) {
       setError('Please enter a valid email address')
@@ -106,34 +106,6 @@ const SignInPage: React.FC = () => {
 
     setLoading(true)
     try {
-      // First check if the email exists in the database
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('email')
-        .eq('email', email)
-        .single()
-
-      if (userError || !userData) {
-        // Check if user exists but needs email confirmation
-        const { data: authData } = await supabase.auth.getUser()
-        if (authData?.user && !authData.user.email_confirmed_at) {
-          setError('Please check your email to confirm your account')
-          setTimeout(() => {
-            navigate('/signin', {
-              state: { 
-                message: 'Please open your email to confirm your account.',
-                mode: 'signin'
-              }
-            })
-          }, 2000)
-        } else {
-          setError('No account found with this email address')
-        }
-        setLoading(false)
-        return
-      }
-
-      // If email exists, send reset password link
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: 'https://rollwithdraw.com/reset-password'
       })

@@ -13,6 +13,7 @@ import Header from './components/Header'
 import CartDropdown from './components/CartDropdown'
 import { supabase } from './lib/supabaseClient'
 import { motion } from 'framer-motion'
+import PasswordResetPage from './components/PasswordReset'
 
 // Lazy load components
 const Home = React.lazy(() => import('./components/Home'))
@@ -183,6 +184,7 @@ const AppContent: React.FC = () => {
             } 
           />
           <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/reset-password" element={<PasswordResetPage />} />
         </Routes>
       </AnimatePresence>
     </div>
