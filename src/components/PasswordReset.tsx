@@ -19,8 +19,41 @@ const PasswordResetPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [isResetComplete, setIsResetComplete] = useState(false)
+  const [isTokenValid, setIsTokenValid] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
+
+  useEffect(() => {
+    // Extract token from URL
+    const urlParams = new URLSearchParams(window.location.search)
+    const token = urlParams.get('token')
+
+    if (!token) {
+      setError('Invalid or missing reset token')
+      return
+    }
+
+    // Verify token with Supabase
+    const verifyToken = async () => {
+      try {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: 'recovery'
+        })
+
+        if (error) {
+          setError('Invalid or expired reset token')
+          return
+        }
+
+        setIsTokenValid(true)
+      } catch (err) {
+        setError('Failed to verify reset token')
+      }
+    }
+
+    verifyToken()
+  }, [])
 
   useEffect(() => {
     // Check if there's a password reset token in the URL
@@ -250,82 +283,91 @@ const PasswordResetPage: React.FC = () => {
               </h1>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleResetPassword} className="p-6 sm:p-8 space-y-4 sm:space-y-6">
-              {/* New Password Input */}
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70 w-4 h-4 sm:w-5 sm:h-5" />
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  placeholder="New Password" 
-                  required
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value)
-                    setError(null)
-                  }}
-                  className="w-full pl-10 sm:pl-10 pr-10 py-2.5 sm:py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white text-[14px] sm:text-base
-                    focus:outline-none focus:border-[#8a4fff] transition-all duration-300"
-                />
-                <motion.button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  whileHover={{ scale: 1.2 }}
-                  whileTap={{ scale: 1.2 }}
-                  className="absolute right-3 lg:bottom-4 bottom-3 text-[#8a4fff] opacity-70"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
-                </motion.button>
+            {!isTokenValid ? (
+              <div className="p-6 sm:p-8 text-center">
+                <div className="bg-[#8a4fff]/10 rounded-full p-4 w-16 h-16 mx-auto mb-4">
+                  <AlertTriangle className="w-8 h-8 text-[#8a4fff] mx-auto" />
+                </div>
+                <p className="text-gray-300 mb-4">Please wait while we verify your reset token...</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#8a4fff] mx-auto"></div>
               </div>
+            ) : (
+              <form onSubmit={handleResetPassword} className="p-6 sm:p-8 space-y-4 sm:space-y-6">
+                {/* New Password Input */}
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70 w-4 h-4 sm:w-5 sm:h-5" />
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="New Password" 
+                    required
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      setError(null)
+                    }}
+                    className="w-full pl-10 sm:pl-10 pr-10 py-2.5 sm:py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white text-[14px] sm:text-base
+                      focus:outline-none focus:border-[#8a4fff] transition-all duration-300"
+                  />
+                  <motion.button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 1.2 }}
+                    className="absolute right-3 lg:bottom-4 bottom-3 text-[#8a4fff] opacity-70"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  </motion.button>
+                </div>
 
-              {/* Confirm New Password Input */}
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70 w-4 h-4 sm:w-5 sm:h-5" />
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  placeholder="Confirm New Password" 
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value)
-                    setError(null)
-                  }}
-                  className="w-full pl-10 sm:pl-10 pr-10 py-2.5 sm:py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white text-[14px] sm:text-base
-                    focus:outline-none focus:border-[#8a4fff] transition-all duration-300"
-                />
-                <motion.button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  whileHover={{ scale: 1.2 }}
-                  whileTap={{ scale: 1.2 }}
-                  className="absolute right-3 lg:bottom-4 bottom-3 text-[#8a4fff] opacity-70"
+                {/* Confirm New Password Input */}
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70 w-4 h-4 sm:w-5 sm:h-5" />
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="Confirm New Password" 
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value)
+                      setError(null)
+                    }}
+                    className="w-full pl-10 sm:pl-10 pr-10 py-2.5 sm:py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white text-[14px] sm:text-base
+                      focus:outline-none focus:border-[#8a4fff] transition-all duration-300"
+                  />
+                  <motion.button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 1.2 }}
+                    className="absolute right-3 lg:bottom-4 bottom-3 text-[#8a4fff] opacity-70"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  </motion.button>
+                </div>
+
+                {/* Password Requirements
+                <p className="text-gray-300 text-[13px] sm:text-sm mb-4 text-center">
+                  Password must be at least 8 characters with uppercase, lowercase, and number
+                </p> */}
+
+                {/* Submit Button */}
+                <motion.button
+                  {...buttonAnimation}
+                  type="submit"
+                  disabled={loading}
+                  className={`
+                    w-full bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b] 
+                    text-white py-2.5 sm:py-3 rounded-lg text-[14px] sm:text-base
+                    flex items-center justify-center
+                    hover:opacity-90 transition-opacity
+                    ${loading ? 'opacity-50 cursor-not-allowed' : ''}
+                  `}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  {loading ? 'Processing...' : 'Reset Password'}
+                  {!loading && <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />}
                 </motion.button>
-              </div>
-
-              {/* Password Requirements
-              <p className="text-gray-300 text-[13px] sm:text-sm mb-4 text-center">
-                Password must be at least 8 characters with uppercase, lowercase, and number
-              </p> */}
-
-              {/* Submit Button */}
-              <motion.button
-                {...buttonAnimation}
-                type="submit"
-                disabled={loading}
-                className={`
-                  w-full bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b] 
-                  text-white py-2.5 sm:py-3 rounded-lg text-[14px] sm:text-base
-                  flex items-center justify-center
-                  hover:opacity-90 transition-opacity
-                  ${loading ? 'opacity-50 cursor-not-allowed' : ''}
-                `}
-              >
-                {loading ? 'Processing...' : 'Reset Password'}
-                {!loading && <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />}
-              </motion.button>
-            </form>
+              </form>
+            )}
 
             {/* Navigation */}
             <div className="bg-[#2c1b4a] border-t border-[#8a4fff]/10 p-4 sm:p-4 text-center">
