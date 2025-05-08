@@ -7,7 +7,9 @@ import {
   Send,
   Mail,
   Server,
-  CreditCard
+  CreditCard,
+  ChevronRight,
+  Star
 } from 'lucide-react'
 import { 
   SiBitcoin, 
@@ -65,7 +67,7 @@ const Footer = () => {
 
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <div className="grid md:grid-cols-5 gap-8 sm:gap-12">
-          {/* Brand & Newsletter */}
+          {/* Brand & Trustpilot Reviews */}
           <div className="md:col-span-2">
             <div className="flex items-center mb-4 sm:mb-6">
               <Gamepad2 className="text-[#8a4fff] mr-2 sm:mr-3 w-8 h-8 sm:w-10 sm:h-10" />
@@ -77,18 +79,21 @@ const Footer = () => {
               Revolutionizing trading with intelligent, automated withdrawal solutions for CSGORoll enthusiasts.
             </p>
             
-            {/* Newsletter Signup */}
-            <div className="bg-[#2c1b4a] rounded-xl p-2 sm:p-3 flex items-center">
-              <Mail className="text-[#8a4fff] mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" />
-              <input 
-                type="email" 
-                placeholder="Subscribe for updates" 
-                className="bg-transparent text-[14px] sm:text-base text-white placeholder-gray-400 outline-none flex-grow"
-              />
-              <button className="bg-[#8a4fff] p-1.5 sm:p-2 rounded-lg hover:bg-[#7a3ddf] transition-colors w-8 sm:w-10">
-                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-            </div>
+            {/* Trustpilot Reviews Button */}
+            <a 
+              href="https://www.trustpilot.com/review/rollwithdraw" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="bg-[#2c1b4a] rounded-xl p-2 sm:p-3 flex items-center hover:bg-[#3a2b5c] transition-colors"
+            >
+              <Star className="text-[#00DA8D] mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-[14px] sm:text-base text-white flex-grow">
+                Check Our Trustpilot Reviews
+              </span>
+              <div className="bg-[#00DA8D] p-1.5 sm:p-2 rounded-lg hover:bg-[#7a3ddf] transition-colors w-8 sm:w-10 flex items-center justify-center">
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+            </a>
           </div>
 
           {/* Navigation */}

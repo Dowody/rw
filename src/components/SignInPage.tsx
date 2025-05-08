@@ -25,6 +25,7 @@ const SignInPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [hideOnRlsError, setHideOnRlsError] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -105,6 +106,34 @@ const SignInPage: React.FC = () => {
 
     setLoading(true)
     try {
+      // First check if the email exists in the database
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('email', email)
+        .single()
+
+      if (userError || !userData) {
+        // Check if user exists but needs email confirmation
+        const { data: authData } = await supabase.auth.getUser()
+        if (authData?.user && !authData.user.email_confirmed_at) {
+          setError('Please check your email to confirm your account')
+          setTimeout(() => {
+            navigate('/signin', {
+              state: { 
+                message: 'Please open your email to confirm your account.',
+                mode: 'signin'
+              }
+            })
+          }, 2000)
+        } else {
+          setError('No account found with this email address')
+        }
+        setLoading(false)
+        return
+      }
+
+      // If email exists, send reset password link
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: 'https://rollwithdraw.com/reset-password'
       })
@@ -307,27 +336,32 @@ const SignInPage: React.FC = () => {
           status: 'active'
         })
 
-      if (insertError) {
-        console.error('Detailed Insert Error:', {
-          message: insertError.message,
-          code: insertError.code,
-          details: insertError.details
-        })
-        
-        setError(insertError.message || 'Failed to create user profile')
-        return
+      if (
+        insertError &&
+        insertError.message &&
+        insertError.message.includes('violates row-level security policy for table "users"')
+      ) {
+        // setError('Account created! Please check your email to confirm your account.');
+        setMode('signin');
+        setTimeout(() => {
+          navigate('/signin', {
+            state: { 
+              message: 'Please open your email to confirm your account.',
+              mode: 'signin'
+            }
+          });
+        }, 2000);
+      } else {
+        setError('Account created successfully!');
+        setTimeout(() => {
+          navigate('/signin', {
+            state: { 
+              message: 'Please open your email to confirm your account.',
+              mode: 'signin'
+            }
+          });
+        }, 2000);
       }
-
-      // Success path
-      setError('Account created successfully!')
-      setTimeout(() => {
-        navigate('/signin', {
-          state: { 
-            message: 'Please open your email to confirm your account.',
-            mode: 'signin'
-          }
-        })
-      }, 2000)
     }
   } catch (err) {
     console.error('Unexpected Signup Error:', err)
@@ -447,7 +481,7 @@ const SignInPage: React.FC = () => {
                 initial={{ opacity: 1, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 1, y: -20 }}
-                className={`absolute ${mode === 'signup' ? '-top-16 sm:-top-20' : '-top-16 sm:-top-20'} left-0 right-0 p-3 sm:p-4 rounded-xl flex items-center justify-center ${
+                className={`absolute ${mode === 'signup' ? '-top-[90px] sm:-top-[110px]' : '-top-[80px] sm:-top-20'} left-0 right-0 p-3 sm:p-4 rounded-xl flex items-center justify-center ${
                   error.includes('Log In or Sign Up')
                     ? 'bg-purple-500/10 border border-purple-500 text-purple-400'
                     : error.includes('Account created successfully')
@@ -553,7 +587,8 @@ const SignInPage: React.FC = () => {
                       onClick={() => setShowPassword(!showPassword)}
                       whileHover={{ scale: 1.2 }}
                       whileTap={{ scale: 1.2 }}
-                      className="absolute right-3 bottom-3 text-[#8a4fff] opacity-70"       >
+                      className="absolute right-3 lg:bottom-4 bottom-3 text-[#8a4fff] opacity-70"
+                    >
                       {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
                     </motion.button>
                   </div>
@@ -563,7 +598,7 @@ const SignInPage: React.FC = () => {
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8a4fff] opacity-70 w-4 h-4 sm:w-5 sm:h-5" />
                       <input 
-                        type="password" 
+                        type={showPassword ? "text" : "password"} 
                         placeholder="Confirm Password" 
                         required
                         value={confirmPassword}
@@ -571,9 +606,18 @@ const SignInPage: React.FC = () => {
                           setConfirmPassword(e.target.value)
                           setError(null)
                         }}
-                        className="w-full pl-10 sm:pl-10 pr-4 py-2.5 sm:py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white text-[14px] sm:text-base
+                        className="w-full pl-10 sm:pl-10 pr-10 py-2.5 sm:py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white text-[14px] sm:text-base
                           focus:outline-none focus:border-[#8a4fff] transition-all duration-300"
                       />
+                      <motion.button 
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        whileHover={{ scale: 1.2 }}
+                        whileTap={{ scale: 1.2 }}
+                        className="absolute right-3 lg:bottom-4 bottom-3 text-[#8a4fff] opacity-70"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
+                      </motion.button>
                     </div>
                   )}
                 </>
