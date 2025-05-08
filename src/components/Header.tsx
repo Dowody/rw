@@ -232,7 +232,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                       </div>
                       <button 
                         onClick={() => {
-                          navigate('/rw/dashboard')
+                          navigate('/dashboard')
                           setIsAccountDropdownOpen(false)
                         }}
                         className="flex items-center w-full text-left px-3 sm:px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-gray-300 hover:text-white text-[14px] sm:text-base"

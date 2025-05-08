@@ -406,6 +406,15 @@ const UserDashboard: React.FC = () => {
     setMaxPercentage(value === '' ? '' : Number(value))
   }
 
+  // Format date helper
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
   // Render loading state
   if (loading) {
     return (
@@ -541,7 +550,7 @@ const UserDashboard: React.FC = () => {
                 </div>
 
                 {/* Subscription Overview */}
-                <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
+                <div className="grid md:grid-cols-1 gap-4 sm:gap-6">
                   {/* Current Subscription Card */}
                   <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10">
                     <div className="flex justify-between items-center mb-3 sm:mb-4">
@@ -556,7 +565,7 @@ const UserDashboard: React.FC = () => {
                             : 'bg-red-500/20 text-red-400'}
                         `}
                       >
-                        {subscriptionStatus}
+                        {subscriptionStatus === 'active' ? 'Active' : 'Expired'}
                       </span>
                     </div>
                     {currentSubscription ? (
@@ -570,16 +579,14 @@ const UserDashboard: React.FC = () => {
                             <span>€{currentSubscription.price}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span>Duration:</span>
-                            <span>{currentSubscription.duration_months} Months</span>
+                            <span>Next Billing:</span>
+                            <span>{formatDate(currentSubscription.nextBillingDate)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span>Start Date:</span>
-                            <span>{currentSubscription.startDate.toLocaleDateString()}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Expiration Date:</span>
-                            <span>{currentSubscription.endDate.toLocaleDateString()}</span>
+                            <span>Status:</span>
+                            <span className={subscriptionStatus === 'active' ? 'text-green-400' : 'text-red-400'}>
+                              {subscriptionStatus === 'active' ? 'Active' : 'Expired'}
+                            </span>
                           </div>
                           {subscriptionStatus === 'expired' && (
                             <div className="flex items-center text-red-400 mt-2">
@@ -590,30 +597,27 @@ const UserDashboard: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm sm:text-base text-gray-400">No active subscription</p>
+                      <div className="flex flex-col">
+                        <p className="text-sm sm:text-base text-gray-400">No active subscription</p>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            navigate('/rw/', {
+                              state: { 
+                                scrollTo: '#products' 
+                              }
+                            })
+                          }}
+                          className="bg-[#8a4fff] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg 
+                          hover:bg-[#7a3ddf] transition-colors flex items-center justify-center mt-4"
+                        >
+                          <Zap className="mr-2 w-4 h-4 sm:w-5 sm:h-5" /> Buy Subscription
+                        </motion.button>
+                      </div>
                     )}
                   </div>
 
-                  {/* Account Stats Card */}
-                  <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10">
-                    <h3 className="text-lg sm:text-xl font-semibold text-[#8a4fff] flex items-center mb-3 sm:mb-4">
-                      <BarChart2 className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" /> Account Statistics
-                    </h3>
-                    <div className="space-y-2 sm:space-y-3 text-sm sm:text-base text-gray-300">
-                      <div className="flex justify-between">
-                        <span>Total Purchases:</span>
-                        <span>{userData?.total_purchases || 0}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Total Spent:</span>
-                        <span>€{userData?.total_spent?.toFixed(2) || '0.00'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Member Since:</span>
-                        <span>{new Date(userData?.created_at).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Bot Configuration Section */}
