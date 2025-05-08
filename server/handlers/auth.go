@@ -42,9 +42,9 @@ func HandlePasswordReset(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Prepare the data
+    // Prepare the data with the correct URL structure
     data := ResetPasswordData{
-        RedirectTo: "https://dowody.github.io/rw/reset-password",
+        RedirectTo: "https://dowody.github.io/rw/reset-password", // Base URL for password reset
         Token:      userToken,
     }
 
