@@ -603,9 +603,10 @@ const UserDashboard: React.FC = () => {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => {
-                            navigate('/rw/', {
+                            navigate('/', {
                               state: { 
-                                scrollTo: '#products' 
+                                scrollTo: '#products',
+                                timestamp: Date.now()
                               }
                             })
                           }}

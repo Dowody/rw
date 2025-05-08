@@ -241,7 +241,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                       </button>
                       <button 
                         onClick={() => {
-                          navigate('/rw/dashboard?section=settings')
+                          navigate('/dashboard?section=settings')
                           setIsAccountDropdownOpen(false)
                         }}
                         className="flex items-center w-full text-left px-3 sm:px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-gray-300 hover:text-white text-[14px] sm:text-base"
@@ -321,7 +321,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => {
-                            navigate('/rw/dashboard')
+                            navigate('/dashboard')
                             setIsMobileMenuOpen(false)
                           }}
                           className="flex items-center justify-center space-x-2 bg-[#8a4fff]/20 text-[#8a4fff] 
@@ -374,7 +374,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                     {!isAuthenticated && (
                       <button 
                         onClick={() => {
-                          navigate('/rw/signin', { state: { from: location.pathname } })
+                          navigate('/signin', { state: { from: location.pathname } })
                           setIsMobileMenuOpen(false)
                         }}
                         className="flex-1 bg-[#6a3de3] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:bg-[#5a2cc2] transition-colors flex items-center justify-center text-[14px] sm:text-base"
