@@ -192,7 +192,7 @@ const AppContent: React.FC = () => {
 // Root App with Router and Context
 const App: React.FC = () => {
   return (
-    <Router basename="/rw">
+    <Router basename="/rw/">
       <CartProvider>
         <InitialLoadWrapper>
           <AppContent />

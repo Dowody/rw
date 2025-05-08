@@ -37,7 +37,7 @@ const SignInPage: React.FC = () => {
       // If authenticated, redirect to home or previous page
       if (session) {
         const state = location.state as { from?: string }
-        const destinationPath = state?.from || '/'
+        const destinationPath = state?.from || '/rw/'
         navigate(destinationPath, { replace: true })
       }
     }
@@ -232,7 +232,7 @@ const SignInPage: React.FC = () => {
           }
   
           // Always navigate to dashboard after successful sign in
-          navigate('/dashboard')
+          navigate('/rw/dashboard')
   
           // Optional: Dispatch auth change event
           window.dispatchEvent(new Event('authChange'))
