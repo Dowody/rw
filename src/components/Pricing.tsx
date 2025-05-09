@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Zap, Star, Crown, Check, Clock, Sparkles } from 'lucide-react'
+import { Zap, Star, Crown, Check, Clock, Sparkles, Dot, Asterisk } from 'lucide-react'
 import { useCart } from './context/CartContext'
 import confetti from 'canvas-confetti'
 import { SiDiscord } from 'react-icons/si'
@@ -160,13 +160,18 @@ const Products = () => {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'expired' | 'inactive'>('inactive')
   const [hasUsedFreeTrial, setHasUsedFreeTrial] = useState(false)
   const [purchasedSubscriptions, setPurchasedSubscriptions] = useState<string[]>([])
+  const [hasCheckedTrial, setHasCheckedTrial] = useState(false)
 
   // Fetch user's current subscription and order history
   useEffect(() => {
+    let isMounted = true;
     const fetchUserData = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        if (!user) {
+          if (isMounted) setHasCheckedTrial(true)
+          return
+        }
 
         // Fetch current subscription
         const { data: userData } = await supabase
@@ -236,7 +241,7 @@ const Products = () => {
           setSubscriptionStatus('inactive')
         }
 
-        // Check order history for free trial usage
+        // Check order history for free trial usage as soon as possible
         if (userData) {
           const { data: orders } = await supabase
             .from('orders')
@@ -252,15 +257,19 @@ const Products = () => {
             if (subscriptions) {
               // Check for free trial
               const hasTrial = subscriptions.some(sub => sub.name === '48-Hour Free Trial')
-              setHasUsedFreeTrial(hasTrial)
+              if (isMounted) setHasUsedFreeTrial(hasTrial)
             }
+          } else {
+            if (isMounted) setHasUsedFreeTrial(false)
           }
         }
+        if (isMounted) setHasCheckedTrial(true)
       } catch (error) {
         console.error('Error fetching user data:', error)
         // On error, set status to inactive
         setCurrentSubscription(null)
         setSubscriptionStatus('inactive')
+        if (isMounted) setHasCheckedTrial(true)
       }
     }
 
@@ -270,7 +279,10 @@ const Products = () => {
     const interval = setInterval(fetchUserData, 60000)
 
     // Cleanup interval on component unmount
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      isMounted = false
+    }
   }, [])
 
   // Check if subscription is disabled
@@ -327,13 +339,14 @@ const Products = () => {
     window.dispatchEvent(new Event('openCart'))
   }
 
+  // In the products array, do not filter yet
   const products = [
     {
       id: 'free-trial',
       name: "48-Hour Free Trial",
       priceRange: "€0.00",
       category: "Limited Access",
-      icon: <Sparkles />,
+      icon: <Sparkles />, 
       price: 0,
       duration_days: 2,
       image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/b95e8765126337.60af5cc76e5df.jpg",
@@ -401,11 +414,16 @@ const Products = () => {
         "Discount: 80% off",
         "No Withdrawals Limit",
         "Unlimited Updates",
-        "Priority Support",
+        "Ability to snipe expensive sticker crafts",
         // "Best Value Package"
       ]
     }
   ]
+
+  // Filter out the free trial if the user has used it
+  const filteredProducts = hasUsedFreeTrial
+    ? products.filter(product => product.id !== 'free-trial')
+    : products
 
   const orderItems = cart.map(item => ({
     id: item.id,
@@ -414,6 +432,7 @@ const Products = () => {
     quantity: item.quantity
   }))
 
+  // Render the section and header immediately, but show loading spinner in the grid area until hasCheckedTrial is true
   return (
     <section 
       id="products" 
@@ -424,33 +443,39 @@ const Products = () => {
           <h2 className="text-[28px] sm:text-4xl font-bold mb-4 
             text-transparent bg-clip-text 
             bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
-            Most Popular Plans
+              Pricing
           </h2>
           <p className="text-[16px] sm:text-xl text-gray-400 max-w-2xl mx-auto">
             Withdraw like a pro – no effort needed          
           </p>
         </div>
-        
-        {hasUsedFreeTrial ? (
-          <PricingGridWithoutTrial 
-            products={products}
-            addedProducts={addedProducts}
-            handleAddToCart={handleAddToCart}
-            setAddedProducts={setAddedProducts}
-            isSubscriptionDisabled={isSubscriptionDisabled}
-            subscriptionStatus={subscriptionStatus}
-            currentSubscription={currentSubscription}
-          />
+        {!hasCheckedTrial ? (
+          <div className="flex flex-col items-center justify-center min-h-[300px]">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-[#8a4fff] border-solid mb-4"></div>
+            <p className="text-gray-400 text-lg">Loading plans...</p>
+          </div>
         ) : (
-          <PricingGridWithTrial 
-            products={products}
-            addedProducts={addedProducts}
-            handleAddToCart={handleAddToCart}
-            setAddedProducts={setAddedProducts}
-            isSubscriptionDisabled={isSubscriptionDisabled}
-            subscriptionStatus={subscriptionStatus}
-            currentSubscription={currentSubscription}
-          />
+          hasUsedFreeTrial ? (
+            <PricingGridWithoutTrial 
+              products={filteredProducts}
+              addedProducts={addedProducts}
+              handleAddToCart={handleAddToCart}
+              setAddedProducts={setAddedProducts}
+              isSubscriptionDisabled={isSubscriptionDisabled}
+              subscriptionStatus={subscriptionStatus}
+              currentSubscription={currentSubscription}
+            />
+          ) : (
+            <PricingGridWithTrial 
+              products={filteredProducts}
+              addedProducts={addedProducts}
+              handleAddToCart={handleAddToCart}
+              setAddedProducts={setAddedProducts}
+              isSubscriptionDisabled={isSubscriptionDisabled}
+              subscriptionStatus={subscriptionStatus}
+              currentSubscription={currentSubscription}
+            />
+          )
         )}
       </div>
     </section>
@@ -598,7 +623,7 @@ const ProductCard = ({
   return (
     <motion.div 
       ref={cardRef}
-      className={`relative group overflow-hidden rounded-2xl ${isSpecial ? 'border-4 border-[#ffd700] animate-pulse' : ''}`}
+      className={`relative group overflow-hidden rounded-2xl ${isSpecial ? 'border-4 border-[#ffd700]' : ''}`}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       initial={{ opacity: 1, y: 50 }}
@@ -647,7 +672,7 @@ const ProductCard = ({
         <div className="flex justify-between items-center mb-3 sm:mb-4">
           <div className="p-2 sm:p-3 rounded-full bg-[#8a4fff]/20">
             {React.cloneElement(icon, {
-              className: `w-5 h-5 sm:w-8 sm:h-8 text-[#8a4fff] ${isHovered ? 'animate-pulse' : ''}`
+              className: `w-5 h-5 sm:w-8 sm:h-8 text-[#8a4fff]`
             })}
           </div>
           <span className="text-[13px] sm:text-sm text-gray-300 opacity-70 absolute left-16 lg:left-24">{category}</span>
@@ -677,25 +702,41 @@ const ProductCard = ({
 
         {/* Features */}
         <div className="mb-4 sm:mb-6 flex-grow">
-          {features.slice(3).map((feature, index) => (
-            <div 
-              key={index} 
-              className={`
-                flex items-center mb-2 
-                transform transition-all duration-300
-                ${isHovered ? 'translate-x-2' : ''}
-              `}
-            >
-              <Check 
+          {features.slice(3).map((feature, index) => {
+            const isFreeLimitedFeature = 
+              id === 'free-trial' && 
+              (feature === "200 Coins Withdrawal Limit" || feature === "Join Discord Required");
+            
+            return (
+              <div 
+                key={index} 
                 className={`
-                  w-4 h-4 sm:w-5 sm:h-5 mr-2 
-                  ${isHovered ? 'text-[#8a4fff]' : 'text-green-500'}
-                  transition-colors duration-300
-                `} 
-              />
-              <span className="text-[14px] sm:text-base text-gray-300">{feature}</span>
-            </div>
-          ))}
+                  flex items-center mb-2 
+                  transform transition-all duration-300
+                  ${isHovered ? 'translate-x-2' : ''}
+                `}
+              >
+                {isFreeLimitedFeature ? (
+                  <Asterisk 
+                    className={`
+                      w-4 h-4 sm:w-5 sm:h-5 mr-2  
+                      ${isHovered ? 'text-[#8a4fff]' : 'text-blue-400'}
+                      transition-colors duration-300 
+                    `}  
+                  />
+                ) : (
+                  <Check 
+                    className={`
+                      w-4 h-4 sm:w-5 sm:h-5 mr-2 
+                      ${isHovered ? 'text-[#8a4fff]' : 'text-green-500'}
+                      transition-colors duration-300
+                    `} 
+                  />
+                )}
+                <span className="text-[14px] sm:text-base text-gray-300">{feature}</span>
+              </div>
+            );
+          })}
         </div>
 
         {/* Add countdown before the action button */}

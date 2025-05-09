@@ -41,6 +41,48 @@ const TradeSlider = () => {
       condition: "FN",
       price: "3,291.01",
       image: "https://lh7-rt.googleusercontent.com/docsz/AD_4nXcD2tVnFdKh_aUUxo7wAdHUHiFV3xWRFu6WCmo3_7q3MFrgI5s9ZviTiyiS-Km2dwKvn24-MdJpljy_lQMPB6_PKRw_ElR8chA767Ckk1Kw-ZBsmdXHmYar4YUCouq-HEvuE3VCroXQGG6oAzMTBACP9OTD=w1200-h630-p-k-no-nu?key=ywbVHT2wtlimK55UlFtvlQ"
+    },
+    {
+      name: "★ StatTrak™ M9 Bayonet ★",
+      type: "Crimson Web",
+      condition: "FN",
+      price: "3,764.50",
+      image: "https://community.fastly.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpovbSsLQJf3qr3czxb49KzgL-DjsjjNrnCqWdY781lxLqWptvx2w3nr0s5Nj_7dY6VdlM4aQvU8lC2xe7ph5C66Z_AyyEy7iE8pSGKRb-3fB0/360fx360f"
+    },
+    {
+      name: "★ Desert Eagle ★",
+      type: "Blaze",
+      condition: "FN",
+      price: "1,293.45",
+      image: "https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_deagle_aa_flames_light_large.dd140c3b359c16ccd8e918ca6ad0b2628151fe1c.png"
+    },
+    {
+      name: "★ AK-47 ★",
+      type: "Fire Serpent",
+      condition: "FN",
+      price: "7,112.67",
+      image: "https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_ak47_cu_fireserpent_ak47_bravo_light_large.9390e7fd091ea8a0434fd2143e0acf0d5d1bbc97.png"
+    },
+    {
+      name: "★ Butterfly Knife ★",
+      type: "Fade",
+      condition: "FN",
+      price: "5,231.80",
+      image: "https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_knife_butterfly_aa_fade_light_large.b1ab5fb3ed08185a266334b6488a364bb3f220f8.png"
+    },
+    {
+      name: "★ Gut Knife ★",
+      type: "Slaughter",
+      condition: "FN",
+      price: "2,500.00",
+      image: "https://community.fastly.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpovbSsLQJf1ObcTjxP08azlpKKqPv9NLPF2DwGupYjju-Q8dyl2A2x_RBqaz_wINedIQNoMAnY81Tsw-zojJO6uMzXiSw0TBKzcR8/360fx360f"
+    },
+    {
+      name: "★ Bowie Knife ★",
+      type: "Forest DDPAT",
+      condition: "FN",
+      price: "2,030.15",
+      image: "https://steamcommunity-a.akamaihd.net/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpovbSsLQJfwObaZzRU7dCJlo-cnvLLO6Lukm9B6dFOhuDG_Zi73AW3rkI4Yz37Jo_HJlBrYlHY8lPvyershZK57Z-YwHZj7nEktyrVyQv3309AwMWh8A"
     }
   ]
 
@@ -137,13 +179,13 @@ const Hero: React.FC = () => {
     },
     {
       icon: <Code className="w-6 h-6" />,
-      title: "Advanced Algorithms",
-      description: "AI-powered trading strategies"
+      title: "Automated Withdrawals",
+      description: "Scripted for effortless withdrawals"
     },
     {
       icon: <Zap className="w-6 h-6" />,
       title: "High-Speed Execution",
-      description: "Millisecond-level trade precision"
+      description: "Instant CSGORoll transactions"
     }
     
   ]
@@ -199,7 +241,7 @@ const Hero: React.FC = () => {
             ease: "easeInOut"
           }
         }}
-        className="absolute top-[1000px]  lg:top-1/2 lg:right-[400px] transform -translate-y-1/2 
+        className="absolute top-[1000px]  lg:top-1/2 lg:right-[300px] transform -translate-y-1/2 
         w-[500px] h-[500px] bg-[#8a4fff] rounded-full opacity-10 blur-3xl"
       />
 
@@ -221,9 +263,7 @@ const Hero: React.FC = () => {
             </h1>
             
             <p className="text-sm sm:text-base md:text-lg text-gray-300 max-w-xl mb-6 sm:mb-10 leading-relaxed">
-              Revolutionize your trading with cutting-edge AI-driven withdrawal strategies 
-              designed for maximum efficiency and precision.
-            </p>
+            Revolutionize your trading with our CSGORoll Withdraw Bot designed for maximum efficiency and precision.            </p>
             
             {/* Features */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-10">

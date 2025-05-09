@@ -111,7 +111,18 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ isOpen, onClose }) => {
           className="p-6 sm:p-8 text-center"
         >
           <ShoppingCart className="w-16 h-16 sm:w-20 sm:h-20 mx-auto text-[#8a4fff] mb-4 opacity-30" />
-          <p className="text-base sm:text-lg text-gray-400">Your cart is empty</p>
+          <p className="text-base sm:text-lg text-gray-400 mb-4">Your cart is empty</p>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              onClose()
+              navigate('/', { state: { scrollTo: '#products' } })
+            }}
+            className="bg-[#8a4fff] text-white px-6 py-2.5 rounded-lg hover:bg-[#7a3ddf] transition-colors text-sm"
+          >
+            View Subscriptions
+          </motion.button>
         </motion.div>
       )}
 

@@ -79,6 +79,10 @@ const FAQ = () => {
     {
       question: "How to find your session token?",
       answer: "1. Right-click anywhere on the CSGORoll website.\n2. Click on 'Inspect'.\n3. At the top of the window, click on the arrows and go to the 'Application' tab.\n4. In the left sidebar, click on 'Cookies' to expand it.\n5. Select 'https://csgoroll.com' from the list.\n6. On the right side, find the row labeled 'session', then click on it and copy the value shown."
+    },
+    {
+      question: "How can I snipe expensive sticker crafts?",
+      answer: "Currently, this feature is only available for the 12 month subscription. Once you purchase it, you will have access to both the regular withdraw bot and the sticker craft bot. With the sticker craft bot you can set a minimum applied sticker value, which will only pick items based on those values."
     }
   ]
 

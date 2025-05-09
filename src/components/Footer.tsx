@@ -18,16 +18,26 @@ import {
   SiDiscord,
   SiGithub 
 } from 'react-icons/si'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 
 const Footer = () => {
+  const navigate = useNavigate()
+
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, scrollTo: string) => {
+    e.preventDefault()
+    const element = document.querySelector(scrollTo)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   const navigationLinks = [
-    { name: "Features", href: "#features" },
-    { name: "How It Works", href: "#how-it-works" },
-    { name: "Pricing", href: "#products" },
-    { name: "Features", href: "#features" },
-    // { name: "Contact", href: "#contact" }
+    { name: 'Home', href: '#hero', scrollTo: '#hero' },
+    { name: 'How It Works', href: '#how-it-works', scrollTo: '#how-it-works' },
+    { name: 'Pricing', href: '#products', scrollTo: '#products' },
+    { name: 'Refferals', href: '#refferals', scrollTo: '#refferals' },
+    { name: 'FAQ', href: '#faq', scrollTo: '#faq' }
   ]
 
   const legalLinks = [
@@ -54,6 +64,8 @@ const Footer = () => {
     }
   ]
 
+  
+
   return (
     <footer className="bg-[#1a0b2e] text-white py-8 sm:py-16 relative overflow-hidden">
       {/* Gradient Overlay */}
@@ -71,7 +83,7 @@ const Footer = () => {
           <div className="md:col-span-2">
             <div className="flex items-center mb-4 sm:mb-6">
               <Gamepad2 className="text-[#8a4fff] mr-2 sm:mr-3 w-8 h-8 sm:w-10 sm:h-10" />
-              <h4 className="text-[20px] sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
+              <h4 className="text-[24px] sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
                 RollWithdraw
               </h4>
             </div>
@@ -104,6 +116,7 @@ const Footer = () => {
                 <li key={index}>
                   <a 
                     href={link.href} 
+                    onClick={(e) => handleScroll(e, link.scrollTo)}
                     className="text-[14px] sm:text-base text-gray-300 hover:text-[#8a4fff] transition-colors"
                   >
                     {link.name}

@@ -203,8 +203,15 @@ const SignInPage: React.FC = () => {
             }
           }
   
-          // Always navigate to dashboard after successful sign in
-          navigate('/dashboard')
+          // Check referrer and redirect accordingly
+          const state = location.state as { from?: string }
+          const referrer = document.referrer
+          
+          if (state?.from === '/checkout' || (state?.from && state.from.includes('#products')) || referrer.includes('#products')) {
+            navigate('/checkout')
+          } else {
+            navigate('/dashboard')
+          }
   
           // Optional: Dispatch auth change event
           window.dispatchEvent(new Event('authChange'))

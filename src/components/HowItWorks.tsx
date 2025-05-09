@@ -6,45 +6,53 @@ import {
   Target,
   Zap,
   Shield,
-  TrendingUp
+  TrendingUp,
+  Stars,
+  BellRing,
+  ShieldCheck,
+  Globe,
+  ServerCrash,
+  SlidersHorizontal,
+  Workflow,
+  Bot
 } from 'lucide-react'
 
 const HowItWorks = () => {
   const steps = [
     {
-      icon: <Link2 />,
-      title: "Account Integration",
-      description: "Seamlessly connect your CSGORoll account using our secure, one-click authentication process.",
+      icon: <Bot />, // Better represents setting parameters
+      title: "Full Trade Automation",
+      description: "You set the minimum and maximum price of the item, the maximum percentage markup, the blacklisted items, and the bot will automatically withdraw items based on those parameters.",
       color: "bg-[#8a4fff]"
     },
     {
-      icon: <Settings />,
-      title: "Customized Configuration",
-      description: "Set precise trading parameters, risk levels, and withdrawal strategies tailored to your preferences.",
+      icon: <ServerCrash />, // Represents server speed and performance
+      title: "Fastest Servers",
+      description: "Our high-speed servers handle trade execution ensuring peak performance, eliminating the need for traders to acquire additional hosting solutions.",
       color: "bg-[#8a4fff]"
     },
     {
-      icon: <Target />,
-      title: "Intelligent Execution",
-      description: "Our advanced AI algorithm executes trades with millisecond precision, maximizing your potential returns.",
+      icon: <Globe />, // Represents browser-based access
+      title: "Browser Based",
+      description: "RollWithdraw can be configured directly on our site, without the need to download any additional programs, ensuring an easy user experience.",
       color: "bg-[#8a4fff]"
     },
     {
-      icon: <Zap />,
-      title: "Real-time Optimization",
-      description: "Continuous machine learning adapts your strategy in real-time, responding to market dynamics.",
+      icon: <ShieldCheck />, // Represents CAPTCHA handling and protection
+      title: "CAPTCHA Solver",
+      description: "Our withdrawal bot efficiently manages CAPTCHA challenges, ensuring a seamless and hassle-free user experience with minimal need for manual input.",
       color: "bg-[#8a4fff]"
     },
     {
-      icon: <Shield />,
-      title: "Advanced Security",
-      description: "Military-grade encryption and multi-factor authentication protect your account and transactions.",
+      icon: <Stars />, // Represents uniqueness and standout features
+      title: "Unique Features",
+      description: "We offer unique features, such as blacklisting all items marked as unstable and the ability to snipe expensive sticker crafts.",
       color: "bg-[#8a4fff]"
     },
     {
-      icon: <TrendingUp />,
-      title: "Performance Tracking",
-      description: "Detailed analytics and performance metrics help you understand and improve your trading strategy.",
+      icon: <BellRing />, // Notification icon
+      title: "Notifications",
+      description: "You can choose to receive Discord or Pushover notifications for every action performed.",
       color: "bg-[#8a4fff]"
     }
   ]
@@ -62,8 +70,7 @@ const HowItWorks = () => {
             How RollWithdraw Works
           </h2>
           <p className="text-[16px] sm:text-xl text-gray-400 max-w-2xl mx-auto">
-            A comprehensive, intelligent trading solution designed for maximum efficiency
-          </p>
+          An efficient, automated solution for optimized withdrawals for you          </p>
         </div>
 
         {/* Desktop Grid Design */}

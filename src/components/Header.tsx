@@ -9,7 +9,13 @@ import {
   X,
   LogOut,
   Settings,
-  BarChart2
+  BarChart2,
+  SlidersHorizontal,
+  Receipt,
+  Wallet,
+  Settings2,
+  CreditCard,
+  BadgeCheck
 } from 'lucide-react'
 import { SiDiscord } from 'react-icons/si'
 import { useCart, CartItem } from './context/CartContext'
@@ -46,8 +52,9 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
   const navItems = [
     { name: 'Home', href: '/rw/', scrollTo: '#hero' },
     { name: 'How It Works', href: '/rw/', scrollTo: '#how-it-works' },
-    { name: 'Plans', href: '/rw/', scrollTo: '#products' },
-    { name: 'Features', href: '/rw/', scrollTo: '#features' },
+    { name: 'Pricing', href: '/rw/', scrollTo: '#products' },
+    { name: 'Refferals', href: '/rw/', scrollTo: '#refferals' },
+    { name: 'FAQ', href: '/rw/', scrollTo: '#faq' }
   ]
 
   // Check Authentication Status
@@ -224,7 +231,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 1, scale: 0.8, y: -10 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute z-50 right-0 top-full mt-2 bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-lg shadow-lg p-2 w-48 sm:w-56"
+                      className="absolute z-50 right-0 top-full mt-2 bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-lg shadow-lg p-2 w-48 sm:w-[250px]"
                     >
                       <div className="px-3 sm:px-4 py-2 border-b border-[#8a4fff]/10 mb-2">
                         <p className="text-xs sm:text-sm text-gray-300">Signed in as</p>
@@ -234,7 +241,11 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                       </div>
                       <button 
                         onClick={() => {
-                          navigate('/dashboard')
+                          navigate('/dashboard', { 
+                            state: { 
+                              section: 'overview'
+                            }
+                          })
                           setIsAccountDropdownOpen(false)
                         }}
                         className="flex items-center w-full text-left px-3 sm:px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-gray-300 hover:text-white text-[14px] sm:text-base"
@@ -243,18 +254,62 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                       </button>
                       <button 
                         onClick={() => {
-                          navigate('/dashboard?section=settings')
+                          navigate('/dashboard', { 
+                            state: { 
+                              section: 'purchases'
+                            }
+                          })
                           setIsAccountDropdownOpen(false)
                         }}
                         className="flex items-center w-full text-left px-3 sm:px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-gray-300 hover:text-white text-[14px] sm:text-base"
                       >
-                        <Settings className="mr-2 sm:mr-3 w-4 h-4" /> Account Settings
+                        <BadgeCheck className="mr-2 sm:mr-3 w-4 h-4" /> My Subscription
                       </button>
                       <button 
-                        onClick={handleLogout}
-                        className="flex items-center w-full text-left px-3 sm:px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-red-400 hover:text-red-500 text-[14px] sm:text-base"
+                        onClick={() => {
+                          navigate('/dashboard', { 
+                            state: { 
+                              section: 'purchases'
+                            }
+                          })
+                          setIsAccountDropdownOpen(false)
+                        }}
+                        className="flex items-center w-full text-left px-3 sm:px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-gray-300 hover:text-white text-[14px] sm:text-base"
                       >
-                        <LogOut className="mr-2 sm:mr-3 w-4 h-4" /> Logout
+                        <Settings2 className="mr-2 sm:mr-3 w-4 h-4" /> Bot Configuration
+                      </button>
+                      <button 
+                        onClick={() => {
+                          navigate('/dashboard', { 
+                            state: { 
+                              section: 'invoices'
+                            }
+                          })
+                          setIsAccountDropdownOpen(false)
+                        }}
+                        className="flex items-center w-full text-left px-3 sm:px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-gray-300 hover:text-white text-[14px] sm:text-base"
+                      >
+                        <Wallet className="mr-2 sm:mr-3 w-4 h-4" /> Billing & Invoices
+                      </button>
+                      
+                      {/* <button 
+                        onClick={() => {
+                          navigate('/dashboard', { 
+                            state: { 
+                              section: 'settings'
+                            }
+                          })
+                          setIsAccountDropdownOpen(false)
+                        }}
+                        className="flex items-center w-full text-left px-3 sm:px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-gray-300 hover:text-white text-[14px] sm:text-base"
+                      >
+                        <Settings className="mr-2 sm:mr-3 w-4 h-4" /> Settings
+                      </button> */}
+                      <button 
+                        onClick={handleLogout}
+                        className="flex items-center w-full text-left px-3 sm:px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-red-400 hover:text-red-300 text-[14px] sm:text-base"
+                      >
+                        <LogOut className="mr-2 sm:mr-3 w-4 h-4" /> Log Out
                       </button>
                     </motion.div>
                   )}
@@ -326,7 +381,11 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => {
-                            navigate('/dashboard')
+                            navigate('/dashboard', { 
+                              state: { 
+                                section: 'overview'
+                              }
+                            })
                             setIsMobileMenuOpen(false)
                           }}
                           className="flex items-center justify-center space-x-2 bg-[#8a4fff]/20 text-[#8a4fff] 

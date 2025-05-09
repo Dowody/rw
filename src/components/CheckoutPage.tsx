@@ -15,7 +15,7 @@ import {
   Gamepad2,
   ShieldCheck
 } from 'lucide-react'
-import { SiBitcoin, SiEthereum, SiTether, SiSteam, SiTradingview } from 'react-icons/si'
+import { SiBitcoin, SiEthereum, SiTether, SiSteam, SiTradingview, SiDiscord } from 'react-icons/si'
 import { supabase } from '../lib/supabaseClient'
 import { PostgrestSingleResponse } from '@supabase/supabase-js'
 
@@ -127,6 +127,9 @@ const CheckoutPage: React.FC = () => {
     }
   ]
 
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
+  const [hasJoinedDiscord, setHasJoinedDiscord] = useState(false)
+
   // Authentication and User Check
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -142,8 +145,8 @@ const CheckoutPage: React.FC = () => {
             }
           })
           setLoading(false)
-      return
-    }
+          return
+        }
 
         // User is authenticated
         setIsAuthenticated(true)
@@ -155,14 +158,36 @@ const CheckoutPage: React.FC = () => {
           setEmail(user.email || '')
         }
 
-        // Validate cart is not empty
-        if (cart.length === 0) {
+        // Check if we're coming from a successful order placement
+        const state = (location as any).state as { section?: string, message?: string }
+        if (cart.length === 0 && state?.message) {
           navigate('/dashboard', { 
             state: { 
               section: 'purchases',
-              message: 'Purchase completed successfully! Your subscription is now active.'
+              message: state.message
             }
           })
+        }
+
+        // Check for active subscription
+        if (user) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('subscription_end_date')
+            .eq('auth_id', user.id)
+            .single()
+          if (userData && userData.subscription_end_date) {
+            const endDate = new Date(userData.subscription_end_date)
+            const now = new Date()
+            if (endDate > now) {
+              setHasActiveSubscription(true)
+              setError('You already have an active subscription. You cannot purchase another until your current subscription expires.')
+            } else {
+              setHasActiveSubscription(false)
+            }
+          } else {
+            setHasActiveSubscription(false)
+          }
         }
 
         // Clear the state to prevent message reappearing on refresh
@@ -179,6 +204,9 @@ const CheckoutPage: React.FC = () => {
     checkAuthentication()
   }, [navigate, cart])
 
+  // Determine if the free trial is in the cart
+  const isFreeTrialInCart = cart.some(item => item.id === 'free-trial')
+
   // Place Order Handler
   const handlePlaceOrder = async () => {
     // Check for multiple subscriptions before proceeding
@@ -191,6 +219,11 @@ const CheckoutPage: React.FC = () => {
 
     if (subscriptionCount > 1) {
       setError('Only one subscription is allowed at a time. Please remove one of your subscriptions from the cart.')
+      return
+    }
+
+    if (hasActiveSubscription) {
+      setError('You already have an active subscription. You cannot purchase another until your current subscription expires.')
       return
     }
 
@@ -386,14 +419,20 @@ const CheckoutPage: React.FC = () => {
         return
       }
       
-      // Clear cart and show order confirmation
-    clearCart()
+      // After successful order placement
+      setIsOrderPlaced(true)
+      clearCart()
       
-      // Navigate to dashboard with products section
+      // Set multiple flags to ensure the popup appears
+      localStorage.setItem('showPurchaseSuccess', 'true')
+      localStorage.setItem('newSubscription', 'true')
+      
+      // Navigate to dashboard with success message
       navigate('/dashboard', { 
         state: { 
-          section: 'purchases',  // Specifically open the products/purchases section
-          message: 'Order completed successfully!'
+          section: 'purchases',
+          message: 'Purchase completed successfully! Your subscription is now active.',
+          showCongrats: true
         }
       })
       
@@ -620,64 +659,14 @@ const CheckoutPage: React.FC = () => {
     )
   }
 
-  // Order Placed Confirmation
-  // if (isOrderPlaced) {
-  //   return (
-  //     <div className="min-h-screen bg-[#04011C] flex items-center justify-center px-4 py-16">
-  //       <motion.div 
-  //         initial={{ opacity: 1, scale: 0.9 }}
-  //         animate={{ opacity: 1, scale: 1 }}
-  //         transition={{ duration: 0.5 }}
-  //         className="max-w-md w-full text-center bg-[#0a0415] rounded-3xl p-12 border border-[#8a4fff]/10"
-  //       >
-  //         <CheckCircle className="w-32 h-32 mx-auto text-[#8a4fff] mb-8" />
-  //         <h2 className="text-4xl font-bold text-white mb-6">
-  //           Order Confirmed
-  //         </h2>
-  //         <p className="text-gray-400 mb-10 text-lg">
-  //           Your order has been successfully processed.
-  //         </p>
-  //         <button 
-  //           onClick={() => navigate('/')}
-  //           className="w-full py-4 bg-[#8a4fff] 
-  //           text-white rounded-xl hover:bg-[#7a3ddf] transition-colors text-lg"
-  //         >
-  //           Return to Home
-  //         </button>
-  //       </motion.div>
-  //     </div>
-  //   )
-  // }
-
   // Empty Cart State
   if (cart.length === 0) {
-    return (
-      <div className="min-h-screen bg-[#04011C] flex items-center justify-center px-4 py-16">
-        <motion.div 
-          initial={{ opacity: 1, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-md w-full text-center bg-[#0a0415] rounded-3xl p-12 border border-[#8a4fff]/10"
-        >
-          <div className="w-32 h-32 mx-auto mb-8 flex items-center justify-center bg-[#8a4fff]/10 rounded-full">
-            <CreditCard className="w-16 h-16 text-[#8a4fff] opacity-70" />
-          </div>
-          <h2 className="text-4xl font-bold text-white mb-6">
-            Cart is Empty
-          </h2>
-          <p className="text-gray-400 mb-10 text-lg">
-            Add items to get started
-          </p>
-          <button 
-            onClick={() => navigate('/')}
-            className="w-full py-4 bg-[#8a4fff] 
-            text-white rounded-xl hover:bg-[#7a3ddf] transition-colors text-lg"
-          >
-            Browse Products
-          </button>
-        </motion.div>
-      </div>
-    )
+    navigate('/dashboard', { 
+      state: { 
+        section: 'purchases'
+      }
+    })
+    return null
   }
 
   return (
@@ -877,18 +866,31 @@ const CheckoutPage: React.FC = () => {
 
               {/* Action Buttons */}
               <div className="space-y-3 sm:space-y-4">
-                <button
-                  onClick={handlePlaceOrder}
-                  disabled={!isPolicyAcknowledged || error !== null}
-                  className={`
-                    w-full py-3 sm:py-4 rounded-xl transition-colors text-[14px] sm:text-lg
-                    ${isPolicyAcknowledged && !error
-                      ? 'bg-[#8a4fff] text-white hover:bg-[#7a3ddf]' 
-                      : 'bg-gray-500 text-gray-300 cursor-not-allowed'}
-                  `}
-                >
-                  Place Order
-                </button>
+                {isFreeTrialInCart && !hasJoinedDiscord ? (
+                  <button
+                    onClick={() => {
+                      window.open('https://discord.gg/rollwithdraw', '_blank', 'noopener,noreferrer')
+                      setHasJoinedDiscord(true)
+                    }}
+                    className="w-full py-3 sm:py-4 bg-[#5865F2] text-white rounded-xl hover:bg-[#4752C4] transition-colors text-[14px] sm:text-lg flex items-center justify-center"
+                  >
+                    <SiDiscord className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
+                    Join Discord
+                  </button>
+                ) : (
+                  <button
+                    onClick={handlePlaceOrder}
+                    disabled={!isPolicyAcknowledged || error !== null || hasActiveSubscription}
+                    className={`
+                      w-full py-3 sm:py-4 rounded-xl transition-colors text-[14px] sm:text-lg
+                      ${isPolicyAcknowledged && !error && !hasActiveSubscription
+                        ? 'bg-[#8a4fff] text-white hover:bg-[#7a3ddf]'
+                        : 'bg-gray-500 text-gray-300 cursor-not-allowed'}
+                    `}
+                  >
+                    Place Order
+                  </button>
+                )}
                 <button
                   onClick={() => navigate('/')}
                   className="w-full py-3 sm:py-4 bg-transparent border border-[#8a4fff]/30 

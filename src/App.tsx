@@ -14,6 +14,7 @@ import CartDropdown from './components/CartDropdown'
 import { supabase } from './lib/supabaseClient'
 import { motion } from 'framer-motion'
 import PasswordResetPage from './components/PasswordReset'
+import DiscordButton from './components/DiscordButton'
 
 // Lazy load components
 const Home = React.lazy(() => import('./components/Home'))
@@ -26,11 +27,11 @@ const PolicyPage = React.lazy(() => import('./components/PolicyPage'))
 const UserDashboard = React.lazy(() => import('./components/UserDashboard'))
 
 // Loading spinner
-const LoadingSpinner = () => (
-  <div className="fixed inset-0 flex items-center justify-center bg-[#0a0415] z-50">
-    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-[#8a4fff]"></div>
-  </div>
-)
+// const LoadingSpinner = () => (
+//   <div className="fixed inset-0 flex items-center justify-center bg-[#04011C] z-50">
+//     <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-[#8a4fff]"></div>
+//   </div>
+// )
 
 // Initial Load Wrapper
 const InitialLoadWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -44,9 +45,9 @@ const InitialLoadWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => clearTimeout(timer)
   }, [])
 
-  if (isInitialLoad) {
-    return <LoadingSpinner />
-  }
+  // if (isInitialLoad) {
+  //   return <LoadingSpinner />
+  // }
 
   return (
     <motion.div
@@ -134,7 +135,7 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
     }
   }, [navigate, location])
 
-  if (isLoading) return <LoadingSpinner />
+  // if (isLoading) return <LoadingSpinner />
   return isAuthenticated ? <>{children}</> : null
 }
 
@@ -188,13 +189,14 @@ const AppContent: React.FC = () => {
   }, [])
 
   if (!isInitialized) {
-    return <LoadingSpinner />
+    // return <LoadingSpinner />
   }
 
   return (
     <div className="bg-[#0a0415] text-white min-h-screen">
       <Header onCartToggle={toggleCart} />
       <CartDropdown isOpen={isCartOpen} onClose={closeCart} />
+      <DiscordButton />
 
       <AnimatePresence mode="wait" initial={false}>
         <Routes location={location} key={location.pathname}>
