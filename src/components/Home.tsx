@@ -226,7 +226,7 @@ const Home: React.FC = () => {
         />
       </section> */}
 
-      <Features />
+      {/* <Features /> */}
       <FAQ />
       <Footer />
 

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Zap, Star, Crown, Check, Clock, Sparkles } from 'lucide-react'
 import { useCart } from './context/CartContext'
 import confetti from 'canvas-confetti'
+import { SiDiscord } from 'react-icons/si'
 
 const CountdownBadge = () => {
   const [daysLeft, setDaysLeft] = useState(30)
@@ -42,6 +43,173 @@ const CountdownBadge = () => {
   )
 }
 
+const Products = () => {
+  const { 
+    cart, 
+    addToCart, 
+    removeFromCart 
+  } = useCart()
+  const [addedProducts, setAddedProducts] = useState<string[]>([])
+
+  // Close cart on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      window.dispatchEvent(new Event('closeCart'))
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
+
+  // Track cart changes and update added products
+  useEffect(() => {
+    const currentCartProductIds = cart.map(item => item.id)
+    setAddedProducts(prev => 
+      prev.filter(productId => currentCartProductIds.includes(productId))
+    )
+  }, [cart])
+
+  const handleAddToCart = (product: any) => {
+    if (addedProducts.includes(product.id)) return
+
+    addToCart({ 
+      id: product.id, 
+      name: product.name, 
+      price: product.price, 
+      quantity: 1 
+    })
+
+    setAddedProducts(prev => [...prev, product.id])
+    window.dispatchEvent(new Event('openCart'))
+  }
+
+  const products = [
+    {
+      id: 'free-trial',
+      name: "48-Hour Free Trial",
+      priceRange: "€0.00",
+      category: "Limited Access",
+      icon: <Sparkles />,
+      price: 0,
+      duration_days: 2,
+      image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/08ce9a65126337.5b4c8ac9c4b3b.jpg",
+      features: [
+        "Original Price: €49.99",
+        "You Save: €49.99",
+        "Discount: 100% off",
+        "48-Hour Full Access",
+        "200 Coins Withdrawal Limit",
+        "Join Discord Required"
+        // "Experience All Features"
+      ],
+      isSpecial: true
+    },
+    {
+      id: 'monthly',
+      name: "1 Month Licence",
+      priceRange: "€49.99",
+      category: "RollWithdraw Bot",
+      icon: <Zap />,
+      price: 49.99,
+      duration_days: 30,
+      image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/f02b1965126337.6021db766416d.jpg",
+      features: [
+        "Original Price: €249.99",
+        "You Save: €200",
+        "Discount: 80% off",
+        "No Withdrawals Limit",
+        "Automated Withdrawals",
+        "Custom Price Ranges"
+        // "Advanced Filtering"
+      ]
+    },
+    {
+      id: '6-months',
+      name: "6 Months Licence",
+      priceRange: "€269.99",
+      category: "RollWithdraw Bot",
+      icon: <Star />,
+      price: 269.99,
+      duration_days: 180,
+      image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/8bf05765126337.6002d0c795c64.jpg",
+      features: [
+        "Original Price: €1349.99",
+        "You Save: €1080",
+        "Discount: 80% off",
+        "No Withdrawals Limit",
+        "Daily Case Collection",
+        "No Cost",
+        // "Simple Interface"
+      ]
+    },
+    {
+      id: 'yearly',
+      name: "12 Months Licence",
+      priceRange: "€479.99",
+      category: "RollWithdraw Bot",
+      icon: <Crown />,
+      price: 539.99,
+      duration_days: 365,
+      image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/08ce9a65126337.5b4c8ac9c4b3b.jpg",
+      features: [
+        "Original Price: €2399.99",
+        "You Save: €1860",
+        "Discount: 80% off",
+        "No Withdrawals Limit",
+        "Unlimited Updates",
+        "Priority Support",
+        // "Best Value Package"
+      ]
+    }
+  ]
+
+  const orderItems = cart.map(item => ({
+    id: item.id,
+    name: item.name,
+    price: item.price,
+    quantity: item.quantity
+  }))
+
+  return (
+    <section 
+      id="products" 
+      className="py-16 bg-[#04011C] pt-20"
+    >
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-12">
+          <h2 className="text-[28px] sm:text-4xl font-bold mb-4 
+            text-transparent bg-clip-text 
+            bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
+            Most Popular Plans
+          </h2>
+          <p className="text-[16px] sm:text-xl text-gray-400 max-w-2xl mx-auto">
+            Withdraw like a pro – no effort needed          
+          </p>
+        </div>
+        
+        <div className="grid md:grid-cols-4 gap-8">
+          {products.map((product) => (
+            <ProductCard 
+              key={product.id}
+              {...product}
+              onAddToCart={() => handleAddToCart(product)}
+              isAdded={addedProducts.includes(product.id)}
+              onRemoveFromAdded={() => {
+                setAddedProducts(prev => 
+                  prev.filter(id => id !== product.id)
+                )
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// Modify ProductCard to handle special styling for free trial
 const ProductCard = ({ 
   id,
   name, 
@@ -53,7 +221,8 @@ const ProductCard = ({
   image,
   onAddToCart,
   isAdded,
-  onRemoveFromAdded
+  onRemoveFromAdded,
+  isSpecial
 }: {
   id: string
   name: string
@@ -66,6 +235,7 @@ const ProductCard = ({
   onAddToCart: () => void
   isAdded: boolean
   onRemoveFromAdded: () => void
+  isSpecial?: boolean
 }) => {
   const [isHovered, setIsHovered] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
@@ -133,7 +303,7 @@ const ProductCard = ({
   return (
     <motion.div 
       ref={cardRef}
-      className="relative group overflow-hidden rounded-2xl"
+      className={`relative group overflow-hidden rounded-2xl ${isSpecial ? 'border-4 border-[#ffd700] animate-pulse' : ''}`}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       initial={{ opacity: 1, y: 50 }}
@@ -157,6 +327,13 @@ const ProductCard = ({
         />
         <div className="absolute inset-0 bg-black/50"></div>
       </div>
+
+      {/* Special Badge for Free Trial */}
+      {isSpecial && (
+        <div className="absolute top-0 right-0 z-20 bg-[#ffd700] text-black px-3 py-1 text-xs font-bold rounded-bl-lg">
+          BEST OFFER
+        </div>
+      )}
 
       {/* Card Content */}
       <div 
@@ -185,23 +362,9 @@ const ProductCard = ({
         <div className="absolute top-[24px] opacity-0 lg:opacity-100 lg:top-10 left-[178px]  lg:left-56 z-10 bg-red-500 text-white px-3 py-1 rounded-full text-[10px]">
           {discount}
         </div>
- 
-        {/* <div className="absolute top-0 lg:top-[5.4rem] right-0 lg:right-[-50px] z-10 
-        bg-gradient-to-r from-[#ff6b6b] to-[#ff9a6b]
-        text-white 
-        px-14 py-2 
-        -skew-x-12
-        text-sm
-        flex items-center 
-        shadow-lg
-        transform origin-top-right rotate-[30deg]">
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        Limited 30 Days
-      </div> */}
 
-      <CountdownBadge />
+        {/* Only show countdown for non-free trial plans */}
+        {!isSpecial && <CountdownBadge />}
 
         {/* Product Name and Price */}
         <div className="mb-3 sm:mb-4">
@@ -249,154 +412,27 @@ const ProductCard = ({
             w-full py-2 sm:py-3 rounded-lg 
             transition-all duration-300
             text-[14px] sm:text-base
-            ${isAdded 
-              ? 'bg-gray-500 text-gray-300 cursor-not-allowed' 
-              : (isHovered 
-                ? 'bg-[#8a4fff] text-white' 
-                : 'bg-[#6a3de3]/20 text-[#8a4fff]')}
+            ${isSpecial 
+              ? 'bg-[#ffd700] text-black hover:bg-[#ffec00]' 
+              : (isAdded 
+                ? 'bg-gray-500 text-gray-300 cursor-not-allowed' 
+                : (isHovered 
+                  ? 'bg-[#8a4fff] text-white' 
+                  : 'bg-[#6a3de3]/20 text-[#8a4fff]'))}
             hover:bg-[#8a4fff] hover:text-white
             mt-auto
           `}
         >
-          {isAdded ? 'Added to Cart' : (isHovered ? 'Select This Plan' : 'Learn More')}
+          {isAdded 
+            ? 'Added to Cart' 
+            : (isSpecial 
+              ? 'Start Free Trial' 
+              : (isHovered 
+                ? 'Select This Plan' 
+                : 'Learn More'))}
         </button>
       </div>
     </motion.div>
-  )
-}
-const Products = () => {
-  const { 
-    cart, 
-    addToCart, 
-    removeFromCart 
-  } = useCart()
-  const [addedProducts, setAddedProducts] = useState<string[]>([])
-
-  // Close cart on scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      window.dispatchEvent(new Event('closeCart'))
-    }
-
-    window.addEventListener('scroll', handleScroll)
-    return () => {
-      window.removeEventListener('scroll', handleScroll)
-    }
-  }, [])
-
-  // Track cart changes and update added products
-  useEffect(() => {
-    const currentCartProductIds = cart.map(item => item.id)
-    setAddedProducts(prev => 
-      prev.filter(productId => currentCartProductIds.includes(productId))
-    )
-  }, [cart])
-
-  const handleAddToCart = (product: any) => {
-    if (addedProducts.includes(product.id)) return
-
-    addToCart({ 
-      id: product.id, 
-      name: product.name, 
-      price: product.price, 
-      quantity: 1 
-    })
-
-    setAddedProducts(prev => [...prev, product.id])
-    window.dispatchEvent(new Event('openCart'))
-  }
-
-  const products = [
-    {
-      id: 'monthly',
-      name: "1 Month Licence",
-      priceRange: "€49.99",
-      category: "RollWithdraw Bot",
-      icon: <Zap />,
-      price: 49.99,
-      image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/f02b1965126337.6021db766416d.jpg",
-      features: [
-        "Original Price: €249.99",
-        "You Save: €200",
-        "Discount: 80% off",
-        "No Withdrawals Limit",
-        "Automated Withdrawals",
-        "Custom Price Ranges",
-        "Advanced Filtering"
-      ]
-    },
-    {
-      id: '6-months',
-      name: "6 Months Licence",
-      priceRange: "€269.99",
-      category: "RollWithdraw Bot",
-      icon: <Star />,
-      price: 269.99,
-      image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/8bf05765126337.6002d0c795c64.jpg",
-      features: [
-        "Original Price: €1349.99",
-        "You Save: €1080",
-        "Discount: 80% off",
-        "No Withdrawals Limit",
-        "Daily Case Collection",
-        "No Cost",
-        "Simple Interface"
-      ]
-    },
-    {
-      id: 'yearly',
-      name: "12 Months Licence",
-      priceRange: "€479.99",
-      category: "RollWithdraw Bot",
-      icon: <Crown />,
-      price: 539.99,
-      image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/08ce9a65126337.5b4c8ac9c4b3b.jpg ",
-      features: [
-        "Original Price: €2399.99",
-        "You Save: €1860",
-        "Discount: 80% off",
-        "No Withdrawals Limit",
-        "Unlimited Updates",
-        "Priority Support",
-        "Best Value Package"
-      ]
-    }
-  ]
-
-  return (
-    <section 
-      id="products" 
-      className="py-16 bg-[#04011C] pt-20"
-    >
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-[28px] sm:text-4xl font-bold mb-4 
-            text-transparent bg-clip-text 
-            bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
-            Most Popular Plans
-          </h2>
-          <p className="text-[16px] sm:text-xl text-gray-400 max-w-2xl mx-auto">
-            Withdraw like a pro – no effort needed          
-          </p>
-        </div>
-        
-        <div className="grid md:grid-cols-3 gap-8">
-          {products.map((product) => (
-            <ProductCard 
-              key={product.id}
-              {...product}
-              onAddToCart={() => handleAddToCart(product)}
-              isAdded={addedProducts.includes(product.id)}
-              onRemoveFromAdded={() => {
-                setAddedProducts(prev => 
-                  prev.filter(id => id !== product.id)
-                )
-              }}
-            />
-          ))}
-        </div>
-      </div>
-    </section>
   )
 }
 

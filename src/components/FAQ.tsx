@@ -75,6 +75,10 @@ const FAQ = () => {
     {
       question: "Do you offer a trial or money-back guarantee?",
       answer: "We provide a 7-day trial for our premium plans, allowing you to experience the full capabilities of RollWithdraw. Additionally, we offer a 30-day money-back guarantee to ensure your complete satisfaction with our service."
+    },
+    {
+      question: "How to find your session token?",
+      answer: "1. Right-click anywhere on the CSGORoll website.\n2. Click on 'Inspect'.\n3. At the top of the window, click on the arrows and go to the 'Application' tab.\n4. In the left sidebar, click on 'Cookies' to expand it.\n5. Select 'https://csgoroll.com' from the list.\n6. On the right side, find the row labeled 'session', then click on it and copy the value shown."
     }
   ]
 
