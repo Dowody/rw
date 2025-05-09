@@ -69,11 +69,32 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        // Get current session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError)
+          throw sessionError
+        }
         
         if (session) {
+          // Verify the session is still valid
+          const { data: { user }, error: userError } = await supabase.auth.getUser()
+          
+          if (userError) {
+            console.error('User verification error:', userError)
+            throw userError
+          }
+
+          if (user) {
           setIsAuthenticated(true)
+          } else {
+            // Session exists but user verification failed
+            await supabase.auth.signOut()
+            throw new Error('Session invalid')
+          }
         } else {
+          // No session, redirect to sign in
           navigate('/signin', { 
             state: { 
               from: location.pathname,
@@ -83,13 +104,34 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
         }
       } catch (error) {
         console.error('Authentication check failed:', error)
-        navigate('/signin')
+        // Clear any invalid session data
+        await supabase.auth.signOut()
+        navigate('/signin', { 
+          state: { 
+            from: location.pathname,
+            message: 'Your session has expired. Please sign in again.',
+          },
+        })
       } finally {
         setIsLoading(false)
       }
     }
 
     checkAuth()
+
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setIsAuthenticated(false)
+        navigate('/signin')
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        setIsAuthenticated(true)
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [navigate, location])
 
   if (isLoading) return <LoadingSpinner />

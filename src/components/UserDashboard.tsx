@@ -28,7 +28,7 @@ import {
   Play,
   Square,
   X,
-  DollarSign,
+  Landmark,
   ChevronUp,
   ChevronDown,
   History
@@ -109,7 +109,6 @@ const UserDashboard: React.FC = () => {
             auth_id, 
             username, 
             email, 
-            avatar_url, 
             current_subscription_id, 
             subscription_start_date,
             total_purchases,
@@ -228,11 +227,11 @@ const UserDashboard: React.FC = () => {
           return {
             ...order,
             subscriptionName: subscription.name || 'Completed Billing',
-            subscriptionDuration: subscription.duration_months || 1,
+            subscriptionDuration: subscription.duration_days || 1,
             expirationDate: (() => {
               const expirationDate = new Date(order.transaction_date)
-              expirationDate.setMonth(
-                expirationDate.getMonth() + (subscription.duration_months || 1)
+              expirationDate.setDate(
+                expirationDate.getDate() + (subscription.duration_days || 1)
               )
               return expirationDate
             })(),
@@ -252,21 +251,46 @@ const UserDashboard: React.FC = () => {
             .single()
 
           if (currentSubscriptionData) {
-            const subscriptionStartDate = new Date(userData.subscription_start_date || new Date())
-            const subscriptionEndDate = new Date(subscriptionStartDate)
-            subscriptionEndDate.setMonth(
-              subscriptionStartDate.getMonth() + currentSubscriptionData.duration_months
-            )
-            
-            const status = subscriptionEndDate > new Date() ? 'active' : 'expired'
+            // Get the latest order for this subscription
+            const { data: latestOrder, error: orderError } = await supabase
+              .from('orders')
+              .select('expiration_date, transaction_date')
+              .eq('subscription_id', userData.current_subscription_id)
+              .eq('status', 'completed')
+              .order('transaction_date', { ascending: false })
+              .limit(1)
+              .single()
+
+            if (latestOrder) {
+              const expirationDate = new Date(latestOrder.expiration_date)
+              const now = new Date()
+              const status = expirationDate > now ? 'active' : 'expired'
+              
+              // If subscription has expired, update user's subscription status
+              if (status === 'expired') {
+                await supabase
+                  .from('users')
+                  .update({
+                    current_subscription_id: null,
+                    subscription_start_date: null,
+                    subscription_end_date: null
+                  })
+                  .eq('id', userData.id)
+              }
             
             setCurrentSubscription({
               ...currentSubscriptionData,
-              startDate: subscriptionStartDate,
-              endDate: subscriptionEndDate,
-              status
+                startDate: new Date(latestOrder.transaction_date),
+                endDate: expirationDate,
+                status,
+                nextBillingDate: expirationDate
             })
             setSubscriptionStatus(status)
+            } else {
+              // No order found, set status to inactive
+              setCurrentSubscription(null)
+              setSubscriptionStatus('inactive')
+            }
           }
         }
 
@@ -274,24 +298,16 @@ const UserDashboard: React.FC = () => {
         setUserData(userData)
 
         // Update the upcoming billing logic
-        if (processedBillingHistory.length > 0) {
-          const lastBilling = processedBillingHistory[0]
-          const nextBillingDate = new Date(lastBilling.date)
-          nextBillingDate.setMonth(nextBillingDate.getMonth() + 1) // Assuming monthly billing
-
-          setUpcomingBilling({
-            subscriptionName: lastBilling.subscriptionName || currentSubscription?.name || 'Subscription',
-            date: nextBillingDate,
-            amount: lastBilling.amount
-          })
-        } else if (currentSubscription) {
-          // Fallback to current subscription details
+        if (currentSubscription) {
           const nextBillingDate = new Date(currentSubscription.endDate)
+          
           setUpcomingBilling({
             subscriptionName: currentSubscription.name,
             date: nextBillingDate,
             amount: currentSubscription.price
           })
+        } else {
+          setUpcomingBilling(null)
         }
 
         setLoading(false)
@@ -575,13 +591,21 @@ const UserDashboard: React.FC = () => {
                           {currentSubscription.name}
                         </p>
                         <div className="space-y-2 text-sm sm:text-base text-gray-300">
+                          
+                          <div className="flex justify-between">
+                            <span>Subscription Time Left:</span>
+                            <span>{(() => {
+                              const now = new Date();
+                              const diffMs = currentSubscription.endDate.getTime() - now.getTime();
+                              const diffHours = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60)));
+                              const days = Math.floor(diffHours / 24);
+                              const hours = diffHours % 24;
+                              return days > 0 ? `${days}d ${hours}h` : `${diffHours}h`;
+                            })()}</span>
+                          </div>
                           <div className="flex justify-between">
                             <span>Price:</span>
                             <span>€{currentSubscription.price}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Next Billing:</span>
-                            <span>{formatDate(currentSubscription.nextBillingDate)}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Status:</span>
@@ -589,6 +613,7 @@ const UserDashboard: React.FC = () => {
                               {subscriptionStatus === 'active' ? 'Active' : 'Expired'}
                             </span>
                           </div>
+                          
                           {subscriptionStatus === 'expired' && (
                             <div className="flex items-center text-red-400 mt-2">
                               <AlertTriangle className="mr-2 w-4 h-4 sm:w-5 sm:h-5" />
@@ -858,6 +883,7 @@ const UserDashboard: React.FC = () => {
                 </div>
 
                 {/* New Configuration Panel */}
+                {subscriptionStatus === 'active' && currentSubscription && (
                 <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10 space-y-4 sm:space-y-6">
                   <h3 className="text-base sm:text-xl font-semibold text-[#8a4fff] flex items-center">
                     <Settings className="mr-2 sm:mr-3 w-4 h-4 sm:w-6 sm:h-6" /> Bot Configuration
@@ -994,6 +1020,7 @@ const UserDashboard: React.FC = () => {
                     </button>
                   </div>
                 </div>
+                )}
 
                 {/* Subscription Details in Vertical Layout */}
                 <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
@@ -1017,7 +1044,7 @@ const UserDashboard: React.FC = () => {
                         </div>
                         <div className="bg-[#2c1b4a] rounded-xl p-3 sm:p-4 flex justify-between items-center">
                           <span className="text-xs sm:text-sm text-gray-300">Duration</span>
-                          <span className="font-semibold text-white text-xs sm:text-sm">{currentSubscription.duration_months} Months</span>
+                          <span className="font-semibold text-white text-xs sm:text-sm">{currentSubscription.duration_days} Days</span>
                         </div>
                         <div className="bg-[#2c1b4a] rounded-xl p-3 sm:p-4 flex justify-between items-center">
                           <span className="text-xs sm:text-sm text-gray-300">Start Date</span>
@@ -1093,14 +1120,14 @@ const UserDashboard: React.FC = () => {
                 <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10">
                   <div className="flex justify-between items-center mb-4 sm:mb-6">
                     <div>
-                      <h3 className="text-base sm:text-2xl font-bold text-[#8a4fff] flex items-center">
+                      <h3 className="text-lg sm:text-2xl font-bold text-[#8a4fff] flex items-center">
                         <History className="mr-2 sm:mr-3 w-4 h-4 sm:w-7 sm:h-7" /> Billing History
                       </h3>
                       <p className="text-xs sm:text-sm text-gray-400 mt-0.5 sm:mt-1">
                         Overview of your recent transactions
                       </p>
                     </div>
-                    <motion.button
+                    {/* <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       className="bg-[#8a4fff]/10 text-[#8a4fff] px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg 
@@ -1108,14 +1135,14 @@ const UserDashboard: React.FC = () => {
                     >
                       <Download className="mr-1 sm:mr-2 w-3 h-3 sm:w-4 sm:h-4" />
                       Export All
-                    </motion.button>
+                    </motion.button> */}
                   </div>
 
                   {billingHistory.length === 0 ? (
                     <div className="bg-[#2c1b4a] rounded-xl p-4 sm:p-8 text-center">
                       <div className="flex justify-center mb-3 sm:mb-4">
                         <div className="bg-[#8a4fff]/20 rounded-full p-3 sm:p-4">
-                          <DollarSign className="w-8 h-8 sm:w-12 sm:h-12 text-[#8a4fff] opacity-70" />
+                          <Landmark className="w-8 h-8 sm:w-12 sm:h-12 text-[#8a4fff] opacity-70" />
                         </div>
                       </div>
                       <h4 className="text-sm sm:text-lg text-white mb-1 sm:mb-2">No Billing History</h4>

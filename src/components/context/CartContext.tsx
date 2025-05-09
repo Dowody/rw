@@ -23,7 +23,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Initialize cart from localStorage
     if (typeof window !== 'undefined') {
       const savedCart = localStorage.getItem('cart')
-      return savedCart ? JSON.parse(savedCart) : []
+      if (savedCart) {
+        const parsedCart = JSON.parse(savedCart)
+        // Filter out duplicate subscriptions
+        const seenSubscriptions = new Set()
+        return parsedCart.filter((item: CartItem) => {
+          // Check if item is a subscription by checking its ID
+          if (item.id === 'monthly' || item.id === '6-months' || item.id === 'yearly' || item.id === 'free-trial') {
+            if (seenSubscriptions.has(item.id)) {
+              return false
+            }
+            seenSubscriptions.add(item.id)
+          }
+          return true
+        })
+      }
+      return []
     }
     return []
   })
@@ -39,7 +54,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const existingItemIndex = prev.findIndex(cartItem => cartItem.id === item.id)
       
       if (existingItemIndex > -1) {
-        // If item exists, increase its quantity
+        // If item exists and it's a subscription, don't add it again
+        if (item.id === 'monthly' || item.id === '6-months' || item.id === 'yearly' || item.id === 'free-trial') {
+          return prev
+        }
+        
+        // For non-subscription items, increase quantity
         const updatedCart = [...prev]
         updatedCart[existingItemIndex] = {
           ...updatedCart[existingItemIndex],

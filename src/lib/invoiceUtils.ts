@@ -7,7 +7,7 @@ interface Purchase {
   date: Date
   amount: number
   items: Array<{ name: string; price: number }>
-  duration_months?: number
+  duration_days?: number
 }
 
 interface UserData {
@@ -80,7 +80,7 @@ export const generateInvoicePDF = async (purchase: Purchase, userData: UserData)
   doc.setFont('helvetica', 'normal')
 
   addDetailRow('Subscription:', purchase.subscriptionName)
-//   addDetailRow('Subscription Period:', `${purchase.duration_months} Months`)
+  addDetailRow('Subscription Period:', formatSubscriptionDuration(purchase.duration_days))
 
   // Horizontal Line
   doc.line(margin, y, pageWidth - margin, y)
@@ -150,4 +150,14 @@ export const generateInvoicePDF = async (purchase: Purchase, userData: UserData)
   // Save PDF
   const filename = `RollWithdraw_Invoice_${invoiceNumber}.pdf`
   doc.save(filename)
+}
+
+export const calculateSubscriptionEndDate = (startDate: Date, durationDays: number): Date => {
+  const endDate = new Date(startDate)
+  endDate.setDate(endDate.getDate() + durationDays)
+  return endDate
+}
+
+export const formatSubscriptionDuration = (durationDays: number | undefined): string => {
+  return `${durationDays || 1} Days`
 }

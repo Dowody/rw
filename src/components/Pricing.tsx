@@ -4,24 +4,58 @@ import { Zap, Star, Crown, Check, Clock, Sparkles } from 'lucide-react'
 import { useCart } from './context/CartContext'
 import confetti from 'canvas-confetti'
 import { SiDiscord } from 'react-icons/si'
+import { supabase } from '../lib/supabaseClient'
 
 const CountdownBadge = () => {
-  const [daysLeft, setDaysLeft] = useState(30)
+  const [daysLeft, setDaysLeft] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setDaysLeft(prev => Math.max(0, prev - 1))
-    }, 24 * 60 * 60 * 1000) // Simulate daily countdown
+    const fetchCountdownData = async () => {
+      try {
+        // Get the latest countdown badge with specific columns
+        const { data: countdownData, error } = await supabase
+          .from('countdown_badges')
+          .select('id, start_date, expiration_date')
+          .order('expiration_date', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-    return () => clearInterval(timer)
-  }, [])
+        if (error) {
+          setDaysLeft(null);
+        } else if (countdownData) {
+          const expirationDate = new Date(countdownData.expiration_date);
+          const now = new Date();
+          const diffMs = expirationDate.getTime() - now.getTime();
+          const diffDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+          setDaysLeft(diffDays);
+        } else {
+          setDaysLeft(null);
+        }
+      } catch (err) {
+        setDaysLeft(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCountdownData();
+
+    // Update every hour
+    const timer = setInterval(fetchCountdownData, 60 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  if (loading || daysLeft === null) {
+    return null;
+  }
 
   return (
     <motion.div 
       initial={{ opacity: 0, x: 50, rotate: 40 }}
       animate={{ opacity: 1, x: 50, rotate: 40 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="absolute top-[6.2rem] lg:top-[6.8rem] right-[5px] lg:right-[10px] z-10 
+      className="absolute top-[2.2rem] lg:top-[0.8rem] right-[-10px] lg:right-[-15px] z-10 
         bg-gradient-to-r from-[#ff6a00] to-[#fdd835]
         text-white 
         px-14 py-2.5 
@@ -40,6 +74,78 @@ const CountdownBadge = () => {
       <Clock className="w-4 h-4 mr-2" />
       {daysLeft} Days Left
     </motion.div>
+  );
+};
+
+interface Product {
+  id: string
+  name: string
+  priceRange: string
+  category: string
+  icon: React.ReactElement
+  features: string[]
+  price: number
+  image: string
+  isSpecial?: boolean
+}
+
+interface PricingGridProps {
+  products: Product[]
+  addedProducts: string[]
+  handleAddToCart: (product: Product) => void
+  setAddedProducts: React.Dispatch<React.SetStateAction<string[]>>
+  isSubscriptionDisabled: (productId: string) => boolean
+  subscriptionStatus: 'active' | 'expired' | 'inactive'
+  currentSubscription?: any
+}
+
+// Pricing Grid with Free Trial (4 columns)
+const PricingGridWithTrial = ({ products, addedProducts, handleAddToCart, setAddedProducts, isSubscriptionDisabled, subscriptionStatus, currentSubscription }: PricingGridProps) => {
+  return (
+    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+      {products.map((product) => (
+        <ProductCard 
+          key={product.id}
+          {...product}
+          onAddToCart={() => handleAddToCart(product)}
+          isAdded={addedProducts.includes(product.id)}
+          onRemoveFromAdded={() => {
+            setAddedProducts(prev => 
+              prev.filter(id => id !== product.id)
+            )
+          }}
+          isDisabled={isSubscriptionDisabled(product.id)}
+          subscriptionStatus={subscriptionStatus}
+          currentSubscription={currentSubscription}
+        />
+      ))}
+    </div>
+  )
+}
+
+// Pricing Grid without Free Trial (3 columns)
+const PricingGridWithoutTrial = ({ products, addedProducts, handleAddToCart, setAddedProducts, isSubscriptionDisabled, subscriptionStatus, currentSubscription }: PricingGridProps) => {
+  return (
+    <div className="grid md:grid-cols-3 gap-8">
+      {products
+        .filter(product => product.id !== 'free-trial')
+        .map((product) => (
+          <ProductCard 
+            key={product.id}
+            {...product}
+            onAddToCart={() => handleAddToCart(product)}
+            isAdded={addedProducts.includes(product.id)}
+            onRemoveFromAdded={() => {
+              setAddedProducts(prev => 
+                prev.filter(id => id !== product.id)
+              )
+            }}
+            isDisabled={isSubscriptionDisabled(product.id)}
+            subscriptionStatus={subscriptionStatus}
+            currentSubscription={currentSubscription}
+          />
+        ))}
+    </div>
   )
 }
 
@@ -50,6 +156,142 @@ const Products = () => {
     removeFromCart 
   } = useCart()
   const [addedProducts, setAddedProducts] = useState<string[]>([])
+  const [currentSubscription, setCurrentSubscription] = useState<any>(null)
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'expired' | 'inactive'>('inactive')
+  const [hasUsedFreeTrial, setHasUsedFreeTrial] = useState(false)
+  const [purchasedSubscriptions, setPurchasedSubscriptions] = useState<string[]>([])
+
+  // Fetch user's current subscription and order history
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        // Fetch current subscription
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id, current_subscription_id, subscription_start_date, subscription_end_date')
+          .eq('auth_id', user.id)
+          .single()
+
+        // Check if there's an active order for this subscription
+        if (userData?.current_subscription_id) {
+          const { data: activeOrder } = await supabase
+            .from('orders')
+            .select('id, status')
+            .eq('subscription_id', userData.current_subscription_id)
+            .eq('status', 'completed')
+            .single()
+
+          // If no active order found, clear the subscription
+          if (!activeOrder) {
+            await supabase
+              .from('users')
+              .update({
+                current_subscription_id: null,
+                subscription_start_date: null,
+                subscription_end_date: null
+              })
+              .eq('id', userData.id)
+
+            setCurrentSubscription(null)
+            setSubscriptionStatus('inactive')
+            return
+          }
+
+          const { data: subscriptionData } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('id', userData.current_subscription_id)
+            .single()
+
+          if (subscriptionData) {
+            const endDate = new Date(userData.subscription_end_date)
+            const now = new Date()
+            const status = endDate > now ? 'active' : 'expired'
+            
+            // If subscription has expired, update user's subscription status
+            if (status === 'expired') {
+              await supabase
+                .from('users')
+                .update({
+                  current_subscription_id: null,
+                  subscription_start_date: null,
+                  subscription_end_date: null
+                })
+                .eq('id', userData.id)
+            }
+            
+            setCurrentSubscription({
+              ...subscriptionData,
+              endDate,
+              status
+            })
+            setSubscriptionStatus(status)
+          }
+        } else {
+          // No subscription found, set status to inactive
+          setCurrentSubscription(null)
+          setSubscriptionStatus('inactive')
+        }
+
+        // Check order history for free trial usage
+        if (userData) {
+          const { data: orders } = await supabase
+            .from('orders')
+            .select('subscription_id, status')
+            .eq('user_id', userData.id)
+
+          if (orders && orders.length > 0) {
+            const { data: subscriptions } = await supabase
+              .from('subscriptions')
+              .select('id, name')
+              .in('id', orders.map(order => order.subscription_id))
+
+            if (subscriptions) {
+              // Check for free trial
+              const hasTrial = subscriptions.some(sub => sub.name === '48-Hour Free Trial')
+              setHasUsedFreeTrial(hasTrial)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error)
+        // On error, set status to inactive
+        setCurrentSubscription(null)
+        setSubscriptionStatus('inactive')
+      }
+    }
+
+    fetchUserData()
+
+    // Set up interval to check subscription status every minute
+    const interval = setInterval(fetchUserData, 60000)
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(interval)
+  }, [])
+
+  // Check if subscription is disabled
+  const isSubscriptionDisabled = (productId: string) => {
+    // If product is in cart, disable it
+    if (cart.some(item => item.id === productId)) {
+      return true
+    }
+
+    // If user has used free trial, disable it
+    if (productId === 'free-trial' && hasUsedFreeTrial) {
+      return true
+    }
+
+    // If user has an active subscription, disable all subscriptions
+    if (subscriptionStatus === 'active' && currentSubscription) {
+      return true
+    }
+
+    return false
+  }
 
   // Close cart on scroll
   useEffect(() => {
@@ -94,7 +336,7 @@ const Products = () => {
       icon: <Sparkles />,
       price: 0,
       duration_days: 2,
-      image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/08ce9a65126337.5b4c8ac9c4b3b.jpg",
+      image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/b95e8765126337.60af5cc76e5df.jpg",
       features: [
         "Original Price: €49.99",
         "You Save: €49.99",
@@ -189,27 +431,74 @@ const Products = () => {
           </p>
         </div>
         
-        <div className="grid md:grid-cols-4 gap-8">
-          {products.map((product) => (
-            <ProductCard 
-              key={product.id}
-              {...product}
-              onAddToCart={() => handleAddToCart(product)}
-              isAdded={addedProducts.includes(product.id)}
-              onRemoveFromAdded={() => {
-                setAddedProducts(prev => 
-                  prev.filter(id => id !== product.id)
-                )
-              }}
-            />
-          ))}
-        </div>
+        {hasUsedFreeTrial ? (
+          <PricingGridWithoutTrial 
+            products={products}
+            addedProducts={addedProducts}
+            handleAddToCart={handleAddToCart}
+            setAddedProducts={setAddedProducts}
+            isSubscriptionDisabled={isSubscriptionDisabled}
+            subscriptionStatus={subscriptionStatus}
+            currentSubscription={currentSubscription}
+          />
+        ) : (
+          <PricingGridWithTrial 
+            products={products}
+            addedProducts={addedProducts}
+            handleAddToCart={handleAddToCart}
+            setAddedProducts={setAddedProducts}
+            isSubscriptionDisabled={isSubscriptionDisabled}
+            subscriptionStatus={subscriptionStatus}
+            currentSubscription={currentSubscription}
+          />
+        )}
       </div>
     </section>
   )
 }
 
-// Modify ProductCard to handle special styling for free trial
+// Add this new component at the top of the file
+const SubscriptionCountdown = ({ endDate }: { endDate: Date }) => {
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0
+  })
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const now = new Date()
+      const difference = endDate.getTime() - now.getTime()
+      
+      if (difference > 0) {
+        setTimeLeft({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60)
+        })
+      }
+    }
+
+    // Calculate immediately
+    calculateTimeLeft()
+
+    // Update every minute
+    const timer = setInterval(calculateTimeLeft, 60000)
+
+    return () => clearInterval(timer)
+  }, [endDate])
+
+  return (
+    <div className="flex items-center space-x-2 text-sm text-gray-400">
+      <Clock className="w-4 h-4 text-[#8a4fff]" />
+      <span>
+        {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m left
+      </span>
+    </div>
+  )
+}
+
+// Modify the ProductCard component to show countdown
 const ProductCard = ({ 
   id,
   name, 
@@ -222,7 +511,10 @@ const ProductCard = ({
   onAddToCart,
   isAdded,
   onRemoveFromAdded,
-  isSpecial
+  isSpecial,
+  isDisabled,
+  subscriptionStatus,
+  currentSubscription
 }: {
   id: string
   name: string
@@ -236,6 +528,9 @@ const ProductCard = ({
   isAdded: boolean
   onRemoveFromAdded: () => void
   isSpecial?: boolean
+  isDisabled?: boolean
+  subscriptionStatus: 'active' | 'expired' | 'inactive'
+  currentSubscription?: any
 }) => {
   const [isHovered, setIsHovered] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
@@ -349,7 +644,7 @@ const ProductCard = ({
         `}
       >
         {/* Icon and Category */}
-        <div className="flex justify-between items-center mb-3 sm:mb-4 ">
+        <div className="flex justify-between items-center mb-3 sm:mb-4">
           <div className="p-2 sm:p-3 rounded-full bg-[#8a4fff]/20">
             {React.cloneElement(icon, {
               className: `w-5 h-5 sm:w-8 sm:h-8 text-[#8a4fff] ${isHovered ? 'animate-pulse' : ''}`
@@ -357,14 +652,13 @@ const ProductCard = ({
           </div>
           <span className="text-[13px] sm:text-sm text-gray-300 opacity-70 absolute left-16 lg:left-24">{category}</span>
         </div>
-        
-        {/* Discount Badge */}
-        <div className="absolute top-[24px] opacity-0 lg:opacity-100 lg:top-10 left-[178px]  lg:left-56 z-10 bg-red-500 text-white px-3 py-1 rounded-full text-[10px]">
-          {discount}
-        </div>
 
-        {/* Only show countdown for non-free trial plans */}
-        {!isSpecial && <CountdownBadge />}
+        {/* Countdown Badge - Only show for non-free trial plans */}
+        {!isSpecial && (
+          <div className="relative">
+            <CountdownBadge />
+          </div>
+        )}
 
         {/* Product Name and Price */}
         <div className="mb-3 sm:mb-4">
@@ -376,8 +670,8 @@ const ProductCard = ({
             {name}
           </h3>
           <div className="flex items-center space-x-3">
-            <p className="text-[16px] sm:text-2xl font-bold text-green-400">{priceRange}</p>
-            <p className="text-[12px] sm:text-sm text-red-400 line-through">{originalPrice}</p>
+            <p className="text-[18px] sm:text-2xl font-bold text-green-400">{priceRange}</p>
+            <p className="text-[14px] sm:text-sm text-red-400 line-through">{originalPrice}</p>
           </div>
         </div>
 
@@ -404,20 +698,26 @@ const ProductCard = ({
           ))}
         </div>
 
+        {/* Add countdown before the action button */}
+        {subscriptionStatus === 'active' && currentSubscription && (
+          <div className="mb-4 mx-auto">
+            <SubscriptionCountdown endDate={currentSubscription.endDate} />
+          </div>
+        )}
+
         {/* Action Button */}
         <button 
           onClick={handleAddToCart}
-          disabled={isAdded}
-          className={`
-            w-full py-2 sm:py-3 rounded-lg 
+          disabled={isAdded || isDisabled}
+          className={`            w-full py-2 sm:py-3 rounded-lg 
             transition-all duration-300
             text-[14px] sm:text-base
             ${isSpecial 
               ? 'bg-[#ffd700] text-black hover:bg-[#ffec00]' 
-              : (isAdded 
-                ? 'bg-gray-500 text-gray-300 cursor-not-allowed' 
-                : (isHovered 
-                  ? 'bg-[#8a4fff] text-white' 
+              : (isAdded || isDisabled
+              ? 'bg-gray-500 text-gray-300 cursor-not-allowed' 
+              : (isHovered 
+                ? 'bg-[#8a4fff] text-white' 
                   : 'bg-[#6a3de3]/20 text-[#8a4fff]'))}
             hover:bg-[#8a4fff] hover:text-white
             mt-auto
@@ -425,11 +725,15 @@ const ProductCard = ({
         >
           {isAdded 
             ? 'Added to Cart' 
-            : (isSpecial 
-              ? 'Start Free Trial' 
-              : (isHovered 
-                ? 'Select This Plan' 
-                : 'Learn More'))}
+            : isDisabled
+              ? (subscriptionStatus === 'active' 
+                ? 'Active Subscription' 
+                : 'Added to Cart')
+              : (isSpecial 
+                ? 'Start Free Trial' 
+                : (isHovered 
+                  ? 'Select This Plan' 
+                  : 'Buy Now'))}
         </button>
       </div>
     </motion.div>
@@ -437,3 +741,4 @@ const ProductCard = ({
 }
 
 export default Products
+

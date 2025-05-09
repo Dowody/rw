@@ -41,10 +41,24 @@ const CheckoutPage: React.FC = () => {
   const [isPolicyAcknowledged, setIsPolicyAcknowledged] = useState(false)
   const [showPolicyModal, setShowPolicyModal] = useState(false)
 
+  // Check for multiple subscriptions
+  useEffect(() => {
+    const subscriptionCount = cart.filter(item => 
+      item.id === 'monthly' || 
+      item.id === '6-months' || 
+      item.id === 'yearly' || 
+      item.id === 'free-trial'
+    ).length
+
+    if (subscriptionCount > 1) {
+      setError('You can only have one subscription in your cart at a time. Please remove any additional subscriptions before proceeding.')    } else {
+      setError(null)
+    }
+  }, [cart])
+
   // Memoized calculations for performance
   const subtotal = useMemo(() => getTotalPrice(), [cart])
-  const taxAmount = useMemo(() => subtotal * 0.1, [subtotal])
-  const total = useMemo(() => subtotal * 1.1, [subtotal])
+  const total = useMemo(() => subtotal, [subtotal])
 
   const [skinMarketplaces, setSkinMarketplaces] = useState([
     {
@@ -167,6 +181,19 @@ const CheckoutPage: React.FC = () => {
 
   // Place Order Handler
   const handlePlaceOrder = async () => {
+    // Check for multiple subscriptions before proceeding
+    const subscriptionCount = cart.filter(item => 
+      item.id === 'monthly' || 
+      item.id === '6-months' || 
+      item.id === 'yearly' || 
+      item.id === 'free-trial'
+    ).length
+
+    if (subscriptionCount > 1) {
+      setError('Only one subscription is allowed at a time. Please remove one of your subscriptions from the cart.')
+      return
+    }
+
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
@@ -243,7 +270,7 @@ const CheckoutPage: React.FC = () => {
       // Fetch subscription with more flexible matching
       const { data: subscriptions, error: subscriptionError } = await supabase
         .from('subscriptions')
-        .select('id, name, duration_months, price')
+        .select('id, name, duration_days, price')
         .or(`name.ilike.%${mappedSubscription.name}%,name.eq.${mappedSubscription.name}`)
   
       if (subscriptionError) {
@@ -272,31 +299,26 @@ const CheckoutPage: React.FC = () => {
       // If user has an existing subscription
       if (userData.data.current_subscription_id) {
         // Fetch current subscription details
-        const { data: currentSubscription } = await supabase
+        const { data: currentSubscription, error: currentSubError } = await supabase
           .from('subscriptions')
-          .select('id, name, duration_months, price')
+          .select('id, name, duration_days, price')
           .eq('id', userData.data.current_subscription_id)
           .single()
   
         // Upgrade logic: Extend subscription if new subscription is longer
-        if (currentSubscription && selectedSubscription.duration_months > currentSubscription.duration_months) {
-          // Prorate the remaining time of current subscription
-          const currentEndDate = new Date(userData.data.subscription_end_date || new Date())
-          const remainingMonths = Math.max(0, 
-            (currentEndDate.getTime() - new Date().getTime()) / (30 * 24 * 60 * 60 * 1000)
+        if (currentSubscription && selectedSubscription.duration_days > currentSubscription.duration_days) {
+          // Calculate pro-rated price
+          const endDate = userData.data.subscription_end_date ? new Date(userData.data.subscription_end_date) : new Date()
+          const remainingDays = Math.ceil(
+            (endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
           )
-  
-          // Calculate prorated price
-          const proRatedPrice = (selectedSubscription.price / selectedSubscription.duration_months) * remainingMonths
+          const proRatedPrice = (selectedSubscription.price / selectedSubscription.duration_days) * remainingDays
           const finalPrice = total - proRatedPrice
   
           // Update subscription with extended duration
           subscriptionStartDate = new Date()
-          subscriptionEndDate = new Date(
-            subscriptionStartDate.setMonth(
-              subscriptionStartDate.getMonth() + selectedSubscription.duration_months
-            )
-          )
+          subscriptionEndDate = new Date(subscriptionStartDate)
+          subscriptionEndDate.setDate(subscriptionStartDate.getDate() + selectedSubscription.duration_days)
         } else {
           // If current subscription is longer or same, keep current subscription
           finalSubscriptionId = userData.data.current_subscription_id
@@ -307,9 +329,7 @@ const CheckoutPage: React.FC = () => {
         // No existing subscription, calculate end date based on trial or regular subscription
         subscriptionEndDate = cart[0].id === 'free-trial'
           ? new Date(subscriptionStartDate.getTime() + (2 * 24 * 60 * 60 * 1000)) // 2 days for trial
-          : new Date(subscriptionStartDate.setMonth(
-              subscriptionStartDate.getMonth() + selectedSubscription.duration_months
-            ))
+          : new Date(subscriptionStartDate.setDate(subscriptionStartDate.getDate() + selectedSubscription.duration_days))
       }
   
       // Prepare order items
@@ -321,15 +341,20 @@ const CheckoutPage: React.FC = () => {
       }))
       
       // Create order
-      const { data: orderData, error: orderError } = await supabase
+      const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: userData.data.id,
           subscription_id: finalSubscriptionId,
           total_amount: total,
-          items: orderItems,
-          payment_method: selectedCrypto,
-          status: 'pending'
+          transaction_date: new Date().toISOString(),
+          status: 'completed',
+          items: [{
+            id: selectedSubscription.id,
+            name: selectedSubscription.name,
+            price: total,
+            quantity: 1
+          }]
         })
         .select()
         .single()
@@ -340,7 +365,7 @@ const CheckoutPage: React.FC = () => {
         return
       }
 
-      if (!orderData) {
+      if (!order) {
         setError('Failed to create order. Please try again.')
         return
       }
@@ -596,33 +621,33 @@ const CheckoutPage: React.FC = () => {
   }
 
   // Order Placed Confirmation
-  if (isOrderPlaced) {
-    return (
-      <div className="min-h-screen bg-[#04011C] flex items-center justify-center px-4 py-16">
-        <motion.div 
-          initial={{ opacity: 1, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-md w-full text-center bg-[#0a0415] rounded-3xl p-12 border border-[#8a4fff]/10"
-        >
-          <CheckCircle className="w-32 h-32 mx-auto text-[#8a4fff] mb-8" />
-          <h2 className="text-4xl font-bold text-white mb-6">
-            Order Confirmed
-          </h2>
-          <p className="text-gray-400 mb-10 text-lg">
-            Your order has been successfully processed.
-          </p>
-          <button 
-            onClick={() => navigate('/')}
-            className="w-full py-4 bg-[#8a4fff] 
-            text-white rounded-xl hover:bg-[#7a3ddf] transition-colors text-lg"
-          >
-            Return to Home
-          </button>
-        </motion.div>
-      </div>
-    )
-  }
+  // if (isOrderPlaced) {
+  //   return (
+  //     <div className="min-h-screen bg-[#04011C] flex items-center justify-center px-4 py-16">
+  //       <motion.div 
+  //         initial={{ opacity: 1, scale: 0.9 }}
+  //         animate={{ opacity: 1, scale: 1 }}
+  //         transition={{ duration: 0.5 }}
+  //         className="max-w-md w-full text-center bg-[#0a0415] rounded-3xl p-12 border border-[#8a4fff]/10"
+  //       >
+  //         <CheckCircle className="w-32 h-32 mx-auto text-[#8a4fff] mb-8" />
+  //         <h2 className="text-4xl font-bold text-white mb-6">
+  //           Order Confirmed
+  //         </h2>
+  //         <p className="text-gray-400 mb-10 text-lg">
+  //           Your order has been successfully processed.
+  //         </p>
+  //         <button 
+  //           onClick={() => navigate('/')}
+  //           className="w-full py-4 bg-[#8a4fff] 
+  //           text-white rounded-xl hover:bg-[#7a3ddf] transition-colors text-lg"
+  //         >
+  //           Return to Home
+  //         </button>
+  //       </motion.div>
+  //     </div>
+  //   )
+  // }
 
   // Empty Cart State
   if (cart.length === 0) {
@@ -660,12 +685,7 @@ const CheckoutPage: React.FC = () => {
       <div className="min-h-screen bg-[#04011C] py-8 sm:py-16 px-4">
         <div className="max-w-4xl mx-auto">
           {/* Error Handling */}
-          {error && (
-            <div className="bg-red-500/10 border border-red-500 text-red-400 p-3 sm:p-4 rounded-xl mb-4 sm:mb-6 flex items-center">
-              <AlertTriangle className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" />
-              <span className="text-[14px] sm:text-base">{error}</span>
-            </div>
-          )}
+          {/* Removing the error message from here */}
 
           {/* Header */}
           <motion.div 
@@ -695,7 +715,7 @@ const CheckoutPage: React.FC = () => {
               className="space-y-4 sm:space-y-8"
             >
               {/* Cart Items */}
-              <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-[#000000]/10">
+              <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-[#8a4fff]/10">
                 <h2 className="text-[18px] sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
                   <CreditCard className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" /> Your Items
                 </h2>
@@ -708,29 +728,15 @@ const CheckoutPage: React.FC = () => {
                       <div>
                         <h3 className="text-[16px] sm:text-lg font-bold text-white">{item.name}</h3>
                         <p className="text-gray-400 text-[12px] sm:text-sm">
-                          {item.id === 'monthly' && 'Monthly Subscription'}
+                          {item.id === 'free-trial' && 'CSGORoll Script'}
+                          {item.id === 'monthly' && 'CSGORoll Script'}
                           {item.id === '6-months' && 'CSGORoll Script'}
-                          {item.id === 'annual' && 'Annual Subscription'}
+                          {item.id === 'yearly' && 'CSGORoll Script'}
                         </p>
                       </div>
                       <div className="flex items-center space-x-2 sm:space-x-4">
-                        <div className="flex items-center bg-[#1a0b2e] rounded-full">
-                          <button 
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            className="p-1.5 sm:p-2 text-gray-400 hover:text-[#8a4fff]"
-                          >
-                            <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
-                          </button>
-                          <span className="px-2 sm:px-3 text-[14px] sm:text-base text-white">{item.quantity}</span>
-                          <button 
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="p-1.5 sm:p-2 text-gray-400 hover:text-[#8a4fff]"
-                          >
-                            <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                          </button>
-                        </div>
-                        <span className="text-[16px] sm:text-lg font-bold text-[#8a4fff]">
-                          €{(item.price * item.quantity).toFixed(2)}
+                        <span className="text-[16px] sm:text-lg font-bold text-[#8a4fff] mr-2">
+                          €{(item.price).toFixed(2)}
                         </span>
                         <button 
                           onClick={() => removeFromCart(item.id)}
@@ -742,6 +748,12 @@ const CheckoutPage: React.FC = () => {
                     </div>
                   ))}
                 </div>
+                {error && (
+                  <div className="mt-4 bg-red-500/10 border border-red-500 text-red-400 p-3 rounded-xl flex items-center">
+                    <AlertTriangle className="mr-2 w-5 h-5" />
+                    <span className="text-[14px]">{error}</span>
+                  </div>
+                )}
               </div>
 
               {/* Payment Method */}
@@ -816,20 +828,7 @@ const CheckoutPage: React.FC = () => {
               
               <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-[14px] sm:text-base">Subtotal</span>
-                  <span className="text-white font-semibold text-[14px] sm:text-base">
-                    €{subtotal.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-[14px] sm:text-base">Tax (10%)</span>
-                  <span className="text-white text-[14px] sm:text-base">
-                    €{taxAmount.toFixed(2)}
-                  </span>
-                </div>
-                <div className="border-t border-[#8a4fff]/10 my-3 sm:my-4"></div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[16px] sm:text-xl font-bold text-white">Total</span>
+                  <span className="text-gray-400 text-[14px] sm:text-base">Total</span>
                   <span className="text-[18px] sm:text-2xl font-bold text-[#8a4fff]">
                     €{total.toFixed(2)}
                   </span>
@@ -880,10 +879,10 @@ const CheckoutPage: React.FC = () => {
               <div className="space-y-3 sm:space-y-4">
                 <button
                   onClick={handlePlaceOrder}
-                  disabled={!isPolicyAcknowledged}
+                  disabled={!isPolicyAcknowledged || error !== null}
                   className={`
                     w-full py-3 sm:py-4 rounded-xl transition-colors text-[14px] sm:text-lg
-                    ${isPolicyAcknowledged 
+                    ${isPolicyAcknowledged && !error
                       ? 'bg-[#8a4fff] text-white hover:bg-[#7a3ddf]' 
                       : 'bg-gray-500 text-gray-300 cursor-not-allowed'}
                   `}

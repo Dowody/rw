@@ -9,7 +9,41 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true
+    persistSession: true,
+    autoRefreshToken: true,
+    storageKey: 'rollwithdraw-auth-token',
+    storage: {
+      getItem: (key) => {
+        try {
+          const itemStr = localStorage.getItem(key)
+          if (!itemStr) return null
+          const item = JSON.parse(itemStr)
+          const now = new Date()
+          if (item.expires_at && new Date(item.expires_at) < now) {
+            localStorage.removeItem(key)
+            return null
+          }
+          return item
+        } catch (error) {
+          console.error('Error reading auth token:', error)
+          return null
+        }
+      },
+      setItem: (key, value) => {
+        try {
+          localStorage.setItem(key, JSON.stringify(value))
+        } catch (error) {
+          console.error('Error saving auth token:', error)
+        }
+      },
+      removeItem: (key) => {
+        try {
+          localStorage.removeItem(key)
+        } catch (error) {
+          console.error('Error removing auth token:', error)
+        }
+      }
+    }
   },
   db: {
     schema: 'public'
@@ -19,7 +53,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       'x-application-name': 'RollWithdraw',
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'Prefer': 'return=representation' // Add this line
+      'Prefer': 'return=representation'
     }
   }
 })
@@ -50,7 +84,7 @@ export interface Database {
     name: string
     description?: string
     price: number
-    duration_months: number
+    duration_days: number
     max_withdrawals_per_day?: number
     max_case_collection?: boolean
     advanced_filtering?: boolean

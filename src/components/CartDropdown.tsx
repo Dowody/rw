@@ -141,7 +141,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ isOpen, onClose }) => {
                 </div>
                 
                 <div className="flex items-center space-x-2 sm:space-x-3">
-                  <div className="flex items-center bg-[#2c1b4a] rounded-full border border-[#8a4fff]/10">
+                  {/* <div className="flex items-center bg-[#2c1b4a] rounded-full border border-[#8a4fff]/10">
                     <motion.button 
                       whileTap={{ scale: 0.9 }}
                       onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -157,7 +157,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ isOpen, onClose }) => {
                     >
                       <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                     </motion.button>
-                  </div>
+                  </div> */}
                   
                   <motion.button 
                     whileHover={{ scale: 1.1 }}

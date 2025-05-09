@@ -18,9 +18,13 @@ import { supabase } from '../lib/supabaseClient'
 const smoothScrollToSection = (sectionId: string) => {
   const section = document.querySelector(sectionId)
   if (section) {
-    section.scrollIntoView({ 
-      behavior: 'smooth',
-      block: 'start'
+    const headerOffset = 100 // Adjust based on your header height
+    const elementPosition = section.getBoundingClientRect().top
+    const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth'
     })
   }
 }
@@ -59,13 +63,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
         setUserEmail(user.email || '')
         
         // Fetch additional user details if needed
-        const { data: userData } = await supabase
-          .from('users')
-          .select('avatar_url')
-          .eq('id', user.id)
-          .single()
-
-        setUserAvatar(userData?.avatar_url || '/rw/avatar.jpg')
+        setUserAvatar('/rw/avatar.jpg')
       }
     } else {
       setIsAuthenticated(false)
@@ -131,14 +129,15 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
     // If on home page, use smooth scroll
     if (location.pathname === '/rw/' && scrollTo) {
       smoothScrollToSection(scrollTo)
+    } else if (scrollTo) {
+      // Navigate to home and scroll after a small delay
+      navigate('/')
+      setTimeout(() => {
+        smoothScrollToSection(scrollTo)
+      }, 100)
     } else {
-      // Navigate to home and then scroll
-      navigate('/', { 
-        state: { 
-          scrollTo: scrollTo,
-          timestamp: Date.now()
-        }
-      })
+      // Regular navigation without scroll
+      navigate(href)
     }
     
     // Close mobile menu
@@ -186,7 +185,10 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
           <div className="flex items-center space-x-4 sm:space-x-6">
             <div className="relative">
               <button 
-                onClick={onCartToggle}
+                onClick={(e) => {
+                  e.preventDefault()
+                  onCartToggle()
+                }}
                 className="text-gray-300 mr-4 sm:mr-5 hover:text-[#8a4fff] transition-colors relative"
               >
                 <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -272,7 +274,10 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
         {/* Mobile Menu Toggle */}
         <div className="md:hidden flex items-center space-x-3 sm:space-x-4">
           <button 
-            onClick={onCartToggle}
+            onClick={(e) => {
+              e.preventDefault()
+              onCartToggle()
+            }}
             className="text-gray-300 hover:text-[#8a4fff] mr-2 transition-colors relative"
           >
             <ShoppingCart className="w-6 h-6 sm:w-6 sm:h-6 mr-0" />
