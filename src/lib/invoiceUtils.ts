@@ -8,6 +8,7 @@ interface Purchase {
   amount: number
   items: Array<{ name: string; price: number }>
   duration_days?: number
+  transactionHash?: string
 }
 
 interface UserData {
@@ -23,7 +24,7 @@ export const generateInvoicePDF = async (purchase: Purchase, userData: UserData)
   })
 
   // Generate QR Code for transaction verification
-  const qrCodeData = `Order ID: ${purchase.id}\nSubscription: ${purchase.subscriptionName}\nDate: ${purchase.date.toISOString()}`
+  const qrCodeData = `Order ID: ${purchase.id}\nSubscription: ${purchase.subscriptionName}\nDate: ${purchase.date.toISOString()}${purchase.transactionHash ? `\nTransaction Hash: ${purchase.transactionHash}` : ''}`
   const qrCodeImage = await QRCode.toDataURL(qrCodeData)
 
   // Page setup
@@ -100,6 +101,11 @@ export const generateInvoicePDF = async (purchase: Purchase, userData: UserData)
   // Reset text color
   doc.setTextColor(50)
   addDetailRow('Payment Method:', 'Crypto')
+  
+  // Add transaction hash if available
+  if (purchase.transactionHash) {
+    addDetailRow('Transaction Hash:', purchase.transactionHash)
+  }
 
   // Horizontal Line
   doc.line(margin, y, pageWidth - margin, y)

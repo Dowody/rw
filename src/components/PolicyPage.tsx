@@ -189,11 +189,11 @@ const PolicyPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-[#1a0b2e] rounded-2xl p-4 sm:p-8 space-y-4 sm:space-y-8">
+        <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl p-4 sm:p-8 space-y-4 sm:space-y-8">
           {currentPolicy.sections.map((section, index) => (
             <div 
               key={index} 
-              className="flex items-start space-x-3 sm:space-x-4 bg-[#2c1b4a] p-4 sm:p-6 rounded-xl"
+              className="flex items-start space-x-3 sm:space-x-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 p-4 sm:p-6 rounded-xl"
             >
               <div className="mt-1">{React.cloneElement(section.icon, { 
                 className: "w-5 h-5 sm:w-6 sm:h-6" 

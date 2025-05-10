@@ -354,7 +354,7 @@ const Products = () => {
         "Original Price: €49.99",
         "You Save: €49.99",
         "Discount: 100% off",
-        "48-Hour Full Access",
+        "24-Hour Full Access",
         "200 Coins Withdrawal Limit",
         "Join Discord Required"
       ],
@@ -363,10 +363,10 @@ const Products = () => {
     {
       id: 'monthly',
       name: "1 Month Licence",
-      priceRange: "€49.99",
+      priceRange: "€0.01",
       category: "RollWithdraw Bot",
       icon: <Zap />,
-      price: 49.99,
+      price: 0.01,
       duration_days: 30,
       image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/f02b1965126337.6021db766416d.jpg",
       features: [
