@@ -338,44 +338,38 @@ const UserDashboard: React.FC = () => {
                   .eq('id', userData.id)
               }
             
-            setCurrentSubscription({
-              ...currentSubscriptionData,
+              const subscription = {
+                ...currentSubscriptionData,
                 startDate: new Date(latestOrder.transaction_date),
                 endDate: expirationDate,
                 status,
                 nextBillingDate: expirationDate
-            })
-            setSubscriptionStatus(status)
+              }
+              
+              setCurrentSubscription(subscription)
+              setSubscriptionStatus(status)
+              
+              // Set upcoming billing if subscription is active
+              if (status === 'active') {
+                setUpcomingBilling({
+                  subscriptionName: subscription.name,
+                  date: expirationDate,
+                  amount: subscription.price
+                })
+              } else {
+                setUpcomingBilling(null)
+              }
             } else {
               // No order found, set status to inactive
               setCurrentSubscription(null)
               setSubscriptionStatus('inactive')
+              setUpcomingBilling(null)
             }
           }
         }
 
         // Set user data
         setUserData(userData)
-
-        // Update the upcoming billing logic
-        if (currentSubscription) {
-          const nextBillingDate = new Date(currentSubscription.endDate)
-          const now = new Date()
-          
-          // Only show upcoming billing if subscription is active
-          if (nextBillingDate > now) {
-            setUpcomingBilling({
-              subscriptionName: currentSubscription.name,
-              date: nextBillingDate,
-              amount: currentSubscription.price
-            })
-          } else {
-            setUpcomingBilling(null)
-          }
-        } else {
-          setUpcomingBilling(null)
-        }
-
         setLoading(false)
       } catch (err) {
         console.error('Unexpected Error Fetching User Data:', err)
@@ -846,35 +840,39 @@ const UserDashboard: React.FC = () => {
                         <h3 className="text-lg sm:text-xl font-bold text-[#8a4fff] flex items-center">
                           <Clock className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" /> Upcoming Billing
                         </h3>
-                        <button 
-                          onClick={() => {
-                            if (location.pathname === '/') {
-                              const section = document.querySelector('#products')
-                              if (section) {
-                                section.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                              }
-                            } else {
-                              navigate('/', {
-                                state: {
-                                  scrollTo: '#products',
-                                  timestamp: Date.now()
+                        {!upcomingBilling.subscriptionName.toLowerCase().includes('trial') && (
+                          <button 
+                            onClick={() => {
+                              if (location.pathname === '/') {
+                                const section = document.querySelector('#products')
+                                if (section) {
+                                  section.scrollIntoView({ behavior: 'smooth', block: 'start' })
                                 }
-                              })
-                            }
-                          }}
-                          className="w-full sm:w-auto bg-[#8a4fff]/10 text-[#8a4fff] px-4 py-2 rounded-lg 
-                          hover:bg-[#8a4fff]/20 transition-colors flex items-center justify-center"
-                        >
-                          <RefreshCw className="mr-2 w-4 h-4" /> 
-                          Renew Subscription
-                        </button>
+                              } else {
+                                navigate('/', {
+                                  state: {
+                                    scrollTo: '#products',
+                                    timestamp: Date.now()
+                                  }
+                                })
+                              }
+                            }}
+                            className="w-full sm:w-auto bg-[#8a4fff]/10 text-[#8a4fff] px-4 py-2 rounded-lg 
+                            hover:bg-[#8a4fff]/20 transition-colors flex items-center justify-center"
+                          >
+                            <RefreshCw className="mr-2 w-4 h-4" /> 
+                            Renew Subscription
+                          </button>
+                        )}
                       </div>
 
                       <div className="bg-[#2c1b4a] rounded-xl p-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div>
                             <h5 className="text-sm font-semibold text-white">
-                              Next Billing: {upcomingBilling.subscriptionName}
+                              {upcomingBilling.subscriptionName.toLowerCase().includes('trial') 
+                                ? 'Free Trial Period' 
+                                : `Next Billing: ${upcomingBilling.subscriptionName}`}
                             </h5>
                             <p className="text-xs text-gray-400 flex items-center mt-1">
                               <Calendar className="mr-2 w-4 h-4" />
@@ -886,41 +884,51 @@ const UserDashboard: React.FC = () => {
                             </p>
                           </div>
                           <div className="text-left sm:text-right">
-                            <p className="text-white font-bold text-lg">
-                              €{upcomingBilling.amount.toFixed(2)}
-                            </p>
-                            <span className="inline-block px-2 py-1 rounded-full text-xs mt-1 bg-blue-500/20 text-blue-400">
-                              Upcoming
-                            </span>
+                            {upcomingBilling.subscriptionName.toLowerCase().includes('trial') ? (
+                              <span className="inline-block px-2 py-1 rounded-full text-xs mt-1 bg-yellow-500/20 text-yellow-400">
+                                Limited Access
+                              </span>
+                            ) : (
+                              <>
+                                <p className="text-white font-bold text-lg">
+                                  €{upcomingBilling.amount.toFixed(2)}
+                                </p>
+                                <span className="inline-block px-2 py-1 rounded-full text-xs mt-1 bg-blue-500/20 text-blue-400">
+                                  Upcoming
+                                </span>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Renewal Benefits */}
-                      <div className="mt-4 bg-[#2c1b4a] rounded-xl p-4">
-                        <h5 className="text-sm lg:text-base font-semibold text-[#8a4fff] mb-3 flex items-center">
-                          <Zap className="mr-2 w-5 h-5" /> 
-                          Renewal Benefits
-                        </h5>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-300">
-                          <div className="flex items-center">
-                            <CheckCircle className="mr-2 w-4 h-4 text-green-500" />
-                            Continuous Access
-                          </div>
-                          <div className="flex items-center">
-                            <CheckCircle className="mr-2 w-4 h-4 text-green-500" />
-                            Priority Support
-                          </div>
-                          <div className="flex items-center">
-                            <CheckCircle className="mr-2 w-4 h-4 text-green-500" />
-                            Early Access Features
-                          </div>
-                          <div className="flex items-center">
-                            <CheckCircle className="mr-2 w-4 h-4 text-green-500" />
-                            Unlimited Withdrawals
+                      {/* Renewal Benefits - Only show for non-trial subscriptions */}
+                      {!upcomingBilling.subscriptionName.toLowerCase().includes('trial') && (
+                        <div className="mt-4 bg-[#2c1b4a] rounded-xl p-4">
+                          <h5 className="text-sm lg:text-base font-semibold text-[#8a4fff] mb-3 flex items-center">
+                            <Zap className="mr-2 w-5 h-5" /> 
+                            Renewal Benefits
+                          </h5>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-300">
+                            <div className="flex items-center">
+                              <CheckCircle className="mr-2 w-4 h-4 text-green-500" />
+                              Continuous Access
+                            </div>
+                            <div className="flex items-center">
+                              <CheckCircle className="mr-2 w-4 h-4 text-green-500" />
+                              Priority Support
+                            </div>
+                            <div className="flex items-center">
+                              <CheckCircle className="mr-2 w-4 h-4 text-green-500" />
+                              Early Access Features
+                            </div>
+                            <div className="flex items-center">
+                              <CheckCircle className="mr-2 w-4 h-4 text-green-500" />
+                              Unlimited Withdrawals
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   )}
                 </motion.div>
@@ -1110,7 +1118,7 @@ const UserDashboard: React.FC = () => {
                         />
                         <button 
                           onClick={addToBlacklist}
-                          className="bg-[#8a4fff] text-white px-3 sm:px-4 py-2 rounded-xl 
+                          className="bg-[#8a4fff] text-white px-5 sm:px-4 py-2 rounded-xl 
                           hover:bg-[#7a3ddf] transition-colors text-xs sm:text-sm"
                         >
                           Add

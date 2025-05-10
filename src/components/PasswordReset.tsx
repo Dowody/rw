@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { verifyPasswordResetToken } from '../lib/passwordReset'
 
 const PasswordResetPage: React.FC = () => {
   const [password, setPassword] = useState('')
@@ -35,21 +36,12 @@ const PasswordResetPage: React.FC = () => {
 
     // Verify token with Supabase
     const verifyToken = async () => {
-      try {
-        const { error } = await supabase.auth.verifyOtp({
-          token_hash: token,
-          type: 'recovery'
-        })
-
-        if (error) {
-          setError('Invalid or expired reset token')
-          return
-        }
-
-        setIsTokenValid(true)
-      } catch (err) {
-        setError('Failed to verify reset token')
+      const result = await verifyPasswordResetToken(token)
+      if (!result.isValid) {
+        setError(result.error || 'Invalid or expired reset token')
+        return
       }
+      setIsTokenValid(true)
     }
 
     verifyToken()
@@ -344,11 +336,6 @@ const PasswordResetPage: React.FC = () => {
                     {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
                   </motion.button>
                 </div>
-
-                {/* Password Requirements
-                <p className="text-gray-300 text-[13px] sm:text-sm mb-4 text-center">
-                  Password must be at least 8 characters with uppercase, lowercase, and number
-                </p> */}
 
                 {/* Submit Button */}
                 <motion.button

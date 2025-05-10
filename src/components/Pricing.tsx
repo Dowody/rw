@@ -256,7 +256,7 @@ const Products = () => {
 
             if (subscriptions) {
               // Check for free trial
-              const hasTrial = subscriptions.some(sub => sub.name === '48-Hour Free Trial')
+              const hasTrial = subscriptions.some(sub => sub.name === '24-Hour Free Trial')
               if (isMounted) setHasUsedFreeTrial(hasTrial)
             }
           } else {
@@ -343,7 +343,7 @@ const Products = () => {
   const products = [
     {
       id: 'free-trial',
-      name: "48-Hour Free Trial",
+      name: "24-Hour Free Trial",
       priceRange: "€0.00",
       category: "Limited Access",
       icon: <Sparkles />, 
@@ -357,7 +357,6 @@ const Products = () => {
         "48-Hour Full Access",
         "200 Coins Withdrawal Limit",
         "Join Discord Required"
-        // "Experience All Features"
       ],
       isSpecial: true
     },
@@ -374,10 +373,9 @@ const Products = () => {
         "Original Price: €249.99",
         "You Save: €200",
         "Discount: 80% off",
+        "Priority Support",
         "No Withdrawals Limit",
-        "Automated Withdrawals",
-        "Custom Price Ranges"
-        // "Advanced Filtering"
+        "Access to All Features"
       ]
     },
     {
@@ -393,10 +391,10 @@ const Products = () => {
         "Original Price: €1349.99",
         "You Save: €1080",
         "Discount: 80% off",
+        "Priority Support",
         "No Withdrawals Limit",
-        "Daily Case Collection",
-        "No Cost",
-        // "Simple Interface"
+        "Access to All Features",
+        "Ability to snipe expensive sticker crafts"
       ]
     },
     {
@@ -517,7 +515,7 @@ const SubscriptionCountdown = ({ endDate }: { endDate: Date }) => {
     <div className="flex items-center space-x-2 text-sm text-gray-400">
       <Clock className="w-4 h-4 text-[#8a4fff]" />
       <span>
-        {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m left
+        Your Current Subscription Expires in {timeLeft.days}d {timeLeft.hours}h 
       </span>
     </div>
   )
@@ -705,7 +703,7 @@ const ProductCard = ({
           {features.slice(3).map((feature, index) => {
             const isFreeLimitedFeature = 
               id === 'free-trial' && 
-              (feature === "200 Coins Withdrawal Limit" || feature === "Join Discord Required");
+              (feature === "Join Discord Required");
             
             return (
               <div 

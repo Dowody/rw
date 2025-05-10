@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { generatePasswordResetUrl } from '../lib/passwordReset'
 
 type AuthMode = 'signin' | 'signup' | 'reset' | 'forgot-password'
 
@@ -26,6 +27,7 @@ const SignInPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [hideOnRlsError, setHideOnRlsError] = useState(false)
+  const [isResetLinkSent, setIsResetLinkSent] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -97,7 +99,7 @@ const SignInPage: React.FC = () => {
   }
 
   // Forgot Password Handler
-    const handleForgotPassword = async () => {
+  const handleForgotPassword = async () => {
     // Validate email
     if (!validateEmail(email)) {
       setError('Please enter a valid email address')
@@ -106,15 +108,13 @@ const SignInPage: React.FC = () => {
 
     setLoading(true)
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://rollwithdraw.com/reset-password'
-      })
-
-      if (error) {
-        setError(error.message)
-      } else {
+      const result = await generatePasswordResetUrl(email)
+      
+      if (result.success) {
         setError('Password reset link sent to your email')
         setMode('signin')
+      } else {
+        setError(result.message)
       }
     } catch (err) {
       setError('Failed to send reset link. Please try again.')
@@ -124,108 +124,26 @@ const SignInPage: React.FC = () => {
   }
 
   // Sign In Handler
-  const handleSignIn = async () => {
-    // Validate email format
-    if (!validateEmail(email)) {
-      setError('Please enter a valid email address')
-      return
-    }
-  
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
     setLoading(true)
+
     try {
-      // Signin with comprehensive error handling
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password
       })
-  
+
       if (error) {
-        console.error('Signin Error:', {
-          message: error.message,
-          code: error.code,
-          details: (error as any).details
-        })
-  
-        // Provide more specific error messages
-        switch (error.code) {
-          case 'invalid_grant':
-            setError('Invalid email or password. Please try again.')
-            break
-          case 'auth/user-not-found':
-            setError('No account found with this email. Please sign up.')
-            break
-          case 'auth/wrong-password':
-            setError('Incorrect password. Please try again.')
-            break
-          default:
-            setError(error.message || 'Authentication failed. Please try again.')
-        }
+        setError(error.message)
         return
       }
-  
-      // Ensure user exists
-      if (data.user) {
-        try {
-          // Fetch user details from users table
-          const { data: userData, error: userFetchError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('auth_id', data.user.id)
-            .single()
-  
-          if (userFetchError) {
-            console.error('User fetch error:', {
-              message: userFetchError.message,
-              code: userFetchError.code,
-              details: userFetchError.details
-            })
-            
-            // Create user profile if it doesn't exist
-            if (!data.user?.email) {
-              setError('Invalid user data. Please contact support.')
-              return
-            }
-            const { error: createError } = await supabase
-              .from('users')
-              .insert({
-                auth_id: data.user.id,
-                email: data.user.email,
-                username: data.user.user_metadata?.username || data.user.email.split('@')[0],
-                created_at: new Date().toISOString(),
-                status: 'active',
-                last_login: new Date().toISOString()
-              })
 
-            if (createError) {
-              console.error('Profile creation error:', createError)
-              setError('Failed to create user profile. Please contact support.')
-              return
-            }
-          }
-  
-          // Check referrer and redirect accordingly
-          const state = location.state as { from?: string }
-          const referrer = document.referrer
-          
-          if (state?.from === '/checkout' || (state?.from && state.from.includes('#products')) || referrer.includes('#products')) {
-            navigate('/checkout')
-          } else {
-            navigate('/dashboard')
-          }
-  
-          // Optional: Dispatch auth change event
-          window.dispatchEvent(new Event('authChange'))
-        } catch (profileError) {
-          console.error('Profile retrieval error:', profileError)
-          setError('An unexpected error occurred. Please try again.')
-        }
-      } else {
-        // Unexpected scenario: no user data
-        setError('Authentication failed. Please try again.')
-      }
+      // Redirect to dashboard or home page after successful sign in
+      navigate('/dashboard')
     } catch (err) {
-      console.error('Unexpected Signin Catch Error:', err)
-      setError('An unexpected error occurred. Please try again.')
+      setError('An unexpected error occurred')
     } finally {
       setLoading(false)
     }
@@ -350,6 +268,31 @@ const SignInPage: React.FC = () => {
   }
 }
 
+  // Reset Password Handler
+  const handleResetPassword = async () => {
+    if (!email) {
+      setError('Please enter your email address')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const result = await generatePasswordResetUrl(email)
+      
+      if (result.success) {
+        setIsResetLinkSent(true)
+      } else {
+        setError(result.message)
+      }
+    } catch (err) {
+      setError('Failed to send reset link')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Main Submit Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -364,7 +307,7 @@ const SignInPage: React.FC = () => {
     // Mode-specific handling
     switch(mode) {
       case 'signin':
-        await handleSignIn()
+        await handleSignIn(e)
         break
       case 'signup':
         await handleSignUp()
@@ -472,6 +415,19 @@ const SignInPage: React.FC = () => {
                 <span className="text-[14px] sm:text-base text-center">{error}</span>
               </motion.div>
             )}
+            {isResetLinkSent && (
+              <motion.div 
+                initial={{ opacity: 1, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 1, y: -20 }}
+                className="absolute -top-[80px] sm:-top-20 left-0 right-0 p-3 sm:p-4 rounded-xl flex items-center justify-center bg-green-500/10 border border-green-500 text-green-400"
+              >
+                <Info className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" />
+                <span className="text-[14px] sm:text-base text-center">
+                  Password reset link has been sent to your email
+                </span>
+              </motion.div>
+            )}
           </AnimatePresence>
 
           <div className="bg-gradient-to-br from-[#1a0b2e] to-[#130428] rounded-2xl shadow-2xl overflow-hidden">
@@ -521,6 +477,7 @@ const SignInPage: React.FC = () => {
                       onChange={(e) => {
                         setEmail(e.target.value)
                         setError(null)
+                        setIsResetLinkSent(false)
                       }}
                       className="w-full pl-10 sm:pl-10 pr-4 py-2.5 sm:py-3 rounded-lg bg-[#2c1b4a] border border-[#8a4fff]/20 text-white text-[14px] sm:text-base
                         focus:outline-none focus:border-[#8a4fff] transition-all duration-300"
@@ -644,13 +601,16 @@ const SignInPage: React.FC = () => {
               {/* Forgot Password Link */}
               {mode === 'signin' && (
                 <div className="text-center">
-                  <button 
+                  <motion.button
                     type="button"
-                    onClick={() => setMode('forgot-password')}
-                    className="text-[#8a4fff] hover:underline text-[14px] sm:text-base"
+                    onClick={handleResetPassword}
+                    disabled={loading}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="text-[#8a4fff] text-[13px] sm:text-sm hover:underline"
                   >
                     Forgot Password?
-                  </button>
+                  </motion.button>
                 </div>
               )}
             </form>

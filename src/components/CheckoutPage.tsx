@@ -421,7 +421,7 @@ const CheckoutPage: React.FC = () => {
       
       // After successful order placement
       setIsOrderPlaced(true)
-      clearCart()
+    clearCart()
       
       // Set multiple flags to ensure the popup appears
       localStorage.setItem('showPurchaseSuccess', 'true')
