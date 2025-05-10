@@ -185,26 +185,71 @@ const PasswordResetPage: React.FC = () => {
             variants={pageVariants}
             className="w-full max-w-md relative"
           >
-            <div className="bg-gradient-to-br from-[#1a0b2e] to-[#130428] rounded-2xl shadow-2xl overflow-hidden p-8 text-center">
-              <CheckCircle className="w-24 h-24 mx-auto text-green-500 mb-6" />
-              <h2 className="text-2xl font-bold text-[#8a4fff] mb-4">
-                Password Reset Successful
-              </h2>
-              <p className="text-gray-300 mb-6">
-                Your password has been successfully reset. You can now sign in with your new password.
-              </p>
-              
-              <motion.button
-                {...buttonAnimation}
-                onClick={handleBackToSignIn}
-                className="w-full bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b] 
-                  text-white py-3 rounded-lg 
-                  flex items-center justify-center
-                  hover:opacity-90 transition-opacity"
-              >
-                Back to Sign In
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </motion.button>
+            <div className="bg-gradient-to-br from-[#1a0b2e] to-[#130428] rounded-2xl shadow-2xl overflow-hidden">
+              {/* Minimalistic Success Icon */}
+              <div className="pt-8 pb-4 flex justify-center">
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-16 h-16 rounded-full bg-[#8a4fff]/10 flex items-center justify-center"
+                >
+                  <CheckCircle className="w-8 h-8 text-[#8a4fff]" />
+                </motion.div>
+              </div>
+
+              {/* Content Container */}
+              <div className="px-8 pb-8">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b] bg-clip-text text-transparent mb-3">
+                    Success!
+                  </h2>
+                  <p className="text-gray-400">
+                    Your password has been reset successfully
+                  </p>
+                </div>
+
+                {/* Status Cards */}
+                <div className="space-y-4 mb-8">
+                  <div className="bg-[#2c1b4a]/50 rounded-xl p-4 border border-[#8a4fff]/10">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-[#8a4fff]/10 p-2 rounded-lg">
+                        <Lock className="w-5 h-5 text-[#8a4fff]" />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">Password Updated</p>
+                        <p className="text-gray-400 text-sm">Your new password is now active</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#2c1b4a]/50 rounded-xl p-4 border border-[#8a4fff]/10">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-[#8a4fff]/10 p-2 rounded-lg">
+                        <Info className="w-5 h-5 text-[#8a4fff]" />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">Ready to Sign In</p>
+                        <p className="text-gray-400 text-sm">You can now access your account</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <motion.button
+                  {...buttonAnimation}
+                  onClick={handleBackToSignIn}
+                  className="w-full bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b] 
+                    text-white py-3.5 rounded-xl
+                    flex items-center justify-center
+                    hover:opacity-90 transition-opacity
+                    shadow-lg shadow-[#8a4fff]/20
+                    font-medium"
+                >
+                  Continue to Account
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </motion.button>
+              </div>
             </div>
           </motion.div>
         </div>
