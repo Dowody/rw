@@ -50,6 +50,16 @@ createAppKit({
   }
 })
 
+module.exports = {
+  theme: {
+    extend: {},
+    screens: {
+      'xs': {'max': '405px'}, // custom screen for < 400px
+    },
+  },
+  plugins: [],
+};
+
 // Add USDC Icon component
 const UsdcIcon = ({ className }: { className?: string }) => (
   <img 
@@ -1094,8 +1104,8 @@ const CheckoutPage: React.FC = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-[#04011C] py-8 sm:py-10 px-4">
-        <div className="max-w-4xl lg:max-w-2xl mx-auto">
+      <div className="min-h-screen bg-[#04011C]">
+        <div className="max-w-4xl lg:max-w-2xl mx-auto px-4 sm:px-4 py-8 sm:py-10">
           {/* Error Handling */}
           {/* Removing the error message from here */}
 
@@ -1376,7 +1386,7 @@ const CheckoutPage: React.FC = () => {
                                 <p className="text-sm text-gray-400">Network</p>
                               </div>
                               <p className="text-base font-medium text-white">
-                                {chainId === 1 ? 'Ethereum Mainnet' : 
+                                {chainId === 1 ? 'Ethereum' : 
                                  chainId === 5 ? 'Goerli Testnet' : 
                                  chainId === 11155111 ? 'Sepolia Testnet' : 
                                  `Chain ID: ${chainId}`}
