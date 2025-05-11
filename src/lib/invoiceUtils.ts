@@ -102,9 +102,18 @@ export const generateInvoicePDF = async (purchase: Purchase, userData: UserData)
   doc.setTextColor(50)
   addDetailRow('Payment Method:', 'Crypto')
   
+  // Add order ID
+  addDetailRow('Order ID:', purchase.id.toString())
+  
   // Add transaction hash if available
   if (purchase.transactionHash) {
     addDetailRow('Transaction Hash:', purchase.transactionHash)
+    // Add a clickable link to view the transaction
+    const txHash = purchase.transactionHash
+    const txUrl = `https://etherscan.io/tx/${txHash}`
+    doc.setTextColor(0, 0, 255) // Blue color for link
+    doc.textWithLink('View Transaction', pageWidth - margin - 60, y, { url: txUrl })
+    doc.setTextColor(50) // Reset text color
   }
 
   // Horizontal Line

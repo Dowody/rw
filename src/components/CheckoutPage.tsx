@@ -29,7 +29,7 @@ import { createAppKit, useAppKit, useAppKitAccount, useAppKitProvider, useAppKit
 import { networks, projectId, metadata, ethersAdapter } from '../lib/config'
 import { BrowserProvider, JsonRpcSigner, parseEther, formatEther } from 'ethers'
 import type { Provider } from '@reown/appkit/react'
-import { toast } from 'react-hot-toast'
+
 import { generateInvoicePDF } from '../lib/invoiceUtils'
 import { ethers } from 'ethers'
 
@@ -49,6 +49,15 @@ createAppKit({
     '--w3m-accent': '#FFFFF',
   }
 })
+
+// Add USDC Icon component
+const UsdcIcon = ({ className }: { className?: string }) => (
+  <img 
+    src="/blue-usdc-icon-symbol-logo.png"
+    alt="USDC"
+    className={className}
+  />
+)
 
 const CheckoutPage: React.FC = () => {
   const { 
@@ -121,8 +130,8 @@ const CheckoutPage: React.FC = () => {
     name: string,
     type: 'crypto' | 'skin'
   }>({
-    id: 'bitcoin',
-    name: 'Bitcoin',
+    id: 'usdc',
+    name: 'USDC',
     type: 'crypto'
   })
 
@@ -134,9 +143,9 @@ const CheckoutPage: React.FC = () => {
     type: 'crypto' | 'skin';
   }> = [
     { 
-      id: 'bitcoin', 
-      name: 'Bitcoin', 
-      icon: <SiBitcoin className="lg:w-10 lg:h-10 w-7 h-7 relative left-1 rotate-[-12deg] text-[#F7931A]" />,
+      id: 'usdc', 
+      name: 'USDC', 
+      icon: <UsdcIcon className="lg:w-10 lg:h-10 w-7 h-7 relative left-1" />,
       type: 'crypto'
     },
     { 
@@ -484,7 +493,9 @@ const CheckoutPage: React.FC = () => {
           username: user.user_metadata?.username || user.email?.split('@')[0] || ''
         }
         
-        await generateInvoicePDF(purchase, userData)
+        if (purchase.transactionHash) {
+          await generateInvoicePDF(purchase, userData)
+        }
       }
       
       // Navigate to dashboard with success message
@@ -574,101 +585,160 @@ const CheckoutPage: React.FC = () => {
       const feeData = await provider.getFeeData()
       const gasPrice = feeData.gasPrice || BigInt(0)
 
-      // Create contract instance
-      const contractAddress = "0x9394CD307B4c1C37a0F4713CbD222238c077209a"
-      const contractABI = [
-        {
-          "inputs": [],
-          "name": "deposit",
-          "outputs": [],
-          "stateMutability": "payable",
-          "type": "function"
-        }
-      ]
+      // Create contract instance based on selected cryptocurrency
+      let contractAddress = ""
+      let contractABI: Array<{
+        inputs: any[];
+        name: string;
+        outputs: any[];
+        stateMutability: string;
+        type: string;
+      }> = []
       
-      const contract = new ethers.Contract(contractAddress, contractABI, signer)
-      
-      // Check if balance is sufficient
-      const balance = await provider.getBalance(address)
-      const totalRequired = parseEther(amountInEth.toString()) + (gasPrice * BigInt(21000)) // Basic gas limit for simple transactions
-      setRequiredAmount(formatEther(totalRequired))
-      
-      if (balance < totalRequired) {
-        setHasInsufficientFunds(true)
-        throw new Error('Insufficient funds')
+      switch(selectedPayment.id) {
+        case 'usdc':
+          contractAddress = "0xe317A4424eC6d68Ec4a4268F4144b206eF5609D7"
+          contractABI = [
+            {
+              "inputs": [],
+              "name": "deposit",
+              "outputs": [],
+              "stateMutability": "payable",
+              "type": "function"
+            }
+          ]
+          break
+        case 'ethereum':
+          contractAddress = "0xe317A4424eC6d68Ec4a4268F4144b206eF5609D7"
+          contractABI = [
+            {
+              "inputs": [],
+              "name": "deposit",
+              "outputs": [],
+              "stateMutability": "payable",
+              "type": "function"
+            }
+          ]
+          break
+        case 'tether':
+          contractAddress = "0xe317A4424eC6d68Ec4a4268F4144b206eF5609D7"
+          contractABI = [
+            {
+              "inputs": [],
+              "name": "deposit",
+              "outputs": [],
+              "stateMutability": "payable",
+              "type": "function"
+            }
+          ]
+          break
+        default:
+          throw new Error('Invalid payment method')
       }
-
-      // Step 2: Waiting for wallet confirmation
-      setCurrentStep(2)
-      setNotificationState({
-        type: 'info',
-        message: 'Please confirm the transaction in your wallet to continue.'
-      })
-
-      // Set timeout for finalizing message
-      const timer = setTimeout(() => {
-        if (!isTransactionRejected) {
-          setShowFinalizing(true)
-        }
-      }, 14000)
-      setConfirmingTimer(timer)
-
-      // Set timeout for long transaction message
-      const longTxTimer = setTimeout(() => {
-        if (!isTransactionRejected) {
-          setNotificationState({
-            type: 'info',
-            message: 'The transaction is taking longer than usual. Please be patient while we wait for blockchain confirmation.'
-          })
-        }
-      }, 25000)
-      setLongTransactionTimer(longTxTimer)
       
-      try {
-        // Send transaction using contract instance
-        const tx = await contract.deposit({
-          value: parseEther(amountInEth.toString()),
-          gasPrice: gasPrice
-        })
+      // For ETH, USDC, and USDT, use contract instance
+      if (selectedPayment.id === 'ethereum' || selectedPayment.id === 'usdc' || selectedPayment.id === 'tether') {
+        const contract = new ethers.Contract(contractAddress, contractABI, signer)
         
-        if (tx?.hash) {
-          setTransactionHash(tx.hash)
-          setNotificationState({
-            type: 'info',
-            message: 'Transaction submitted! Waiting for confirmation...'
-          })
+        // Check if balance is sufficient
+        const balance = await provider.getBalance(address)
+        const totalRequired = parseEther(amountInEth.toString()) + (gasPrice * BigInt(21000))
+        setRequiredAmount(formatEther(totalRequired))
+        
+        if (balance < totalRequired) {
+          setHasInsufficientFunds(true)
+          throw new Error('Insufficient funds')
+        }
 
-          // Step 3: Waiting for blockchain confirmation
-          setCurrentStep(3)
-          // Wait for transaction to be mined
-          const receipt = await tx.wait()
-          
-          if (receipt && receipt.status === 1) {
-            handlePlaceOrder()
-            setIsWalletModalOpen(false)
-          } else {
-            throw new Error('Transaction failed')
+        // Step 2: Waiting for wallet confirmation
+        setCurrentStep(2)
+        setNotificationState({
+          type: 'info',
+          message: 'Please confirm the transaction in your wallet to continue.'
+        })
+
+        // Set timeout for finalizing message
+        const timer = setTimeout(() => {
+          if (!isTransactionRejected) {
+            setShowFinalizing(true)
           }
-        }
-      } catch (txError: any) {
-        // Handle transaction-specific errors
-        if (txError.code === 'ACTION_REJECTED' || txError.message?.toLowerCase().includes('user denied')) {
-          setIsTransactionRejected(true)
-          if (longTransactionTimer) {
-            clearTimeout(longTransactionTimer)
-            setLongTransactionTimer(null)
+        }, 20000)
+        setConfirmingTimer(timer)
+
+        // Set timeout for long transaction message
+        const longTxTimer = setTimeout(() => {
+          if (!isTransactionRejected) {
+            setNotificationState({
+              type: 'info',
+              message: 'The transaction is taking longer than usual. Please be patient while we wait for blockchain confirmation.'
+            })
           }
-          if (confirmingTimer) {
-            clearTimeout(confirmingTimer)
-            setConfirmingTimer(null)
+        }, 25000)
+        setConfirmingTimer(longTxTimer)
+
+        // Set timeout for very long transaction message
+        const veryLongTxTimer = setTimeout(() => {
+          if (!isTransactionRejected) {
+            setNotificationState({
+              type: 'error',
+              message: 'Transaction is still pending. Please DO NOT close this page! If you leave now, your payment will be processed but your subscription won\'t be activated. Stay on this page until the transaction is complete.'
+            })
           }
-          setNotificationState({
-            type: 'error',
-            message: 'You rejected the transaction. Click Pay again if you want to try.'
+        }, 50000)
+        setLongTransactionTimer(veryLongTxTimer)
+        
+        try {
+          // Send transaction using contract instance
+          const tx = await contract.deposit({
+            value: parseEther(amountInEth.toString()),
+            gasPrice: gasPrice
           })
-        } else {
-          throw txError // Re-throw other errors to be caught by outer catch
+          
+          if (tx?.hash) {
+            setTransactionHash(tx.hash)
+            setNotificationState({
+              type: 'info',
+              message: 'Success! Payment received.'
+            })
+
+            // Step 3: Waiting for blockchain confirmation
+            setCurrentStep(3)
+            // Wait for transaction to be mined
+            const receipt = await tx.wait()
+            
+            if (receipt && receipt.status === 1) {
+              handlePlaceOrder()
+              setIsWalletModalOpen(false)
+            } else {
+              throw new Error('Transaction failed')
+            }
+          }
+        } catch (txError: any) {
+          // Handle transaction-specific errors
+          if (txError.code === 'ACTION_REJECTED' || txError.message?.toLowerCase().includes('user denied')) {
+            setIsTransactionRejected(true)
+            if (longTransactionTimer) {
+              clearTimeout(longTransactionTimer)
+              setLongTransactionTimer(null)
+            }
+            if (confirmingTimer) {
+              clearTimeout(confirmingTimer)
+              setConfirmingTimer(null)
+            }
+            setNotificationState({
+              type: 'error',
+              message: 'You rejected the transaction. Click Pay again if you want to try.'
+            })
+          } else {
+            throw txError // Re-throw other errors to be caught by outer catch
+          }
         }
+      } else {
+        // For USDT, show address for manual transfer
+        setNotificationState({
+          type: 'info',
+          message: `Please send ${amountInEth} ${(selectedPayment.id as string).toUpperCase()} to: ${contractAddress}`
+        })
       }
     } catch (error: any) {
       console.error('Payment Error:', error)
@@ -958,9 +1028,9 @@ const CheckoutPage: React.FC = () => {
 
     return (
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 1, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
+        exit={{ opacity: 1, y: -20 }}
         className={`fixed left-0 right-0 mx-auto z-[60] p-4 rounded-xl w-[calc(100%-2rem)] max-w-md relative overflow-hidden ${
           type === 'error' 
             ? 'bg-red-500 border border-red-500 text-white' 
@@ -1264,7 +1334,7 @@ const CheckoutPage: React.FC = () => {
                           <div className="flex items-center justify-between p-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl border border-[#8a4fff]/20">
                             <div className="flex items-center space-x-4">
                               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#8a4fff]/30 to-[#8a4fff]/10 flex items-center justify-center shadow-inner">
-                                {selectedPayment.id === 'bitcoin' && <SiBitcoin className="w-7 h-7 text-[#F7931A]" />}
+                                {selectedPayment.id === 'usdc' && <UsdcIcon className="w-7 h-7" />}
                                 {selectedPayment.id === 'ethereum' && <SiEthereum className="w-7 h-7 text-[#627EEA]" />}
                                 {selectedPayment.id === 'tether' && <SiTether className="w-7 h-7 text-[#26A17B]" />}
                               </div>
