@@ -145,19 +145,19 @@ const CheckoutPage: React.FC = () => {
     { 
       id: 'usdc', 
       name: 'USDC', 
-      icon: <UsdcIcon className="lg:w-10 lg:h-10 w-8 h-8 relative left-0" />,
+      icon: <UsdcIcon className="lg:w-8 lg:h-8 w-8 h-8 relative left-0" />,
       type: 'crypto'
     },
     { 
       id: 'ethereum', 
       name: 'Ethereum', 
-      icon: <SiEthereum className="lg:w-10 lg:h-10 w-7 h-7 relative left-1 text-[#627EEA]" />,
+      icon: <SiEthereum className="lg:w-8 lg:h-8 w-7 h-7 relative lg:left-0 left-1 text-[#627EEA]" />,
       type: 'crypto'
     },
     { 
       id: 'tether', 
       name: 'Tether', 
-      icon: <SiTether className="lg:w-10 lg:h-10 w-7 h-7 relative left-1 text-[#26A17B]" />,
+      icon: <SiTether className="lg:w-8 lg:h-8 w-7 h-7 relative lg:left-0 left-1 text-[#26A17B]" />,
       type: 'crypto'
     },
     { 
@@ -1340,7 +1340,11 @@ const CheckoutPage: React.FC = () => {
                               </div>
                               <div>
                                 <p className="text-base font-medium text-white">{selectedPayment.name}</p>
-                                <p className="text-sm text-gray-400">€{total.toFixed(2)}</p>
+                                <p className="text-sm text-gray-400">
+                                  {selectedPayment.id === 'ethereum' && `${(total / 2000).toFixed(8)} ETH`}
+                                  {selectedPayment.id === 'usdc' && `${(total).toFixed(2)} USDC`}
+                                  {selectedPayment.id === 'tether' && `${(total).toFixed(2)} USDT`}
+                                </p>
                               </div>
                             </div>
                             <div className="flex items-center space-x-2 bg-green-500/10 px-4 py-2 rounded-full">
@@ -1565,7 +1569,7 @@ const WalletBalance: React.FC<{
   address: string | undefined;
   chainId: number;
 }> = ({ provider, address, chainId }) => {
-  const [balance, setBalance] = useState<string>('0');
+  const [eurBalance, setEurBalance] = useState<string>('0');
 
   useEffect(() => {
     const fetchBalance = async () => {
@@ -1573,7 +1577,11 @@ const WalletBalance: React.FC<{
         try {
           const browserProvider = new BrowserProvider(provider, chainId);
           const balance = await browserProvider.getBalance(address);
-          setBalance(formatEther(balance));
+          const ethBalance = formatEther(balance);
+
+          // Convert ETH to EUR (using 2000 EUR/ETH rate)
+          const eurValue = (Number(ethBalance) * 2000).toFixed(2);
+          setEurBalance(eurValue);
         } catch (error) {
           console.error('Error fetching balance:', error);
         }
@@ -1586,7 +1594,7 @@ const WalletBalance: React.FC<{
     return () => clearInterval(interval);
   }, [provider, address, chainId]);
 
-  return <>{Number(balance).toFixed(8)} ETH</>;
+  return <>€{eurBalance}</>;
 };
 
 export default CheckoutPage
