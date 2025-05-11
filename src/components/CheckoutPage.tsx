@@ -53,7 +53,7 @@ createAppKit({
 // Add USDC Icon component
 const UsdcIcon = ({ className }: { className?: string }) => (
   <img 
-    src="/blue-usdc-icon-symbol-logo.png"
+    src="https://icones.pro/wp-content/uploads/2024/04/blue-usdc-icon-symbol-logo.png"
     alt="USDC"
     className={className}
   />
@@ -145,7 +145,7 @@ const CheckoutPage: React.FC = () => {
     { 
       id: 'usdc', 
       name: 'USDC', 
-      icon: <UsdcIcon className="lg:w-10 lg:h-10 w-7 h-7 relative left-1" />,
+      icon: <UsdcIcon className="lg:w-10 lg:h-10 w-8 h-8 relative left-0" />,
       type: 'crypto'
     },
     { 
