@@ -412,6 +412,7 @@ const Products = () => {
         "Discount: 80% off",
         "No Withdrawals Limit",
         "Unlimited Updates",
+        "Access to All Features",
         "Ability to snipe expensive sticker crafts",
         // "Best Value Package"
       ]
@@ -663,7 +664,7 @@ const ProductCard = ({
             : 'bg-[#2c1b4a]/70 hover:bg-[#2c1b4a]/80'}
           transform 
           ${isHovered ? 'scale-105' : 'scale-100'}
-          h-full
+          h-full flex flex-col
         `}
       >
         {/* Icon and Category */}
@@ -744,36 +745,38 @@ const ProductCard = ({
           </div>
         )}
 
-        {/* Action Button */}
-        <button 
-          onClick={handleAddToCart}
-          disabled={isAdded || isDisabled}
-          className={`            w-full py-2 sm:py-3 rounded-lg 
-            transition-all duration-300
-            text-[14px] sm:text-base
-            ${isSpecial 
-              ? 'bg-[#ffd700] text-black hover:bg-[#ffec00]' 
-              : (isAdded || isDisabled
-              ? 'bg-gray-500 text-gray-300 cursor-not-allowed' 
-              : (isHovered 
-                ? 'bg-[#8a4fff] text-white' 
-                  : 'bg-[#6a3de3]/20 text-[#8a4fff]'))}
-            hover:bg-[#8a4fff] hover:text-white
-            mt-auto
-          `}
-        >
-          {isAdded 
-            ? 'Added to Cart' 
-            : isDisabled
-              ? (subscriptionStatus === 'active' 
-                ? 'Active Subscription' 
-                : 'Added to Cart')
-              : (isSpecial 
-                ? 'Start Free Trial' 
+        {/* Action Button Container */}
+        <div className="mt-auto pt-4">
+          <button 
+            onClick={handleAddToCart}
+            disabled={isAdded || isDisabled}
+            className={`
+              w-full py-2 sm:py-3 rounded-lg 
+              transition-all duration-300
+              text-[14px] sm:text-base
+              ${isSpecial 
+                ? 'bg-[#ffd700] text-black hover:bg-[#ffec00]' 
+                : (isAdded || isDisabled
+                ? 'bg-gray-500 text-gray-300 cursor-not-allowed' 
                 : (isHovered 
-                  ? 'Select This Plan' 
-                  : 'Buy Now'))}
-        </button>
+                  ? 'bg-[#8a4fff] text-white' 
+                    : 'bg-[#6a3de3]/20 text-[#8a4fff]'))}
+              hover:bg-[#8a4fff] hover:text-white
+            `}
+          >
+            {isAdded 
+              ? 'Added to Cart' 
+              : isDisabled
+                ? (subscriptionStatus === 'active' 
+                  ? 'Active Subscription' 
+                  : 'Added to Cart')
+                : (isSpecial 
+                  ? 'Start Free Trial' 
+                  : (isHovered 
+                    ? 'Select This Plan' 
+                    : 'Buy Now'))}
+          </button>
+        </div>
       </div>
     </motion.div>
   )

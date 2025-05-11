@@ -50,16 +50,6 @@ createAppKit({
   }
 })
 
-module.exports = {
-  theme: {
-    extend: {},
-    screens: {
-      'xs': {'max': '405px'}, // custom screen for < 400px
-    },
-  },
-  plugins: [],
-};
-
 // Add USDC Icon component
 const UsdcIcon = ({ className }: { className?: string }) => (
   <img 
