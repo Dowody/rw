@@ -4,69 +4,33 @@ CREATE TABLE IF NOT EXISTS users (
     auth_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT UNIQUE,
     username TEXT UNIQUE,
-    referral_code VARCHAR UNIQUE,
     referred_by VARCHAR,
     referral_count INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     status TEXT DEFAULT 'active',
-    subscription_end_date TIMESTAMPTZ
+    subscription_end_date TIMESTAMPTZ,
+    total_referral_earnings NUMERIC(10, 2) DEFAULT 0.00,
+    last_login TIMESTAMPTZ
 );
+
+-- Add missing columns to users table
+ALTER TABLE public.users
+ADD COLUMN IF NOT EXISTS referred_by VARCHAR,
+ADD COLUMN IF NOT EXISTS referral_count INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS total_referral_earnings NUMERIC(10, 2) DEFAULT 0.00,
+ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ;
 
 -- Create indexes if they don't exist
 CREATE INDEX IF NOT EXISTS idx_users_auth_id ON users(auth_id);
-CREATE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code);
-CREATE INDEX IF NOT EXISTS idx_users_referred_by ON users(referred_by);
+CREATE INDEX IF NOT EXISTS idx_users_referred_by ON public.users(referred_by);
 
 -- Drop existing triggers if they exist
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-DROP TRIGGER IF EXISTS set_referral_code ON users;
-DROP TRIGGER IF EXISTS update_referral_stats ON users;
+DROP TRIGGER IF EXISTS update_referral_stats ON public.users;
 
 -- Drop existing functions if they exist
 DROP FUNCTION IF EXISTS handle_new_user();
-DROP FUNCTION IF EXISTS generate_referral_code();
 DROP FUNCTION IF EXISTS update_referral_stats();
-
--- Function to generate referral code
-CREATE OR REPLACE FUNCTION generate_referral_code()
-RETURNS TRIGGER AS $$
-DECLARE
-    new_code VARCHAR;
-    is_unique BOOLEAN;
-BEGIN
-    -- Keep trying until we find a unique code
-    LOOP
-        -- Generate a random 8-character alphanumeric code
-        new_code := upper(
-            substr(
-                encode(gen_random_bytes(6), 'base64'),
-                1, 8
-            )
-        );
-        
-        -- Replace any non-alphanumeric characters with random letters
-        new_code := regexp_replace(new_code, '[^A-Z0-9]', 
-            chr(65 + floor(random() * 26)::integer)::text, 'g');
-        
-        -- Check if the code is unique
-        SELECT NOT EXISTS (
-            SELECT 1 FROM users WHERE referral_code = new_code
-        ) INTO is_unique;
-        
-        -- If the code is unique, we can use it
-        IF is_unique THEN
-            EXIT;
-        END IF;
-    END LOOP;
-
-    NEW.referral_code := new_code;
-    RETURN NEW;
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE LOG 'Error in generate_referral_code: %', SQLERRM;
-        RAISE;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to update referral stats
 CREATE OR REPLACE FUNCTION update_referral_stats()
@@ -78,20 +42,34 @@ BEGIN
     IF NEW.referred_by IS NOT NULL THEN
         -- Get the referrer's record
         SELECT * INTO referrer_record
-        FROM users
-        WHERE referral_code = NEW.referred_by;
+        FROM public.users
+        WHERE id IN (
+            SELECT user_id 
+            FROM public.referral_codes 
+            WHERE code = NEW.referred_by 
+            AND is_active = true
+        );
 
         -- If we found the referrer
         IF FOUND THEN
             -- Update referrer's stats
-            UPDATE users
+            UPDATE public.users
             SET 
                 referral_count = referral_count + 1,
-                total_referral_earnings = total_referral_earnings + 7.00, -- $7 per referral
+                total_referral_earnings = total_referral_earnings + 7.00, -- 7 days subscription reward
                 subscription_end_date = CASE
+                    -- If no subscription, start a new one with 7 days
                     WHEN subscription_end_date IS NULL THEN NOW() + INTERVAL '7 days'
+                    -- If subscription expired, start a new one with 7 days
                     WHEN subscription_end_date < NOW() THEN NOW() + INTERVAL '7 days'
+                    -- If active subscription, add 7 days to current end date
                     ELSE subscription_end_date + INTERVAL '7 days'
+                END,
+                status = CASE
+                    -- If subscription was expired, set to active
+                    WHEN subscription_end_date < NOW() THEN 'active'
+                    -- Otherwise keep current status
+                    ELSE status
                 END
             WHERE id = referrer_record.id;
         END IF;
@@ -111,6 +89,7 @@ RETURNS TRIGGER AS $$
 DECLARE
     existing_user RECORD;
     username_exists BOOLEAN;
+    referrer_record RECORD;
 BEGIN
     -- Check if username is provided
     IF NEW.raw_user_meta_data->>'username' IS NULL THEN
@@ -119,7 +98,7 @@ BEGIN
 
     -- Check if username already exists
     SELECT EXISTS (
-        SELECT 1 FROM users 
+        SELECT 1 FROM public.users 
         WHERE username = NEW.raw_user_meta_data->>'username'
     ) INTO username_exists;
 
@@ -129,45 +108,57 @@ BEGIN
 
     -- Check if user already exists
     SELECT * INTO existing_user
-    FROM users
+    FROM public.users
     WHERE auth_id = NEW.id;
 
     -- If user doesn't exist, create new record
     IF NOT FOUND THEN
-        INSERT INTO users (
+        -- Get referrer's record if there's a referral code
+        IF NEW.raw_user_meta_data->>'referred_by' IS NOT NULL THEN
+            -- Look up the referrer using the referral code
+            SELECT u.* INTO referrer_record
+            FROM public.users u
+            JOIN public.referral_codes rc ON rc.user_id = u.id
+            WHERE rc.code = NEW.raw_user_meta_data->>'referred_by'
+            AND rc.is_active = true;
+        END IF;
+
+        -- Insert new user
+        INSERT INTO public.users (
             auth_id,
             email,
             username,
-            avatar_url,
-            current_subscription_id,
-            subscription_start_date,
-            subscription_end_date,
-            total_purchases,
-            total_spent,
             created_at,
             last_login,
             status,
-            total_referral_earnings,
             referred_by
         ) VALUES (
             NEW.id, -- auth_id from auth.users
             NEW.email,
             NEW.raw_user_meta_data->>'username',
-            NULL, -- avatar_url
-            NULL, -- current_subscription_id
-            NULL, -- subscription_start_date
-            NULL, -- subscription_end_date
-            0, -- total_purchases
-            0.00, -- total_spent
             NOW(), -- created_at
             NOW(), -- last_login
             'active', -- status
-            0.00, -- total_referral_earnings
             NEW.raw_user_meta_data->>'referred_by' -- referred_by from metadata
-        );
+        ) RETURNING id INTO existing_user.id;
+
+        -- Create referral record if there's a referrer
+        IF referrer_record.id IS NOT NULL THEN
+            INSERT INTO public.referrals (
+                referrer_id,
+                referred_id,
+                status,
+                reward_amount
+            ) VALUES (
+                referrer_record.id,
+                existing_user.id,
+                'signed_up',
+                '7 days' -- 7 days subscription reward
+            );
+        END IF;
     ELSE
         -- Update existing user's last login
-        UPDATE users
+        UPDATE public.users
         SET last_login = NOW()
         WHERE auth_id = NEW.id;
     END IF;
@@ -186,36 +177,36 @@ CREATE TRIGGER on_auth_user_created
     FOR EACH ROW
     EXECUTE FUNCTION handle_new_user();
 
-CREATE TRIGGER set_referral_code
-    BEFORE INSERT ON users
-    FOR EACH ROW
-    WHEN (NEW.referral_code IS NULL)
-    EXECUTE FUNCTION generate_referral_code();
-
 CREATE TRIGGER update_referral_stats
-    AFTER INSERT ON users
+    AFTER INSERT ON public.users
     FOR EACH ROW
     EXECUTE FUNCTION update_referral_stats();
 
 -- Create RLS policies for users table
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Users can read own data" ON public.users;
+DROP POLICY IF EXISTS "Users can update own data" ON public.users;
+DROP POLICY IF EXISTS "Public can check username availability" ON public.users;
+DROP POLICY IF EXISTS "Service role can manage all users" ON public.users;
 
 -- Allow users to read their own data
-CREATE POLICY "Users can read own data" ON users
+CREATE POLICY "Users can read own data" ON public.users
     FOR SELECT
     USING (auth.uid() = auth_id);
 
 -- Allow users to update their own data
-CREATE POLICY "Users can update own data" ON users
+CREATE POLICY "Users can update own data" ON public.users
     FOR UPDATE
     USING (auth.uid() = auth_id);
 
 -- Allow public to check username availability
-CREATE POLICY "Public can check username availability" ON users
+CREATE POLICY "Public can check username availability" ON public.users
     FOR SELECT
     USING (true);
 
 -- Allow service role to manage all users
-CREATE POLICY "Service role can manage all users" ON users
+CREATE POLICY "Service role can manage all users" ON public.users
     FOR ALL
     USING (auth.jwt() ->> 'role' = 'service_role'); 

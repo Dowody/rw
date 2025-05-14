@@ -55,6 +55,7 @@ const ReferralsSection: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [showAllReferrals, setShowAllReferrals] = useState(false)
+  const [isGeneratingCode, setIsGeneratingCode] = useState(false)
 
   useEffect(() => {
     fetchReferralData()
@@ -98,7 +99,7 @@ const ReferralsSection: React.FC = () => {
           created_at,
           completed_at,
           referred_id,
-          users!referrals_referred_id_fkey (
+          referred_user:users!referrals_referred_id_fkey (
             username,
             email
           )
@@ -124,28 +125,30 @@ const ReferralsSection: React.FC = () => {
         createdAt: new Date(code.created_at)
       })))
 
-      setReferrals(referralsData.map(referral => ({
+      const transformedReferrals = referralsData.map(referral => ({
         id: referral.id,
         referredUser: {
-          username: referral.users?.[0]?.username || 'Unknown',
-          email: referral.users?.[0]?.email || 'Unknown'
+          username: referral.referred_user?.username || 'Unknown',
+          email: referral.referred_user?.email || 'Unknown'
         },
         status: referral.status,
         rewardAmount: referral.reward_amount,
         createdAt: new Date(referral.created_at),
         completedAt: referral.completed_at ? new Date(referral.completed_at) : undefined
-      })))
+      }))
+
+      setReferrals(transformedReferrals)
 
       // Calculate stats
-      const completedReferrals = referralsData.filter(r => r.status === 'completed').length
-      const pendingReferrals = referralsData.filter(r => r.status === 'pending').length
+      const completedReferrals = transformedReferrals.filter(r => r.status === 'completed').length
+      const pendingReferrals = transformedReferrals.filter(r => r.status === 'pending').length
       const totalRewards = rewardsData.reduce((sum, reward) => sum + reward.amount, 0)
       const pendingRewards = rewardsData
         .filter(reward => reward.status === 'pending')
         .reduce((sum, reward) => sum + reward.amount, 0)
 
       setStats({
-        totalReferrals: referralsData.length,
+        totalReferrals: transformedReferrals.length,
         completedReferrals,
         pendingReferrals,
         totalRewards,
@@ -162,7 +165,7 @@ const ReferralsSection: React.FC = () => {
 
   const generateReferralCode = async () => {
     try {
-      setLoading(true)
+      setIsGeneratingCode(true)
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) {
@@ -198,7 +201,7 @@ const ReferralsSection: React.FC = () => {
       console.error('Error generating referral code:', err)
       toast.error('Failed to generate referral code')
     } finally {
-      setLoading(false)
+      setIsGeneratingCode(false)
     }
   }
 
@@ -212,7 +215,7 @@ const ReferralsSection: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
+      case 'signed_up':
         return 'bg-green-500/20 text-green-400'
       case 'pending':
         return 'bg-yellow-500/20 text-yellow-400'
@@ -236,13 +239,13 @@ const ReferralsSection: React.FC = () => {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 1, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       className="space-y-8"
     >
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl p-4 border border-[#8a4fff]/10">
           <div className="flex items-center gap-3 mb-2">
             <div className="bg-[#8a4fff]/10 p-2 rounded-lg">
@@ -286,18 +289,7 @@ const ReferralsSection: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl p-4 border border-[#8a4fff]/10">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="bg-[#8a4fff]/10 p-2 rounded-lg">
-              <Clock className="w-5 h-5 text-[#8a4fff]" />
-            </div>
-            <h3 className="text-lg font-semibold text-[#8a4fff]">Active Referrals</h3>
-          </div>
-          <p className="text-2xl font-bold text-white">{stats.pendingReferrals}</p>
-          <p className="text-sm text-gray-400 mt-1">
-            {stats.pendingReferrals} pending completion
-          </p>
-        </div>
+       
       </div>
 
       {/* Referral Codes */}
@@ -315,15 +307,35 @@ const ReferralsSection: React.FC = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={generateReferralCode}
+            disabled={isGeneratingCode}
             className="bg-[#8a4fff] text-white px-4 py-2 rounded-xl 
-            hover:bg-[#7a3ddf] transition-colors flex items-center justify-center gap-2 w-full sm:w-auto"
+            hover:bg-[#7a3ddf] transition-colors flex items-center justify-center gap-2 w-full sm:w-auto
+            disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <RefreshCw className="w-4 h-4" /> Generate New Code
+            {isGeneratingCode ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" /> Generating...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4" /> Generate New Code
+              </>
+            )}
           </motion.button>
         </div>
 
         <div className="space-y-4">
-          {referralCodes.length === 0 ? (
+          {isGeneratingCode ? (
+            <div className="text-center py-8 text-gray-400">
+              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+              <p>Generating new referral code...</p>
+            </div>
+          ) : loading ? (
+            <div className="text-center py-8 text-gray-400">
+              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+              <p>Loading referral codes...</p>
+            </div>
+          ) : referralCodes.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
               <p>No referral codes generated yet</p>
             </div>
@@ -432,7 +444,7 @@ const ReferralsSection: React.FC = () => {
                       Referred on {referral.createdAt.toLocaleDateString()}
                     </div>
                     <div className="text-white font-medium">
-                      Reward: €{referral.rewardAmount.toFixed(2)}
+                      Reward: {referral.rewardAmount} free subscription
                     </div>
                   </div>
                 </div>
