@@ -31,25 +31,43 @@ import {
   Landmark,
   ChevronUp,
   ChevronDown,
-  History
+  History,
+  Share2
 } from 'lucide-react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { generateInvoicePDF } from '../lib/invoiceUtils'
 import AccountSettings from './AccountSettings'
 import Confetti from 'react-confetti'
+import ReferralsSection from './ReferralsSection'
 
+type DashboardSection = 'overview' | 'purchases' | 'invoices' | 'settings' | 'bot-config' | 'referrals';
+
+interface SidebarItem {
+  id: DashboardSection;
+  label: string;
+  icon: JSX.Element;
+  component: JSX.Element | null;
+}
 
 const UserDashboard: React.FC = () => {
   const [userData, setUserData] = useState<any>(null)
-  const [activeSection, setActiveSection] = useState<'overview' | 'purchases' | 'invoices' | 'settings' | 'bot-config'>('overview')
+  const [activeSection, setActiveSection] = useState<DashboardSection>('overview')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showSubscriptionMessage, setShowSubscriptionMessage] = useState(() => {
+    // Initialize from localStorage, default to true if not set
+    return localStorage.getItem('showSubscriptionMessage') !== 'false'
+  })
+  const [hasRenewed, setHasRenewed] = useState(() => {
+    return localStorage.getItem('hasRenewed') === 'true'
+  })
   
   // State for products and subscriptions
   const [orders, setOrders] = useState<any[]>([])
   const [currentSubscription, setCurrentSubscription] = useState<any>(null)
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'expired' | 'inactive'>('inactive')
+  const [subscriptionType, setSubscriptionType] = useState<'trial' | 'monthly' | '6-months' | 'yearly' | null>(null)
 
   const navigate = useNavigate()
   const location = useLocation()
@@ -184,9 +202,73 @@ const UserDashboard: React.FC = () => {
           return
         }
 
+        // Fetch the latest order for this user
+        const { data: latestOrder, error: orderError } = await supabase
+          .from('orders')
+          .select(`
+            id,
+            subscription_id,
+            expiration_date,
+            transaction_date,
+            status
+          `)
+          .eq('user_id', userData.id)
+          .eq('status', 'completed')
+          .order('transaction_date', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (orderError) {
+          console.error('Latest Order Fetch Error:', orderError)
+        }
+
+        // If we have a latest order, fetch its subscription details
+        if (latestOrder) {
+          const { data: subscriptionData, error: subscriptionError } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('id', latestOrder.subscription_id)
+            .single()
+
+          if (subscriptionError) {
+            console.error('Subscription Fetch Error:', subscriptionError)
+          } else if (subscriptionData) {
+            const endDate = new Date(latestOrder.expiration_date)
+            const now = new Date()
+            const status = endDate > now ? 'active' : 'expired'
+            
+            // Set subscription type based on subscription name
+            const subscriptionName = subscriptionData.name.toLowerCase()
+            if (subscriptionName.includes('trial')) {
+              setSubscriptionType('trial')
+            } else if (subscriptionName.includes('month')) {
+              setSubscriptionType('monthly')
+            } else if (subscriptionName.includes('6')) {
+              setSubscriptionType('6-months')
+            } else if (subscriptionName.includes('year')) {
+              setSubscriptionType('yearly')
+            }
+
+            setCurrentSubscription({
+              ...subscriptionData,
+              endDate,
+              status,
+              orderId: latestOrder.id
+            })
+            setSubscriptionStatus(status)
+          }
+        } else {
+          setCurrentSubscription(null)
+          setSubscriptionStatus('inactive')
+          setSubscriptionType(null)
+        }
+
+        // Set user data
+        setUserData(userData)
+
         // Fetch billing history
         const { data: billingData, error: billingError } = await supabase
-          .from('orders')
+          .from('orders_with_items')
           .select(`
             id,
             total_amount,
@@ -235,141 +317,6 @@ const UserDashboard: React.FC = () => {
         // Set billing history
         setBillingHistory(processedBillingHistory)
 
-        // Fetch completed orders
-        const { data: ordersData, error: ordersError } = await supabase
-          .from('orders')
-          .select(`
-            id,
-            user_id,
-            subscription_id,
-            total_amount,
-            transaction_date,
-            status,
-            items
-          `)
-          .eq('user_id', userData.id)
-          .eq('status', 'completed')
-          .order('transaction_date', { ascending: false })
-          .limit(5)
-
-        if (ordersError) {
-          console.error('Orders Fetch Error:', ordersError)
-        }
-
-        // Fetch subscriptions for these orders
-        let subscriptionsOrderMap: { [key: string]: any } = {}
-        if (ordersData && ordersData.length > 0) {
-          const subscriptionIds = ordersData
-            .map(order => order.subscription_id)
-            .filter(id => id !== null && id !== undefined)
-
-          if (subscriptionIds.length > 0) {
-            const { data: subscriptionsData, error: subscriptionsError } = await supabase
-              .from('subscriptions')
-              .select('*')
-              .in('id', subscriptionIds)
-
-            if (subscriptionsError) {
-              console.error('Subscriptions Fetch Error:', subscriptionsError)
-            } else if (subscriptionsData) {
-              subscriptionsOrderMap = subscriptionsData.reduce((acc, sub) => {
-                acc[sub.id] = sub
-                return acc
-              }, {})
-            }
-          }
-        }
-
-        // Process orders with subscription details
-        const processedOrders = (ordersData || []).map(order => {
-          const subscription = subscriptionsOrderMap[order.subscription_id] || {}
-          
-          return {
-            ...order,
-            subscriptionName: subscription.name || 'Completed Billing',
-            subscriptionDuration: subscription.duration_days || 1,
-            expirationDate: (() => {
-              const expirationDate = new Date(order.transaction_date)
-              expirationDate.setDate(
-                expirationDate.getDate() + (subscription.duration_days || 1)
-              )
-              return expirationDate
-            })(),
-            status: 'completed'
-          }
-        })
-
-        // Set orders
-        setOrders(processedOrders)
-
-        // Fetch current subscription
-        if (userData.current_subscription_id) {
-          const { data: currentSubscriptionData, error: subscriptionError } = await supabase
-            .from('subscriptions')
-            .select('*')
-            .eq('id', userData.current_subscription_id)
-            .single()
-
-          if (currentSubscriptionData) {
-            // Get the latest order for this subscription
-            const { data: latestOrder, error: orderError } = await supabase
-              .from('orders')
-              .select('expiration_date, transaction_date')
-              .eq('subscription_id', userData.current_subscription_id)
-              .eq('status', 'completed')
-              .order('transaction_date', { ascending: false })
-              .limit(1)
-              .single()
-
-            if (latestOrder) {
-              const expirationDate = new Date(latestOrder.expiration_date)
-              const now = new Date()
-              const status = expirationDate > now ? 'active' : 'expired'
-              
-              // If subscription has expired, update user's subscription status
-              if (status === 'expired') {
-                await supabase
-                  .from('users')
-                  .update({
-                    current_subscription_id: null,
-                    subscription_start_date: null,
-                    subscription_end_date: null
-                  })
-                  .eq('id', userData.id)
-              }
-            
-              const subscription = {
-                ...currentSubscriptionData,
-                startDate: new Date(latestOrder.transaction_date),
-                endDate: expirationDate,
-                status,
-                nextBillingDate: expirationDate
-              }
-              
-              setCurrentSubscription(subscription)
-              setSubscriptionStatus(status)
-              
-              // Set upcoming billing if subscription is active
-              if (status === 'active') {
-                setUpcomingBilling({
-                  subscriptionName: subscription.name,
-                  date: expirationDate,
-                  amount: subscription.price
-                })
-              } else {
-                setUpcomingBilling(null)
-              }
-            } else {
-              // No order found, set status to inactive
-              setCurrentSubscription(null)
-              setSubscriptionStatus('inactive')
-              setUpcomingBilling(null)
-            }
-          }
-        }
-
-        // Set user data
-        setUserData(userData)
         setLoading(false)
       } catch (err) {
         console.error('Unexpected Error Fetching User Data:', err)
@@ -491,6 +438,141 @@ const UserDashboard: React.FC = () => {
       day: 'numeric'
     })
   }
+
+  // Add this new component for subscription end messages
+  const SubscriptionEndMessage = () => {
+    // Show message if subscription is expired and hasn't been renewed
+    if (subscriptionStatus !== 'expired') return null;
+
+    const messages = {
+      trial: {
+        title: "Thanks for trying Rollwithdraw!",
+        message: "Your 24-hour trial has ended. Choose a plan to continue using the platform.",
+        buttonText: "Renew Your Subscription"
+      },
+      monthly: {
+        title: "Monthly Subscription Ended",
+        message: "Your monthly subscription has expired. Renew now to continue enjoying all features.",
+        buttonText: "Renew Subscription"
+      },
+      '6-months': {
+        title: "6-Month Subscription Ended",
+        message: "Your 6-month subscription has expired. Renew now to maintain your access.",
+        buttonText: "Renew Subscription"
+      },
+      yearly: {
+        title: "Yearly Subscription Ended",
+        message: "Your yearly subscription has expired. Renew now to continue using premium features.",
+        buttonText: "Renew Subscription"
+      }
+    };
+
+    const currentMessage = messages[subscriptionType || 'trial'];
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl p-4 sm:p-6 border border-[#8a4fff]/10 mb-6"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="bg-[#8a4fff]/10 p-2 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-[#8a4fff]" />
+              </div>
+              <h3 className="text-lg font-semibold text-[#8a4fff]">{currentMessage.title}</h3>
+            </div>
+            <p className="text-gray-300 text-sm sm:text-base">{currentMessage.message}</p>
+          </div>
+          <button
+            onClick={() => {
+              navigate('/', {
+                state: {
+                  scrollTo: '#products',
+                  timestamp: Date.now()
+                }
+              })
+            }}
+            className="w-full sm:w-auto bg-[#8a4fff] text-white px-6 py-3 rounded-xl 
+            hover:bg-[#7a3ddf] transition-colors flex items-center justify-center gap-2
+            text-sm sm:text-base font-medium"
+          >
+            <Crown className="w-4 h-4" />
+            {currentMessage.buttonText}
+          </button>
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Update the Current Subscription Card to show expired state
+  const renderCurrentSubscription = () => {
+    if (!currentSubscription) {
+      return (
+        <div className="flex flex-col">
+          <p className="text-sm sm:text-base text-gray-400">No active subscription</p>
+          {subscriptionStatus === 'expired' && !hasRenewed && (
+            <p className="text-sm text-red-400 mt-2">Expired</p>
+          )}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              navigate('/', {
+                state: { 
+                  scrollTo: '#products',
+                  timestamp: Date.now()
+                }
+              })
+            }}
+            className="bg-[#8a4fff] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg 
+            hover:bg-[#7a3ddf] transition-colors flex items-center justify-center mt-4"
+          >
+            <Zap className="mr-2 w-4 h-4 sm:w-5 sm:h-5" /> Buy Subscription
+          </motion.button>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <p className="text-xl sm:text-2xl font-bold text-white mb-2">
+          {currentSubscription.name}
+        </p>
+        <div className="space-y-2 text-sm sm:text-base text-gray-300">
+          <div className="flex justify-between">
+            <span>Subscription Time Left:</span>
+            <span>{(() => {
+              const now = new Date();
+              const diffMs = currentSubscription.endDate.getTime() - now.getTime();
+              const diffHours = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60)));
+              const days = Math.floor(diffHours / 24);
+              const hours = diffHours % 24;
+              return days > 0 ? `${days}d ${hours}h` : `${diffHours}h`;
+            })()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Price:</span>
+            <span>€{currentSubscription.price}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Status:</span>
+            <span className={subscriptionStatus === 'active' ? 'text-green-400' : 'text-red-400'}>
+              {subscriptionStatus === 'active' ? 'Active' : 'Expired'}
+            </span>
+          </div>
+          
+          {subscriptionStatus === 'expired' && !hasRenewed && (
+            <div className="flex items-center text-red-400 mt-2">
+              <AlertTriangle className="mr-2 w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="text-sm">Subscription has expired</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   // Render loading state
   if (loading || !showContent) {
@@ -622,6 +704,42 @@ const UserDashboard: React.FC = () => {
     </>
   )
 
+  // Add this to your sidebar items array or navigation items
+  const sidebarItems: SidebarItem[] = [
+    {
+      id: 'overview',
+      label: 'Overview',
+      icon: <BarChart2 className="w-5 h-5" />,
+      component: null
+    },
+    {
+      id: 'purchases',
+      label: 'Subscription',
+      icon: <BadgeCheck className="w-5 h-5" />,
+      component: null
+    },
+    {
+      id: 'referrals',
+      label: 'Referrals',
+      icon: <Share2 className="w-5 h-5" />,
+      component: <ReferralsSection />
+    },
+    {
+      id: 'invoices',
+      label: 'Billing',
+      icon: <FileText className="w-5 h-5" />,
+      component: null
+    },
+    
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: <Settings className="w-5 h-5" />,
+      component: null
+    },
+    
+  ]
+
   return (
     <>
       {showCongrats && (
@@ -645,43 +763,20 @@ const UserDashboard: React.FC = () => {
               </div>
 
               <div className="space-y-1 sm:space-y-2">
-                {[
-                  { 
-                    icon: <BarChart2 className="mr-2 sm:mr-3 w-4 h-4 sm:w-5 sm:h-5" />, 
-                    label: 'Overview', 
-                    section: 'overview' 
-                  },
-                  { 
-                    icon: <BadgeCheck className="mr-2 sm:mr-3 w-4 h-4 sm:w-5 sm:h-5" />, 
-                    label: 'Subscription', 
-                    section: 'purchases' 
-                  },
-                  { 
-                    icon: <FileText className="mr-2 sm:mr-3 w-4 h-4 sm:w-5 sm:h-5" />, 
-                    label: 'Billing', 
-                    section: 'invoices' 
-                  },
-                  { 
-                    icon: <Settings className="mr-2 sm:mr-3 w-4 h-4 sm:w-5 sm:h-5" />, 
-                    label: 'Settings', 
-                    section: 'settings' 
-                  }
-                ].map((item) => (
-                  <motion.button
-                    key={item.section}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setActiveSection(item.section as any)}
+                {sidebarItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveSection(item.id)}
                     className={`
-                      w-full flex items-center p-2 sm:p-3 rounded-xl transition-colors text-sm lg:text-base sm:text-sm
-                      ${activeSection === item.section 
-                        ? 'bg-[#8a4fff]/20 text-[#8a4fff]' 
-                        : 'text-gray-400 hover:bg-[#8a4fff]/10'}
+                      flex items-center space-x-3 w-full px-4 py-3 rounded-lg transition-colors
+                      ${activeSection === item.id 
+                        ? 'bg-[#8a4fff]/10 text-[#8a4fff]' 
+                        : 'text-gray-400 hover:text-white hover:bg-[#8a4fff]/5'}
                     `}
                   >
                     {item.icon}
-                    {item.label}
-                  </motion.button>
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </button>
                 ))}
               </div>
 
@@ -739,64 +834,7 @@ const UserDashboard: React.FC = () => {
                           {subscriptionStatus === 'active' ? 'Active' : 'Expired'}
                         </span>
                       </div>
-                      {currentSubscription ? (
-                        <div>
-                          <p className="text-xl sm:text-2xl font-bold text-white mb-2">
-                            {currentSubscription.name}
-                          </p>
-                          <div className="space-y-2 text-sm sm:text-base text-gray-300">
-                            
-                            <div className="flex justify-between">
-                              <span>Subscription Time Left:</span>
-                              <span>{(() => {
-                                const now = new Date();
-                                const diffMs = currentSubscription.endDate.getTime() - now.getTime();
-                                const diffHours = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60)));
-                                const days = Math.floor(diffHours / 24);
-                                const hours = diffHours % 24;
-                                return days > 0 ? `${days}d ${hours}h` : `${diffHours}h`;
-                              })()}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Price:</span>
-                              <span>€{currentSubscription.price}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Status:</span>
-                              <span className={subscriptionStatus === 'active' ? 'text-green-400' : 'text-red-400'}>
-                                {subscriptionStatus === 'active' ? 'Active' : 'Expired'}
-                              </span>
-                            </div>
-                            
-                            {subscriptionStatus === 'expired' && (
-                              <div className="flex items-center text-red-400 mt-2">
-                                <AlertTriangle className="mr-2 w-4 h-4 sm:w-5 sm:h-5" />
-                                <span className="text-sm">Subscription has expired</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col">
-                          <p className="text-sm sm:text-base text-gray-400">No active subscription</p>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                              navigate('/', {
-                                state: { 
-                                  scrollTo: '#products',
-                                  timestamp: Date.now()
-                                }
-                              })
-                            }}
-                            className="bg-[#8a4fff] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg 
-                            hover:bg-[#7a3ddf] transition-colors flex items-center justify-center mt-4"
-                          >
-                            <Zap className="mr-2 w-4 h-4 sm:w-5 sm:h-5" /> Buy Subscription
-                          </motion.button>
-                        </div>
-                      )}
+                      {renderCurrentSubscription()}
                     </div>
 
                   </div>
@@ -831,7 +869,6 @@ const UserDashboard: React.FC = () => {
                       </div>
                     </motion.div>
                   )}
-
 
                   {/* Upcoming Billing Section */}
                   {upcomingBilling && subscriptionStatus === 'active' && (
@@ -931,6 +968,9 @@ const UserDashboard: React.FC = () => {
                       )}
                     </div>
                   )}
+
+                  {/* Subscription End Message */}
+                  <SubscriptionEndMessage />
                 </motion.div>
               )}
 
@@ -966,7 +1006,7 @@ const UserDashboard: React.FC = () => {
                     
                     <div className="relative z-10 flex items-center justify-between">
                       <div className="flex-grow">
-                        <h2 className="text-xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3 
+                        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3 
                           text-transparent bg-clip-text 
                           bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
                           {currentSubscription?.name || 'No Subscription'}
@@ -1172,11 +1212,15 @@ const UserDashboard: React.FC = () => {
                           </div>
                           <div className="bg-[#2c1b4a] rounded-xl p-3 sm:p-4 flex justify-between items-center">
                             <span className="text-xs sm:text-sm text-gray-300">Start Date</span>
-                            <span className="font-semibold text-white text-xs sm:text-sm">{currentSubscription.startDate.toLocaleDateString()}</span>
+                            <span className="font-semibold text-white text-xs sm:text-sm">
+                              {currentSubscription?.startDate ? new Date(currentSubscription.startDate).toLocaleDateString() : 'N/A'}
+                            </span>
                           </div>
                           <div className="bg-[#2c1b4a] rounded-xl p-3 sm:p-4 flex justify-between items-center">
                             <span className="text-xs sm:text-sm text-gray-300">Expiration Date</span>
-                            <span className="font-semibold text-white text-xs sm:text-sm">{currentSubscription.endDate.toLocaleDateString()}</span>
+                            <span className="font-semibold text-white text-xs sm:text-sm">
+                              {currentSubscription?.endDate ? new Date(currentSubscription.endDate).toLocaleDateString() : 'N/A'}
+                            </span>
                           </div>
                         </div>
                       ) : (
@@ -1244,10 +1288,10 @@ const UserDashboard: React.FC = () => {
                   <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10">
                     <div className="flex justify-between items-center mb-4 sm:mb-6">
                       <div>
-                        <h3 className="text-lg sm:text-2xl font-bold text-[#8a4fff] flex items-center">
-                          <History className="mr-2 sm:mr-3 w-4 h-4 sm:w-7 sm:h-7" /> Billing History
+                        <h3 className="text-2xl sm:text-2xl font-bold text-[#8a4fff] flex items-center">
+                          <History className="mr-2 sm:mr-3 w-5 h-5 sm:w-7 sm:h-7" /> Billing History
                         </h3>
-                        <p className="text-xs sm:text-sm text-gray-400 mt-0.5 sm:mt-1">
+                        <p className="text-xs sm:text-sm text-gray-400 mt-0.5 sm:mt-1 mb-4">
                           Overview of your recent transactions
                         </p>
                       </div>
@@ -1348,6 +1392,10 @@ const UserDashboard: React.FC = () => {
 
               {activeSection === 'settings' && (
                 <AccountSettings />
+              )}
+
+              {activeSection === 'referrals' && (
+                <ReferralsSection />
               )}
             </div>
           </div>

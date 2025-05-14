@@ -55,7 +55,7 @@ const InvoicesSection: React.FC = () => {
 
         // Fetch orders with subscription details
         const { data: ordersData, error: ordersError } = await supabase
-          .from('orders')
+          .from('orders_with_items')
           .select(`
             id, 
             total_amount, 

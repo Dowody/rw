@@ -208,6 +208,12 @@ const AppContent: React.FC = () => {
             } 
           />
           <Route 
+            path="/signup" 
+            element={
+              isAuthenticated ? <Navigate to="/" replace /> : <SignInPage />
+            } 
+          />
+          <Route 
             path="/checkout" 
             element={
               <PrivateRoute>

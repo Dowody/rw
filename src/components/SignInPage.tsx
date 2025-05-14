@@ -11,7 +11,7 @@ import {
   Info,
   AtSign
 } from 'lucide-react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { generatePasswordResetUrl } from '../lib/passwordReset'
 
@@ -30,6 +30,18 @@ const SignInPage: React.FC = () => {
   const [isResetLinkSent, setIsResetLinkSent] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
+
+  // Handle referral code from URL
+  useEffect(() => {
+    const referralCode = searchParams.get('ref')
+    if (referralCode) {
+      // Set mode to signup if there's a referral code
+      setMode('signup')
+      // Store the referral code in state or context if needed
+      localStorage.setItem('referralCode', referralCode)
+    }
+  }, [searchParams])
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -150,119 +162,83 @@ const SignInPage: React.FC = () => {
   }
 
   // Sign Up Handler
-  const handleSignUp = async () => {
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
     // Validate inputs
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address')
+      setLoading(false)
+      return
+    }
+
     if (!validateUsername(username)) {
-      setError('Username must be 3-16 characters, alphanumeric or underscores')
+      setError('Username must be 3-16 characters and contain only letters, numbers, and underscores')
+      setLoading(false)
       return
     }
 
     if (!validatePassword(password)) {
-      setError('Password must be at least 8 characters with uppercase, lowercase, and number')
+      setError('Password must be at least 8 characters and contain uppercase, lowercase, and numbers')
+      setLoading(false)
       return
     }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match')
+      setLoading(false)
       return
     }
-    setLoading(true)
+
   try {
-    // Comprehensive username check with error handling
-    const { data: existingUsers, error: usernameCheckError } = await supabase
+      // Get referral code from localStorage
+      const referralCode = localStorage.getItem('referralCode')
+
+      // First, check if username is already taken
+      const { data: existingUser, error: usernameError } = await supabase
       .from('users')
       .select('username')
       .eq('username', username)
-      .maybeSingle()
+        .single()
 
-    if (usernameCheckError) {
-      console.error('Username check error:', {
-        code: usernameCheckError.code,
-        message: usernameCheckError.message,
-        details: usernameCheckError.details
-      })
-      
-      // If table doesn't exist, attempt to create it
-      if (usernameCheckError.code === '42P01') {
-        // You might want to trigger table creation here or contact support
-        setError('Database configuration error. Please contact support.')
-        return
-      }
-      
-      setError('Error checking username availability')
-      return
+      if (usernameError && usernameError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        throw usernameError
     }
 
-    if (existingUsers) {
+      if (existingUser) {
       setError('Username is already taken')
+        setLoading(false)
       return
     }
 
-    // Signup with Auth
-    const { data, error } = await supabase.auth.signUp({
+      // Sign up the user with auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           username,
-          email_confirm: true
+            referred_by: referralCode || null
         },
-        emailRedirectTo: `${window.location.origin}/signin`
+          emailRedirectTo: `${window.location.origin}/rw/signin`
       }
     })
 
-    if (error) {
-      console.error('Auth Signup Error:', {
-        message: error.message,
-        code: error.code,
-        details: (error as any).details
-      })
-      setError(error.message || 'Failed to create account')
-      return
-    }
+      if (authError) throw authError
 
-    // Ensure user exists before inserting
-    if (data.user) {
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert({
-          auth_id: data.user.id,
-          email: data.user.email,
-          username: username,
-          created_at: new Date().toISOString(),
-          status: 'active'
-        })
-
-      if (
-        insertError &&
-        insertError.message &&
-        insertError.message.includes('violates row-level security policy for table "users"')
-      ) {
-        // setError('Account created! Please check your email to confirm your account.');
-        setMode('signin');
-        setTimeout(() => {
-          navigate('/signin', {
-            state: { 
-              message: 'Please open your email to confirm your account.',
-              mode: 'signin'
-            }
-          });
-        }, 2000);
-      } else {
-        setError('Account created successfully!');
-        setTimeout(() => {
-          navigate('/signin', {
-            state: { 
-              message: 'Please open your email to confirm your account.',
-              mode: 'signin'
-            }
-          });
-        }, 2000);
-      }
+      if (authData.user) {
+        // Clear the stored referral code
+        localStorage.removeItem('referralCode')
+        
+        // Show success message
+        setError('Account created successfully! Please check your email to verify your account.')
+        setMode('signin')
     }
-  } catch (err) {
-    console.error('Unexpected Signup Error:', err)
-    setError('An unexpected error occurred. Please try again.')
+    } catch (error: any) {
+      console.error('Signup error:', error)
+      setError(error.message || 'An error occurred during signup')
   } finally {
     setLoading(false)
   }
@@ -310,7 +286,7 @@ const SignInPage: React.FC = () => {
         await handleSignIn(e)
         break
       case 'signup':
-        await handleSignUp()
+        await handleSignUp(e)
         break
       case 'forgot-password':
         await handleForgotPassword()

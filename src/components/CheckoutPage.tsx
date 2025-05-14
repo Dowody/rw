@@ -413,30 +413,16 @@ const CheckoutPage: React.FC = () => {
           : new Date(subscriptionStartDate.setDate(subscriptionStartDate.getDate() + selectedSubscription.duration_days))
       }
   
-      // Prepare order items
-      const orderItems = cart.map(item => ({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity
-      }))
-      
       // Create order
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: userData.data.id,
-          subscription_id: finalSubscriptionId,
-          total_amount: total,
-          transaction_date: new Date().toISOString(),
+          amount: total,
           status: 'completed',
-          transaction_hash: transactionHash,
-          items: [{
-            id: selectedSubscription.id,
-            name: selectedSubscription.name,
-            price: total,
-            quantity: 1
-          }]
+          subscription_id: finalSubscriptionId,
+          expiration_date: subscriptionEndDate.toISOString(),
+          updated_at: new Date().toISOString()
         })
         .select()
         .single()
@@ -449,6 +435,22 @@ const CheckoutPage: React.FC = () => {
 
       if (!order) {
         setError('Failed to create order. Please try again.')
+        return
+      }
+
+      // Create order items
+      const { error: orderItemsError } = await supabase
+        .from('order_items')
+        .insert({
+          order_id: order.id,
+          subscription_id: finalSubscriptionId,
+          quantity: 1,
+          price: total
+        })
+      
+      if (orderItemsError) {
+        console.error('Order items creation error:', orderItemsError)
+        setError('Failed to process order items. Please try again.')
         return
       }
       
@@ -470,7 +472,7 @@ const CheckoutPage: React.FC = () => {
       
       // After successful order placement
       setIsOrderPlaced(true)
-      clearCart()
+    clearCart()
       
       // Set multiple flags to ensure the popup appears
       localStorage.setItem('showPurchaseSuccess', 'true')
@@ -483,7 +485,7 @@ const CheckoutPage: React.FC = () => {
           subscriptionName: selectedSubscription.name,
           date: new Date(),
           amount: total,
-          items: orderItems,
+          items: cart,
           duration_days: selectedSubscription.duration_days,
           transactionHash: transactionHash || undefined
         }
@@ -971,7 +973,7 @@ const CheckoutPage: React.FC = () => {
             </div>
             <p className="text-sm text-gray-300 pl-13 leading-relaxed">
               We only work with verified marketplaces. Double-check trade details and never accept offers from unofficial sources.
-            </p>
+          </p>
           </div>
         </div>
 
@@ -1141,15 +1143,15 @@ const CheckoutPage: React.FC = () => {
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#8a4fff]/30 to-[#8a4fff]/10 flex items-center justify-center shadow-inner">
                           <Gamepad2 className="w-6 h-6 text-[#8a4fff]" />
                         </div>
-                        <div>
+                      <div>
                           <h3 className="text-sm font-medium text-white lg:text-base">{item.name}</h3>
                           <p className="text-xs text-gray-400">
-                            {item.id === 'free-trial' && 'CSGORoll Script'}
-                            {item.id === 'monthly' && 'CSGORoll Script'}
-                            {item.id === '6-months' && 'CSGORoll Script'}
-                            {item.id === 'yearly' && 'CSGORoll Script'}
-                          </p>
-                        </div>
+                          {item.id === 'free-trial' && 'CSGORoll Script'}
+                          {item.id === 'monthly' && 'CSGORoll Script'}
+                          {item.id === '6-months' && 'CSGORoll Script'}
+                          {item.id === 'yearly' && 'CSGORoll Script'}
+                        </p>
+                      </div>
                       </div>
                       <div className="flex items-center space-x-4 lg:space-x-6">
                         <span className="text-base font-bold lg:text-lg text-[#8a4fff]">
@@ -1169,38 +1171,38 @@ const CheckoutPage: React.FC = () => {
 
               {/* Payment Method */}
               {!isOnlyFreeTrialInCart && (
-                <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-[#8a4fff]/10">
-                  <h2 className="text-[18px] sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
-                    <Lock className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" /> Payment Method
-                  </h2>
+              <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-[#8a4fff]/10">
+                <h2 className="text-[18px] sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
+                  <Lock className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" /> Payment Method
+                </h2>
                   
                   <div className="space-y-3">
                     {/* Crypto Options */}
                     <div className="grid grid-cols-3 gap-3">
                       {paymentOptions.filter(p => p.type === 'crypto').map((payment) => (
-                        <button
-                          key={payment.id}
+                    <button
+                      key={payment.id}
                           onClick={() => setSelectedPayment({
-                            id: payment.id,
-                            name: payment.name,
-                            type: payment.type
+                          id: payment.id,
+                          name: payment.name,
+                          type: payment.type
                           })}
-                          className={`
+                      className={`
                             flex flex-col items-center p-3 rounded-xl transition-all duration-300
-                            ${selectedPayment.id === payment.id 
-                              ? 'bg-[#8a4fff]/10 border-2 border-[#8a4fff]' 
+                        ${selectedPayment.id === payment.id 
+                          ? 'bg-[#8a4fff]/10 border-2 border-[#8a4fff]' 
                               : 'bg-[#1a0b2e] border-2 border-transparent hover:bg-[#8a4fff]/5'}
-                          `}
-                        >
+                      `}
+                    >
                           <div className="w-8 h-8 mb-2">{payment.icon}</div>
                           <p className="text-sm font-medium text-white">{payment.name}</p>
-                        </button>
-                      ))}
-                    </div>
+                    </button>
+                  ))}
+                </div>
 
                     {/* Skins Option */}
                     {paymentOptions.filter(p => p.type === 'skin').map((payment) => (
-                      <button
+                  <button
                         key={payment.id}
                         onClick={() => setSelectedPayment({
                           id: payment.id,
@@ -1223,10 +1225,10 @@ const CheckoutPage: React.FC = () => {
                           <SiTradingview className="w-6 h-6 text-[#1E73A4]" />
                           <SiSteam className="w-6 h-6 text-blue-500" />
                         </div>
-                      </button>
+                  </button>
                     ))}
-                  </div>
                 </div>
+              </div>
               )}
             </motion.div>
 
@@ -1242,9 +1244,9 @@ const CheckoutPage: React.FC = () => {
                 <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-[#8a4fff]/10">
                   {selectedPayment.type === 'skin' ? (
                     <>
-                      <h2 className="text-[18px] sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
+              <h2 className="text-[18px] sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
                         <Gamepad2 className="mr-2 sm:mr-3 w-6 h-6 sm:w-6 sm:h-6" /> Select Marketplace
-                      </h2>
+              </h2>
                       <div className="space-y-3">
                         {[
                           {
@@ -1350,8 +1352,8 @@ const CheckoutPage: React.FC = () => {
                             <div className="flex items-center space-x-2 bg-green-500/10 px-4 py-2 rounded-full">
                               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                               <span className="text-sm text-green-400">Connected</span>
-                            </div>
-                          </div>
+                </div>
+              </div>
 
                           <div className="grid grid-cols-2 gap-4">
                             <div className="p-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl border border-[#8a4fff]/20">
@@ -1421,9 +1423,9 @@ const CheckoutPage: React.FC = () => {
                       <span className="text-xl font-medium text-white">€{total.toFixed(2)}</span>
                     </div>
                   </div>
-                </div>
+              </div>
 
-                {/* Policy Acknowledgment */}
+              {/* Policy Acknowledgment */}
                 <div className="mb-6">
                   <div className="flex items-center justify-center">
                     <button
@@ -1444,20 +1446,20 @@ const CheckoutPage: React.FC = () => {
                     <button 
                       onClick={() => setIsPolicyAcknowledged(!isPolicyAcknowledged)}
                       className="text-gray-400 flex items-center text-sm ml-3 cursor-pointer hover:text-gray-300 transition-colors"
-                    >
-                      I've read and accept the{' '}
-                      <Link 
-                        to="/policy" 
-                        className="ml-1 text-[#8a4fff] hover:underline"
+                >
+                  I've read and accept the{' '}
+                  <Link 
+                    to="/policy" 
+                    className="ml-1 text-[#8a4fff] hover:underline"
                         onClick={(e) => e.stopPropagation()}
-                      >
-                        Policies
-                      </Link>
+                  >
+                    Policies
+                  </Link>
                     </button>
                   </div>
-                </div>
+              </div>
 
-                {/* Action Buttons */}
+              {/* Action Buttons */}
                 <div className="space-y-3">
                   {isOnlyFreeTrialInCart && !hasJoinedDiscord ? (
                     <button
@@ -1471,48 +1473,57 @@ const CheckoutPage: React.FC = () => {
                       Join Discord
                     </button>
                   ) : (
-                    <button
-                      onClick={handlePayClick}
-                      disabled={!isPolicyAcknowledged || hasActiveSubscription || isProcessingPayment}
-                      className={`
-                        w-full py-3.5 rounded-lg transition-all duration-300 flex items-center justify-center relative
-                        ${isPolicyAcknowledged && !hasActiveSubscription
-                          ? 'bg-gradient-to-r from-[#8a4fff] via-[#6a2dcf] to-[#4a1daf] text-white hover:from-[#7a3ddf] hover:via-[#5a2dbf] hover:to-[#3a1d9f] active:scale-[0.98] shadow-lg shadow-[#8a4fff]/20'
-                          : 'bg-gray-500 text-gray-300 cursor-not-allowed'}
-                      `}
-                    >
-                      {isProcessingPayment ? (
-                        <div className="flex items-center justify-between w-full px-4">
-                          <div className="flex items-center space-x-3">
-                            <div className="relative">
-                              <div className="animate-spin rounded-full h-6 w-6 border-2 border-white/30"></div>
-                              <div className="absolute top-0 left-0 animate-spin rounded-full h-6 w-6 border-t-2 border-white"></div>
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-sm font-medium">Processing Payment</span>
-                              <div className="flex items-center space-x-2 mt-1">
-                                <div className={`w-1.5 h-1.5 rounded-full ${currentStep >= 1 ? 'bg-white' : 'bg-white/30'}`}></div>
-                                <div className={`w-1.5 h-1.5 rounded-full ${currentStep >= 2 ? 'bg-white' : 'bg-white/30'}`}></div>
-                                <div className={`w-1.5 h-1.5 rounded-full ${currentStep >= 3 ? 'bg-white' : 'bg-white/30'}`}></div>
+                    <>
+                      <button
+                        onClick={handlePayClick}
+                        disabled={!isPolicyAcknowledged || hasActiveSubscription || isProcessingPayment}
+                        className={`
+                          w-full py-3.5 rounded-lg transition-all duration-300 flex items-center justify-center relative
+                          ${isPolicyAcknowledged && !hasActiveSubscription
+                            ? 'bg-gradient-to-r from-[#8a4fff] via-[#6a2dcf] to-[#4a1daf] text-white hover:from-[#7a3ddf] hover:via-[#5a2dbf] hover:to-[#3a1d9f] active:scale-[0.98] shadow-lg shadow-[#8a4fff]/20'
+                            : 'bg-gray-500 text-gray-300 cursor-not-allowed'}
+                        `}
+                      >
+                        {isProcessingPayment ? (
+                          <div className="flex items-center justify-between w-full px-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="relative">
+                                <div className="animate-spin rounded-full h-6 w-6 border-2 border-white/30"></div>
+                                <div className="absolute top-0 left-0 animate-spin rounded-full h-6 w-6 border-t-2 border-white"></div>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium">Processing Payment</span>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <div className={`w-1.5 h-1.5 rounded-full ${currentStep >= 1 ? 'bg-white' : 'bg-white/30'}`}></div>
+                                  <div className={`w-1.5 h-1.5 rounded-full ${currentStep >= 2 ? 'bg-white' : 'bg-white/30'}`}></div>
+                                  <div className={`w-1.5 h-1.5 rounded-full ${currentStep >= 3 ? 'bg-white' : 'bg-white/30'}`}></div>
+                                </div>
                               </div>
                             </div>
+                            <div className="text-sm font-medium">
+                              {currentStep === 1 && "Preparing..."}
+                              {currentStep === 2 && !showFinalizing && "Confirming..."}
+                              {currentStep === 2 && showFinalizing && "Finalizing..."}
+                              {currentStep === 3 && "Done..."}
+                            </div>
                           </div>
-                          <div className="text-sm font-medium">
-                            {currentStep === 1 && "Preparing..."}
-                            {currentStep === 2 && !showFinalizing && "Confirming..."}
-                            {currentStep === 2 && showFinalizing && "Finalizing..."}
-                            {currentStep === 3 && "Done..."}
+                        ) : (
+                          <div className="flex items-center justify-center">
+                            <CreditCard className="w-4 h-4 mr-2" />
+                            <span className="text-base font-medium">
+                              {isOnlyFreeTrialInCart ? 'Activate Free Trial' : `Pay €${total.toFixed(2)}`}
+                            </span>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center">
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          <span className="text-base font-medium">
-                            {isOnlyFreeTrialInCart ? 'Activate Free Trial' : `Pay €${total.toFixed(2)}`}
-                          </span>
-                        </div>
-                      )}
-                    </button>
+                        )}
+                      </button>
+                      {/* DEV TESTING BUTTON - REMOVE IN PRODUCTION */}
+                      <button
+                        onClick={() => handlePlaceOrder()}
+                        className="w-full py-3.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-base"
+                      >
+                        [DEV] Bypass Payment
+                      </button>
+                    </>
                   )}
                   <button
                     onClick={() => navigate('/')}

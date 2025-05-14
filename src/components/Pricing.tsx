@@ -184,13 +184,16 @@ const Products = () => {
         if (userData?.current_subscription_id) {
           const { data: activeOrder } = await supabase
             .from('orders')
-            .select('id, status')
+            .select('id, status, expiration_date')
             .eq('subscription_id', userData.current_subscription_id)
             .eq('status', 'completed')
             .single()
 
-          // If no active order found, clear the subscription
-          if (!activeOrder) {
+          // If no active order found or order has expired, clear the subscription
+          const now = new Date()
+          const orderExpired = activeOrder ? new Date(activeOrder.expiration_date) < now : true
+
+          if (!activeOrder || orderExpired) {
             await supabase
               .from('users')
               .update({
@@ -201,7 +204,7 @@ const Products = () => {
               .eq('id', userData.id)
 
             setCurrentSubscription(null)
-            setSubscriptionStatus('inactive')
+            setSubscriptionStatus('expired')
             return
           }
 
@@ -213,7 +216,6 @@ const Products = () => {
 
           if (subscriptionData) {
             const endDate = new Date(userData.subscription_end_date)
-            const now = new Date()
             const status = endDate > now ? 'active' : 'expired'
             
             // If subscription has expired, update user's subscription status
@@ -300,6 +302,11 @@ const Products = () => {
     // If user has an active subscription, disable all subscriptions
     if (subscriptionStatus === 'active' && currentSubscription) {
       return true
+    }
+
+    // If subscription has expired, enable all subscriptions
+    if (subscriptionStatus === 'expired') {
+      return false
     }
 
     return false

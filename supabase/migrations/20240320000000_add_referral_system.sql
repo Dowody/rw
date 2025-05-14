@@ -2,8 +2,7 @@
 ALTER TABLE users
 ADD COLUMN referral_code VARCHAR UNIQUE,
 ADD COLUMN referred_by VARCHAR,
-ADD COLUMN referral_count INTEGER DEFAULT 0,
-ADD COLUMN total_referral_earnings DECIMAL(10,2) DEFAULT 0.00;
+ADD COLUMN referral_count INTEGER DEFAULT 0;
 
 -- Create index for faster lookups
 CREATE INDEX idx_users_referral_code ON users(referral_code);
@@ -41,16 +40,31 @@ CREATE TRIGGER set_referral_code
     WHEN (NEW.referral_code IS NULL)
     EXECUTE FUNCTION generate_referral_code();
 
--- Create function to update referral count and earnings
+-- Create function to update referral count and extend subscription
 CREATE OR REPLACE FUNCTION update_referral_stats()
 RETURNS TRIGGER AS $$
+DECLARE
+    current_end_date TIMESTAMP;
 BEGIN
-    -- Update referral count and earnings for the referrer
+    -- Update referral count and extend subscription for the referrer
     IF NEW.referred_by IS NOT NULL THEN
+        -- Get current subscription end date
+        SELECT subscription_end_date INTO current_end_date
+        FROM users
+        WHERE referral_code = NEW.referred_by;
+
+        -- Update user's referral count and extend subscription by 7 days
         UPDATE users
         SET 
             referral_count = referral_count + 1,
-            total_referral_earnings = total_referral_earnings + 10.00 -- Example: €10 per referral
+            subscription_end_date = CASE
+                -- If no current subscription, set to 7 days from now
+                WHEN current_end_date IS NULL THEN NOW() + INTERVAL '7 days'
+                -- If current subscription is expired, set to 7 days from now
+                WHEN current_end_date < NOW() THEN NOW() + INTERVAL '7 days'
+                -- If active subscription, add 7 days to current end date
+                ELSE current_end_date + INTERVAL '7 days'
+            END
         WHERE referral_code = NEW.referred_by;
     END IF;
     RETURN NEW;

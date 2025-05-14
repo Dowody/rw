@@ -92,8 +92,8 @@ const AccountSettings: React.FC = () => {
       )}
       {/* Password Change Section */}
       <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-8 border border-[#8a4fff]/10">
-        <h3 className="text-base sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
-          <Lock className="mr-2 sm:mr-3 w-4 h-4 sm:w-6 sm:h-6" /> Change Password
+        <h3 className="text-2xl sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
+          <Lock className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" /> Change Password
         </h3>
         <div className="grid md:grid-cols-2 gap-3 sm:gap-4 py-2">
           <div className="relative">
