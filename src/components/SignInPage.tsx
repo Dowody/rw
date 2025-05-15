@@ -195,6 +195,24 @@ const SignInPage: React.FC = () => {
     try {
       // Get referral code from localStorage
       const referralCode = localStorage.getItem('referralCode')
+      let referrerId = null
+
+      // If there's a referral code, verify it first
+      if (referralCode) {
+        const { data: referrerCodeData, error: referrerCodeError } = await supabase
+          .from('referral_codes')
+          .select('user_id')
+          .eq('code', referralCode)
+          .eq('is_active', true)
+          .single()
+
+        if (referrerCodeError) {
+          console.error('Referral code verification error:', referrerCodeError)
+          // Continue with signup even if referral code is invalid
+        } else if (referrerCodeData) {
+          referrerId = referrerCodeData.user_id
+        }
+      }
 
       // First create the auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -209,7 +227,7 @@ const SignInPage: React.FC = () => {
 
       if (authData.user) {
         // Then create the user record
-        const { error: userError } = await supabase
+        const { data: userData, error: userError } = await supabase
           .from('users')
           .insert({
             auth_id: authData.user.id,
@@ -223,6 +241,8 @@ const SignInPage: React.FC = () => {
             total_referral_earnings: 0.00,
             subscription_end_date: null
           })
+          .select()
+          .single()
 
         if (userError) {
           // If user creation fails, delete the auth user
@@ -230,23 +250,24 @@ const SignInPage: React.FC = () => {
           throw userError
         }
 
-        // If there's a referral code, create the referral record
-        if (referralCode) {
-          const { data: referrerData, error: referrerError } = await supabase
-            .from('users')
-            .select('id')
-            .eq('referred_by', referralCode)
-            .single()
+        // If we have a valid referrer ID, create the referral record
+        if (referrerId && userData) {
+          const { error: referralError } = await supabase
+            .from('referrals')
+            .insert({
+              referrer_id: referrerId,
+              referred_id: authData.user.id,
+              status: 'signed_up',
+              reward_amount: '7 days'
+            })
 
-          if (!referrerError && referrerData) {
-            await supabase
-              .from('referrals')
-              .insert({
-                referrer_id: referrerData.id,
-                referred_id: authData.user.id,
-                status: 'signed_up',
-                reward_amount: '7 days'
-              })
+          if (referralError) {
+            console.error('Referral creation error:', referralError)
+          } else {
+            console.log('Referral created successfully:', {
+              referrerId,
+              referredId: authData.user.id
+            })
           }
         }
 
@@ -400,7 +421,7 @@ const SignInPage: React.FC = () => {
                 initial={{ opacity: 1, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 1, y: -20 }}
-                className={`absolute ${mode === 'signup' ? '-top-[90px] sm:-top-[110px]' : '-top-[80px] sm:-top-20'} left-0 right-0 p-3 sm:p-4 rounded-xl flex items-center justify-center ${
+                className={`absolute ${mode === 'signup' ? '-top-[90px] sm:-top-[120px]' : '-top-[80px] sm:-top-30'} left-0 right-0 p-3 sm:p-4 rounded-xl flex items-center justify-center ${
                   error.includes('Log In or Sign Up')
                     ? 'bg-purple-500/10 border border-purple-500 text-purple-400'
                     : error.includes('Account created successfully')

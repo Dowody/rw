@@ -41,11 +41,18 @@ DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON public.use
 DROP POLICY IF EXISTS "Enable insert for service role" ON public.users;
 DROP POLICY IF EXISTS "Enable insert for auth trigger" ON public.users;
 DROP POLICY IF EXISTS "Enable insert for signup" ON public.users;
+DROP POLICY IF EXISTS "Enable read for authenticated users" ON public.users;
+DROP POLICY IF EXISTS "Enable insert for anon" ON public.users;
 
 -- Allow users to read their own data
 CREATE POLICY "Users can read own data" ON public.users
     FOR SELECT
     USING (auth.uid() = auth_id);
+
+-- Allow authenticated users to read their own data
+CREATE POLICY "Enable read for authenticated users" ON public.users
+    FOR SELECT
+    USING (auth.role() = 'authenticated');
 
 -- Allow users to update their own data
 CREATE POLICY "Users can update own data" ON public.users
@@ -66,6 +73,11 @@ CREATE POLICY "Service role can manage all users" ON public.users
 CREATE POLICY "Enable insert for service role" ON public.users
     FOR INSERT
     WITH CHECK (auth.jwt() ->> 'role' = 'service_role');
+
+-- Allow insert for anon users
+CREATE POLICY "Enable insert for anon" ON public.users
+    FOR INSERT
+    WITH CHECK (auth.role() = 'anon');
 
 -- Allow insert for signup
 CREATE POLICY "Enable insert for signup" ON public.users
