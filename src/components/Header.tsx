@@ -15,7 +15,8 @@ import {
   Wallet,
   Settings2,
   CreditCard,
-  BadgeCheck
+  BadgeCheck,
+  Share2
 } from 'lucide-react'
 import { SiDiscord } from 'react-icons/si'
 import { useCart, CartItem } from './context/CartContext'
@@ -53,7 +54,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
     { name: 'Home', href: '/rw/', scrollTo: '#hero' },
     { name: 'How It Works', href: '/rw/', scrollTo: '#how-it-works' },
     { name: 'Pricing', href: '/rw/', scrollTo: '#products' },
-    { name: 'Refferals', href: '/rw/', scrollTo: '#refferals' },
+    { name: 'Referrals', href: '/dashboard', state: { section: 'referrals' } },
     { name: 'FAQ', href: '/rw/', scrollTo: '#faq' }
   ]
 
@@ -132,7 +133,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
   }
 
   // Navigation Handler
-  const handleNavigation = useCallback((href: string, scrollTo?: string) => {
+  const handleNavigation = useCallback((href: string, scrollTo?: string, state?: any) => {
     // If on home page, use smooth scroll
     if (location.pathname === '/rw/' && scrollTo) {
       smoothScrollToSection(scrollTo)
@@ -144,7 +145,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
       }, 100)
     } else {
       // Regular navigation without scroll
-      navigate(href)
+      navigate(href, { state })
     }
     
     // Close mobile menu
@@ -179,7 +180,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
           {navItems.map((item, index) => (
             <motion.button 
               key={index} 
-              onClick={() => handleNavigation(item.href, item.scrollTo)}
+              onClick={() => handleNavigation(item.href, item.scrollTo, item.state)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="text-[16px] sm:text-lg text-gray-300 hover:text-[#8a4fff] transition-colors cursor-pointer"
@@ -265,6 +266,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                       >
                         <BadgeCheck className="mr-2 sm:mr-3 w-4 h-4" /> My Subscription
                       </button>
+                      
                       <button 
                         onClick={() => {
                           navigate('/dashboard', { 
@@ -282,6 +284,19 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                         onClick={() => {
                           navigate('/dashboard', { 
                             state: { 
+                              section: 'referrals'
+                            }
+                          })
+                          setIsAccountDropdownOpen(false)
+                        }}
+                        className="flex items-center w-full text-left px-3 sm:px-4 py-2 hover:bg-[#1a0b2e] transition-colors text-gray-300 hover:text-white text-[14px] sm:text-base"
+                      >
+                        <Share2 className="mr-2 sm:mr-3 w-4 h-4" /> Referrals
+                      </button>
+                      <button 
+                        onClick={() => {
+                          navigate('/dashboard', { 
+                            state: { 
                               section: 'invoices'
                             }
                           })
@@ -291,6 +306,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                       >
                         <Wallet className="mr-2 sm:mr-3 w-4 h-4" /> Billing & Invoices
                       </button>
+                      
                       
                       {/* <button 
                         onClick={() => {
@@ -413,7 +429,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                   {navItems.map((item, index) => (
                     <motion.button
                       key={index}
-                      onClick={() => handleNavigation(item.href, item.scrollTo)}
+                      onClick={() => handleNavigation(item.href, item.scrollTo, item.state)}
                       initial={{ opacity: 1, x: -10 }}
                       animate={{ opacity: 1, x: 5 }}
                       transition={{ delay: index * 0.1 }}

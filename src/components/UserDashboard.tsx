@@ -256,11 +256,21 @@ const UserDashboard: React.FC = () => {
               orderId: latestOrder.id
             })
             setSubscriptionStatus(status)
+
+            // Set upcoming billing information
+            if (status === 'active') {
+              setUpcomingBilling({
+                subscriptionName: subscriptionData.name,
+                date: endDate,
+                amount: subscriptionData.price
+              })
+            }
           }
         } else {
           setCurrentSubscription(null)
           setSubscriptionStatus('inactive')
           setSubscriptionType(null)
+          setUpcomingBilling(null)
         }
 
         // Set user data
@@ -798,7 +808,7 @@ const UserDashboard: React.FC = () => {
                   initial={{ opacity: 1, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="space-y-8"
+                  className="space-y-6"
                 >
                   {/* User Profile Card */}
                   <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-8 border border-[#8a4fff]/10 flex items-center">
@@ -837,7 +847,7 @@ const UserDashboard: React.FC = () => {
                       {renderCurrentSubscription()}
                     </div>
 
-                  </div>
+                    
 
                   {/* Bot Configuration Section */}
                   {subscriptionStatus === 'active' && (
@@ -845,7 +855,7 @@ const UserDashboard: React.FC = () => {
                       initial={{ opacity: 1, y: 0 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
-                      className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10"
+                      className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10 mt-2"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
@@ -870,9 +880,34 @@ const UserDashboard: React.FC = () => {
                     </motion.div>
                   )}
 
+                  {/* Referral Promotion Card */}
+                  <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10 mt-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                          <h3 className="text-lg sm:text-xl font-semibold text-[#8a4fff] flex items-center mb-2">
+                            <Share2 className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" /> Referral Program
+                          </h3>
+                          <p className="text-gray-400 text-sm lg:text-base sm:text-sm">
+                            Invite friends and earn 7 days of free subscription for each successful referral
+                          </p>
+                        </div>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setActiveSection('referrals')}
+                          className="w-full sm:w-auto bg-[#8a4fff] text-[14px] sm:text-base text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl 
+                          hover:bg-[#7a3ddf] transition-colors flex items-center justify-center"
+                        >
+                          <Share2 className="mr-2 w-4 h-4 sm:w-5 sm:h-5" /> 
+                          View Referrals
+                        </motion.button>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Upcoming Billing Section */}
                   {upcomingBilling && subscriptionStatus === 'active' && (
-                    <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10 mt-6">
+                    <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10 mt-2">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
                         <h3 className="text-lg sm:text-xl font-bold text-[#8a4fff] flex items-center">
                           <Clock className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" /> Upcoming Billing

@@ -201,20 +201,19 @@ const SignInPage: React.FC = () => {
       // If there's a referral code, verify it first
       if (referralCode) {
         console.log('Verifying referral code:', referralCode)
-        const { data: referrerCodeData, error: referrerCodeError } = await supabase
-          .from('referral_codes')
-          .select('user_id')
-          .eq('code', referralCode)
-          .eq('is_active', true)
+        const { data: referrerData, error: referrerError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('referral_code', referralCode)
           .maybeSingle()
 
-        if (referrerCodeError) {
-          console.error('Referral code verification error:', referrerCodeError)
-        } else if (referrerCodeData) {
-          referrerId = referrerCodeData.user_id
+        if (referrerError) {
+          console.error('Referral code verification error:', referrerError)
+        } else if (referrerData) {
+          referrerId = referrerData.id
           console.log('Found referrer ID:', referrerId)
         } else {
-          console.log('No active referral code found for:', referralCode)
+          console.log('No user found with referral code:', referralCode)
         }
       }
 
@@ -230,7 +229,13 @@ const SignInPage: React.FC = () => {
 
       if (authError) {
         console.error('Auth user creation error:', authError)
-        throw authError
+        if (authError.message.includes('User already registered')) {
+          setError('An account with this email already exists. Please sign in instead.')
+          setMode('signin')
+        } else {
+          throw authError
+        }
+        return
       }
 
       if (authData.user) {
@@ -259,7 +264,13 @@ const SignInPage: React.FC = () => {
           console.error('User record creation error:', userError)
           // If user creation fails, delete the auth user
           await supabase.auth.admin.deleteUser(authData.user.id)
-          throw userError
+          if (userError.code === '23505') {
+            setError('An account with this email already exists. Please sign in instead.')
+            setMode('signin')
+          } else {
+            throw userError
+          }
+          return
         }
 
         console.log('User record created:', userData)
@@ -303,7 +314,12 @@ const SignInPage: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Signup error:', error)
-      setError(error.message || 'An error occurred during signup')
+      if (error.code === '23505') {
+        setError('An account with this email already exists. Please sign in instead.')
+        setMode('signin')
+      } else {
+        setError(error.message || 'An error occurred during signup')
+      }
     } finally {
       setLoading(false)
     }
