@@ -192,57 +192,78 @@ const SignInPage: React.FC = () => {
       return
     }
 
-  try {
+    try {
       // Get referral code from localStorage
       const referralCode = localStorage.getItem('referralCode')
 
-      // First, check if username is already taken
-      const { data: existingUser, error: usernameError } = await supabase
-      .from('users')
-      .select('username')
-      .eq('username', username)
-        .single()
-
-      if (usernameError && usernameError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-        throw usernameError
-    }
-
-      if (existingUser) {
-      setError('Username is already taken')
-        setLoading(false)
-      return
-    }
-
-      // Sign up the user with auth
+      // First create the auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username,
-            referred_by: referralCode || null
-        },
+        email,
+        password,
+        options: {
           emailRedirectTo: `${window.location.origin}/rw/signin`
-      }
-    })
+        }
+      })
 
       if (authError) throw authError
 
       if (authData.user) {
+        // Then create the user record
+        const { error: userError } = await supabase
+          .from('users')
+          .insert({
+            auth_id: authData.user.id,
+            email: email,
+            username: username,
+            created_at: new Date().toISOString(),
+            last_login: new Date().toISOString(),
+            status: 'active',
+            referred_by: referralCode || null,
+            referral_count: 0,
+            total_referral_earnings: 0.00,
+            subscription_end_date: null
+          })
+
+        if (userError) {
+          // If user creation fails, delete the auth user
+          await supabase.auth.admin.deleteUser(authData.user.id)
+          throw userError
+        }
+
+        // If there's a referral code, create the referral record
+        if (referralCode) {
+          const { data: referrerData, error: referrerError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('referred_by', referralCode)
+            .single()
+
+          if (!referrerError && referrerData) {
+            await supabase
+              .from('referrals')
+              .insert({
+                referrer_id: referrerData.id,
+                referred_id: authData.user.id,
+                status: 'signed_up',
+                reward_amount: '7 days'
+              })
+          }
+        }
+
         // Clear the stored referral code
         localStorage.removeItem('referralCode')
         
         // Show success message
         setError('Account created successfully! Please check your email to verify your account.')
         setMode('signin')
-    }
+      }
     } catch (error: any) {
       console.error('Signup error:', error)
       setError(error.message || 'An error occurred during signup')
-  } finally {
-    setLoading(false)
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
   // Reset Password Handler
   const handleResetPassword = async () => {

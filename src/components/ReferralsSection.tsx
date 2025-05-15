@@ -128,8 +128,8 @@ const ReferralsSection: React.FC = () => {
       const transformedReferrals = referralsData.map(referral => ({
         id: referral.id,
         referredUser: {
-          username: referral.referred_user?.username || 'Unknown',
-          email: referral.referred_user?.email || 'Unknown'
+          username: referral.referred_user[0]?.username || 'Unknown',
+          email: referral.referred_user[0]?.email || 'Unknown'
         },
         status: referral.status,
         rewardAmount: referral.reward_amount,
