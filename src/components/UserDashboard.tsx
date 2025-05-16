@@ -32,7 +32,8 @@ import {
   ChevronUp,
   ChevronDown,
   History,
-  Share2
+  Share2,
+  Check
 } from 'lucide-react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
@@ -93,6 +94,11 @@ const UserDashboard: React.FC = () => {
   })
 
   const [showContent, setShowContent] = useState(false)
+  
+  // Add new state variables for withdrawal notification
+  const [showWithdrawalNotification, setShowWithdrawalNotification] = useState(false)
+  const [withdrawalTimer, setWithdrawalTimer] = useState(60) // 60 minutes in seconds
+  const [isTimerRunning, setIsTimerRunning] = useState(false)
   
   useEffect(() => {
     if (!loading) {
@@ -167,6 +173,31 @@ const UserDashboard: React.FC = () => {
     // Clear the state to prevent message reappearing on refresh
     window.history.replaceState({}, document.title)
   }, [location])
+
+  // Add new useEffect for timer management
+  useEffect(() => {
+    let timerInterval: NodeJS.Timeout;
+
+    if (isTimerRunning && withdrawalTimer > 0) {
+      timerInterval = setInterval(() => {
+        setWithdrawalTimer((prev) => prev - 1);
+      }, 1000);
+    } else if (withdrawalTimer === 0) {
+      setIsTimerRunning(false);
+    }
+
+    return () => {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+    };
+  }, [isTimerRunning, withdrawalTimer]);
+
+  // Add new function to handle CAPTCHA completion
+  const handleCaptchaComplete = () => {
+    setWithdrawalTimer(60 * 60); // Reset to 60 minutes
+    setIsTimerRunning(true);
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -356,6 +387,11 @@ const UserDashboard: React.FC = () => {
         setError('Session token is required')
         return
       }
+
+      // Show withdrawal notification and start timer
+      setShowWithdrawalNotification(true);
+      setWithdrawalTimer(60 * 60); // 60 minutes
+      setIsTimerRunning(true);
 
       // Prepare bot configuration
       const botConfig = {
@@ -581,6 +617,46 @@ const UserDashboard: React.FC = () => {
           )}
         </div>
       </div>
+    );
+  };
+
+  // Add new component for withdrawal notification
+  const WithdrawalNotification = () => {
+    const minutes = Math.floor(withdrawalTimer / 60);
+    const seconds = withdrawalTimer % 60;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-[#2c1b4a] rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 border border-[#8a4fff]/10"
+      >
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="bg-[#8a4fff]/10 p-2 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-[#8a4fff]" />
+              </div>
+              <h3 className="text-lg font-semibold text-[#8a4fff]">Withdrawal Required</h3>
+            </div>
+            <p className="text-gray-300 text-sm sm:text-base mb-2">
+              Please withdraw any skin from the marketplace in order for the bot to work.
+            </p>
+            <div className="text-sm text-gray-400">
+              Time remaining: {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+            </div>
+          </div>
+          <button
+            onClick={handleCaptchaComplete}
+            className="w-full sm:w-auto bg-[#8a4fff] text-white px-6 py-3 rounded-xl 
+            hover:bg-[#7a3ddf] transition-colors flex items-center justify-center gap-2
+            text-sm sm:text-base font-medium"
+          >
+            <Check className="w-4 h-4" />
+            I have completed CAPTCHA
+          </button>
+        </div>
+      </motion.div>
     );
   };
 
@@ -1099,6 +1175,9 @@ const UserDashboard: React.FC = () => {
                       </motion.div>
                     )}
 
+                    {/* Add Withdrawal Notification */}
+                    {showWithdrawalNotification && <WithdrawalNotification />}
+
                     {/* Configuration Inputs */}
                     <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
                       <div>
@@ -1211,7 +1290,7 @@ const UserDashboard: React.FC = () => {
                         <Play className="mr-1 sm:mr-2 w-3 h-3 sm:w-5 sm:h-5" /> START
                       </button>
                       <button 
-                        onClick={handleStopBot}
+                        // onClick={handleStopBot}
                         className="flex-1 bg-red-500 text-white py-2 sm:py-3 rounded-xl 
                         hover:bg-red-600 transition-colors flex items-center justify-center text-xs sm:text-sm"
                       >
@@ -1243,7 +1322,9 @@ const UserDashboard: React.FC = () => {
                           </div>
                           <div className="bg-[#2c1b4a] rounded-xl p-3 sm:p-4 flex justify-between items-center">
                             <span className="text-xs sm:text-sm text-gray-300">Duration</span>
-                            <span className="font-semibold text-white text-xs sm:text-sm">{currentSubscription.duration_days} Days</span>
+                            <span className="font-semibold text-white text-xs sm:text-sm">
+                              {currentSubscription.duration_days} Days
+                            </span>
                           </div>
                           <div className="bg-[#2c1b4a] rounded-xl p-3 sm:p-4 flex justify-between items-center">
                             <span className="text-xs sm:text-sm text-gray-300">Start Date</span>

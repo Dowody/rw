@@ -165,26 +165,26 @@ const ReferralsSection: React.FC = () => {
       const totalSignedUp = signedUpReferrals + redeemedReferrals
         
       // Calculate total rewards based on pending referrals
-      const totalRewards = signedUpReferrals * 7
+        const totalRewards = signedUpReferrals * 7
 
-      // Update rewards_days in the database
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          rewards_days: totalRewards
-        })
-        .eq('auth_id', user.id)
+        // Update rewards_days in the database
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({
+            rewards_days: totalRewards
+          })
+          .eq('auth_id', user.id)
 
-      if (updateError) {
-        console.error('Error updating rewards_days:', updateError)
-      }
+        if (updateError) {
+          console.error('Error updating rewards_days:', updateError)
+        }
 
       setStats({
         totalReferrals: transformedReferrals.length,
         completedReferrals: totalSignedUp,
         pendingReferrals: redeemedReferrals,
         totalRewards,
-        pendingRewards: 0
+          pendingRewards: 0
       })
       }
 
@@ -251,9 +251,9 @@ const ReferralsSection: React.FC = () => {
       return 'bg-green-500/20 text-green-400'
     }
     if (referralStatus === 'Signed Up') {
-      return 'bg-blue-500/20 text-blue-400'
+        return 'bg-blue-500/20 text-blue-400'
     }
-    return 'bg-gray-500/20 text-gray-400'
+        return 'bg-gray-500/20 text-gray-400'
   }
 
   const handleRedeemSubscription = async () => {
@@ -727,7 +727,7 @@ const ReferralsSection: React.FC = () => {
                     </div>
                       <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm ${getStatusColor(referral.referral_status)}`}>
                         {referral.referral_status}
-                      </span>
+                    </span>
                   </div>
                     <div className="flex items-center justify-between mt-2 text-xs sm:text-sm">
                       <div className="">
