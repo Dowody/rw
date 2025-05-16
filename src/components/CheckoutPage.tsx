@@ -29,6 +29,7 @@ import { createAppKit, useAppKit, useAppKitAccount, useAppKitProvider, useAppKit
 import { networks, projectId, metadata, ethersAdapter } from '../lib/config'
 import { BrowserProvider, JsonRpcSigner, parseEther, formatEther } from 'ethers'
 import type { Provider } from '@reown/appkit/react'
+import emailjs from '@emailjs/browser'
 
 import { generateInvoicePDF } from '../lib/invoiceUtils'
 import { ethers } from 'ethers'
@@ -48,6 +49,11 @@ createAppKit({
   themeVariables: {
     '--w3m-accent': '#FFFFF',
   }
+})
+
+// Initialize EmailJS
+emailjs.init({
+  publicKey: "W8YR2P7ez_FAsEIbv",
 })
 
 // Add USDC Icon component
@@ -290,13 +296,17 @@ const CheckoutPage: React.FC = () => {
         current_subscription_id: string | null;
         subscription_start_date: string | null;
         subscription_end_date: string | null;
+        username?: string;
+        email?: string;
       }> = await supabase
         .from('users')
         .select(`
           id, 
           current_subscription_id, 
           subscription_start_date, 
-          subscription_end_date
+          subscription_end_date,
+          username,
+          email
         `)
         .eq('auth_id', user.id)
         .single()
@@ -472,8 +482,85 @@ const CheckoutPage: React.FC = () => {
       
       // After successful order placement
       setIsOrderPlaced(true)
-    clearCart()
+      clearCart()
       
+      // Send order confirmation emails
+      const sendOrderConfirmationEmails = async (orderData: any) => {
+        try {
+          // Admin notification email
+          const adminTemplateParams = {
+            order_id: orderData.id,
+            user_id: userData.data.id,
+            status: orderData.status,
+            amount: total,
+            total_amount: total,
+            transaction_date: new Date().toISOString(),
+            subscription_id: finalSubscriptionId,
+            expiration_date: subscriptionEndDate.toISOString(),
+            created_at: orderData.created_at,
+            updated_at: orderData.updated_at
+          }
+
+          // User confirmation email
+          const userTemplateParams = {
+            username: userData.data.username || userData.data.email?.split('@')[0],
+            id: orderData.id,
+            total_amount: total,
+            transaction_date: new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }),
+            subscription_id: finalSubscriptionId,
+            subscription_name: selectedSubscription.name,
+            expiration_date: subscriptionEndDate.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }),
+            orders: cart.map(item => ({
+              name: item.name,
+              units: 1,
+              price: item.price
+            })),
+            cost: {
+              total: total
+            },
+            email: userData.data.email,
+            created_at: new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          }
+
+          // Send admin notification
+          await emailjs.send(
+            'service_27i9rew',
+            'template_tuctejo',
+            adminTemplateParams
+          )
+
+          // Send user confirmation
+          await emailjs.send(
+            'service_rl84opo',
+            'template_uu06rg9',
+            userTemplateParams
+          )
+ 
+          console.log('Order confirmation emails sent successfully')
+        } catch (error) {
+          console.error('Failed to send order confirmation emails:', error)
+        }
+      }
+
+      // Call the email sending function
+      if (order) {
+        await sendOrderConfirmationEmails(order)
+      }
+
       // Set multiple flags to ensure the popup appears
       localStorage.setItem('showPurchaseSuccess', 'true')
       localStorage.setItem('newSubscription', 'true')
@@ -1464,7 +1551,7 @@ const CheckoutPage: React.FC = () => {
                   {isOnlyFreeTrialInCart && !hasJoinedDiscord ? (
                     <button
                       onClick={() => {
-                        window.open('https://discord.gg/rollwithdraw', '_blank', 'noopener,noreferrer')
+                        window.open('https://discord.gg/XxHsYT4m', '_blank', 'noopener,noreferrer')
                         setHasJoinedDiscord(true)
                       }}
                       className="w-full py-4 bg-[#5865F2] text-white rounded-xl hover:bg-[#4752C4] transition-colors text-lg flex items-center justify-center"

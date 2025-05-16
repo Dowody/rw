@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f7;
+      padding: 24px;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    /* Header with Purple Gradient */
+    .header {
+      background: linear-gradient(to bottom right, #210746, #2C095D);
+      color: white;
+      padding: 20px;
+    }
+    .header h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+    .header p {
+      margin: 4px 0 0;
+    }
+    .content {
+      padding: 24px;
+    }
+    table {
+      width: 100%;
+      font-size: 14px;
+      color: #333;
+      border-spacing: 0;
+      border-collapse: collapse;
+    }
+    table tr td:first-child {
+      padding: 8px 0;
+      font-weight: 600;
+      width: 140px;
+      color: #555;
+    }
+    table tr td:last-child {
+      padding: 8px 0;
+      text-align: left;
+    }
+    .footer {
+      background-color: #fafafa;
+      text-align: center;
+      padding: 16px;
+      font-size: 12px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h2>📦 New Order Received!</h2>
+      <p>A new order has been placed. Here are the details:</p>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <table>
+        <tr><td>Order ID:</td><td>{{order_id}}</td></tr>
+        <tr><td>User ID:</td><td>{{user_id}}</td></tr>
+        <tr><td>Status:</td><td>{{status}}</td></tr>
+        <tr><td>Total Amount:</td><td>${{total_amount}}</td></tr>
+        <tr><td>Transaction Date:</td><td>{{transaction_date}}</td></tr>
+        <tr><td>Expiration Date:</td><td>{{expiration_date}}</td></tr>
+        <tr><td>Created At:</td><td>{{created_at}}</td></tr>
+      </table>
+
+      <p>Please review and process this order promptly.</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <small>This is an automated notification. Please do not reply to this email.</small>
+    </div>
+  </div>
+</body>
+</html>

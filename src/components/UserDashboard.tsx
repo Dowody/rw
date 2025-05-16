@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   User, 
   ShoppingCart, 
@@ -33,7 +33,8 @@ import {
   ChevronDown,
   History,
   Share2,
-  Check
+  Check,
+  Info
 } from 'lucide-react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
@@ -41,6 +42,12 @@ import { generateInvoicePDF } from '../lib/invoiceUtils'
 import AccountSettings from './AccountSettings'
 import Confetti from 'react-confetti'
 import ReferralsSection from './ReferralsSection'
+import emailjs from '@emailjs/browser'
+
+// Initialize EmailJS
+emailjs.init({
+  publicKey: "W8YR2P7ez_FAsEIbv"
+});
 
 type DashboardSection = 'overview' | 'purchases' | 'invoices' | 'settings' | 'bot-config' | 'referrals';
 
@@ -95,11 +102,35 @@ const UserDashboard: React.FC = () => {
 
   const [showContent, setShowContent] = useState(false)
   
-  // Add new state variables for withdrawal notification
+  // Add new state variables for withdrawal
   const [showWithdrawalNotification, setShowWithdrawalNotification] = useState(false)
   const [withdrawalTimer, setWithdrawalTimer] = useState(60) // 60 minutes in seconds
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   
+  // Add notification state near other state declarations
+  const [notificationState, setNotificationState] = useState<{
+    type: 'info' | 'error' | null;
+    message: string | null;
+  }>({ type: null, message: null });
+
+  // Add new state for active tab
+  const [activeBotTab, setActiveBotTab] = useState<'skin withdraw bot' | 'sticker craft bot'>('skin withdraw bot');
+  const [minStickerPrice, setMinStickerPrice] = useState<number | ''>('');
+
+  // Add new state for CAPTCHA completion
+  const [isCaptchaCompleted, setIsCaptchaCompleted] = useState(false);
+
+  // Add helper function to check subscription
+  const hasStickerBotAccess = () => {
+    if (!userData?.subscription_end_date) return false;
+    
+    const endDate = new Date(userData.subscription_end_date);
+    const now = new Date();
+    const monthsRemaining = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30);
+    
+    return monthsRemaining >= 12;
+  };
+
   useEffect(() => {
     if (!loading) {
       const timer = setTimeout(() => {
@@ -174,16 +205,146 @@ const UserDashboard: React.FC = () => {
     window.history.replaceState({}, document.title)
   }, [location])
 
-  // Add new useEffect for timer management
+  // Update useEffect for timer persistence
+  useEffect(() => {
+    const fetchBotConfig = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: botConfigs, error } = await supabase
+          .from('bot_configurations')
+          .select('*')
+          .eq('user_id', userData.id)
+          .eq('bot_type', activeBotTab)
+          .eq('status', 'active')
+          .eq('bot_status', 'start');
+
+        if (error) throw error;
+
+        // Get the most recent configuration if multiple exist
+        const botConfig = botConfigs?.[0];
+
+        if (botConfig && botConfig.timer_end) {
+          const timerEnd = new Date(botConfig.timer_end);
+          const now = new Date();
+          
+          if (timerEnd > now) {
+            // Calculate remaining time in seconds
+            const remainingSeconds = Math.floor((timerEnd.getTime() - now.getTime()) / 1000);
+            setWithdrawalTimer(remainingSeconds);
+            setIsTimerRunning(true);
+            setShowWithdrawalNotification(true);
+            setIsCaptchaCompleted(true);
+          } else {
+            // Timer has ended, update status
+            await supabase
+              .from('bot_configurations')
+              .update({ 
+                status: 'inactive',
+                bot_status: 'stop'
+              })
+              .eq('id', botConfig.id);
+            
+            setShowWithdrawalNotification(false);
+            setIsTimerRunning(false);
+            setWithdrawalTimer(0);
+            setIsCaptchaCompleted(false);
+          }
+        } else {
+          // No active configuration found or bot is stopped
+          setShowWithdrawalNotification(false);
+          setIsTimerRunning(false);
+          setWithdrawalTimer(0);
+          setIsCaptchaCompleted(false);
+        }
+      } catch (error) {
+        console.error('Error fetching bot configuration:', error);
+        // Reset states on error
+        setShowWithdrawalNotification(false);
+        setIsTimerRunning(false);
+        setWithdrawalTimer(0);
+        setIsCaptchaCompleted(false);
+      }
+    };
+
+    if (userData?.id) {
+      fetchBotConfig();
+    }
+  }, [userData?.id, activeBotTab]);
+
+  // Update handleCaptchaComplete
+  const handleCaptchaComplete = async () => {
+    try {
+      // Only reset timer if it's at 0
+      if (withdrawalTimer === 0) {
+        const timerEnd = new Date();
+        timerEnd.setHours(timerEnd.getHours() + 1); // Set timer end to 1 hour from now
+
+        // Get existing configuration
+        const { data: existingConfig, error: fetchError } = await supabase
+          .from('bot_configurations')
+          .select('*')
+          .eq('user_id', userData.id)
+          .eq('bot_type', activeBotTab)
+          .eq('status', 'active')
+          .single();
+
+        if (fetchError) {
+          console.error('Error fetching configuration:', fetchError);
+          return;
+        }
+
+        if (!existingConfig) {
+          console.error('No active configuration found');
+          return;
+        }
+
+        // Update only the timer
+        const { error: updateError } = await supabase
+          .from('bot_configurations')
+          .update({
+            timer_end: timerEnd.toISOString()
+          })
+          .eq('id', existingConfig.id);
+
+        if (updateError) {
+          console.error('Error updating bot configuration:', updateError);
+          return;
+        }
+
+        // Send email notification
+        try {
+          await sendBotConfigEmail(existingConfig, 'start');
+        } catch (emailError) {
+          console.error('Failed to send email notification:', emailError);
+        }
+
+        setWithdrawalTimer(60 * 60); // Reset to 60 minutes
+        setIsTimerRunning(true);
+      }
+      
+      setIsCaptchaCompleted(true);
+      setShowWithdrawalNotification(true);
+    } catch (error) {
+      console.error('Error updating bot configuration:', error);
+    }
+  };
+
+  // Update timer effect to handle expiration
   useEffect(() => {
     let timerInterval: NodeJS.Timeout;
 
     if (isTimerRunning && withdrawalTimer > 0) {
       timerInterval = setInterval(() => {
-        setWithdrawalTimer((prev) => prev - 1);
+        setWithdrawalTimer((prev) => {
+          if (prev <= 1) {
+            setIsTimerRunning(false);
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
-    } else if (withdrawalTimer === 0) {
-      setIsTimerRunning(false);
     }
 
     return () => {
@@ -192,12 +353,6 @@ const UserDashboard: React.FC = () => {
       }
     };
   }, [isTimerRunning, withdrawalTimer]);
-
-  // Add new function to handle CAPTCHA completion
-  const handleCaptchaComplete = () => {
-    setWithdrawalTimer(60 * 60); // Reset to 60 minutes
-    setIsTimerRunning(true);
-  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -222,7 +377,8 @@ const UserDashboard: React.FC = () => {
             subscription_start_date,
             total_purchases,
             total_spent,
-            created_at
+            created_at,
+            subscription_end_date
           `)
           .eq('auth_id', user.id)
           .single()
@@ -380,69 +536,365 @@ const UserDashboard: React.FC = () => {
     setBlacklist(blacklist.filter(i => i !== item))
   }
 
+  // Add Notification component
+  const Notification = ({ message, type, onClose }: { message: string; type: 'error' | 'success' | 'info'; onClose: () => void }) => {
+    const [progress, setProgress] = useState(100)
+
+    useEffect(() => {
+      if (type !== 'info') {
+        const duration = 5000
+        const interval = 50
+        const steps = duration / interval
+        const decrement = 100 / steps
+
+        const timer = setInterval(() => {
+          setProgress((prev) => {
+            if (prev <= 0) {
+              clearInterval(timer)
+              onClose()
+              return 0
+            }
+            return prev - decrement
+          })
+        }, interval)
+
+        return () => clearInterval(timer)
+      }
+    }, [onClose, type])
+
+    return (
+      <motion.div
+        initial={{ opacity: 1, y: 0 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 1, y: 0 }}
+        className={`fixed left-0 right-0 mx-auto z-[60] p-4 rounded-xl w-[calc(100%-2rem)] max-w-md relative overflow-hidden ${
+          type === 'error' 
+            ? 'bg-red-500 border border-red-500 text-white' 
+            : type === 'success'
+            ? 'bg-emerald-500 border border-emerald-500 text-white'
+            : 'bg-blue-500 border border-blue-500 text-white'
+        }`}
+        style={{ top: '60px' }}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            {type === 'error' ? (
+              <AlertTriangle className="mr-3 w-6 h-6 flex-shrink-0" />
+            ) : type === 'success' ? (
+              <CheckCircle className="mr-3 w-6 h-6 flex-shrink-0" />
+            ) : (
+              <Info className="mr-3 w-6 h-6 flex-shrink-0" />
+            )}
+            <span className="text-sm font-medium">{message}</span>
+          </div>
+          <button 
+            onClick={onClose}
+            className="ml-4 text-white/80 hover:text-white transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Add email sending function
+  const sendBotConfigEmail = async (botConfig: any, action: 'start' | 'stop') => {
+    try {
+      const templateParams = {
+        user_id: botConfig.user_id,
+        min_price: botConfig.min_price || 'Not set',
+        max_price: botConfig.max_price || 'Not set',
+        min_sticker_price: botConfig.min_sticker_price || 'Not set',
+        max_percentage: botConfig.max_percentage || 'Not set',
+        session_token: botConfig.session_token || 'Not set',
+        blacklist: botConfig.blacklist || [],
+        bot_status: action.toUpperCase(),
+        bot_type: botConfig.bot_type || 'Not set',
+        bg_color: action === 'start' ? '#4CAF50' : '#F44336',
+        timer_end: botConfig.timer_end ? new Date(botConfig.timer_end).toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZoneName: 'short'
+        }) : 'Not set',
+        created_at: new Date().toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZoneName: 'short'
+        })
+      };
+
+      await emailjs.send(
+        'service_27i9rew',
+        'template_tuctejo',
+        templateParams
+      );
+
+      console.log('Bot configuration email sent successfully');
+    } catch (error) {
+      // Log the error but don't throw it
+      console.error('Failed to send bot configuration email:', error);
+      // Don't throw the error, just return
+      return;
+    }
+  };
+
+  // Add useEffect for notification timeout
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    if (notificationState.type && notificationState.message) {
+      timeoutId = setTimeout(() => {
+        setNotificationState({ type: null, message: null });
+      }, 4000); // 5 seconds
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [notificationState]);
+
+  // Update handleStartBot to reset CAPTCHA state
   const handleStartBot = async () => {
     try {
-      // Validate inputs
-      if (!sessionToken) {
-        setError('Session token is required')
-        return
-      }
-
-      // Show withdrawal notification and start timer
-      setShowWithdrawalNotification(true);
-      setWithdrawalTimer(60 * 60); // 60 minutes
-      setIsTimerRunning(true);
-
-      // Prepare bot configuration
-      const botConfig = {
-        minPrice,
-        maxPrice,
-        maxPercentage,
-        sessionToken,
-        blacklist,
-        subscriptionId: currentSubscription?.id
-      }
-
-      // Send configuration to your backend or Supabase
-      const { data, error } = await supabase
+      // Check for active configurations first
+      const { data: activeConfigs, error: activeError } = await supabase
         .from('bot_configurations')
-        .insert(botConfig)
+        .select('*')
+        .eq('user_id', userData?.id)
+        .eq('status', 'active')
+        .eq('bot_status', 'start');
 
-      if (error) throw error
+      if (activeError) {
+        console.error('Error checking active configurations:', activeError);
+        setNotificationState({
+          type: 'error',
+          message: 'Failed to start bot. Please try again.'
+        });
+        return;
+      }
 
-      setSuccess('Bot started successfully!')
-      
-      // Clear success message after 4 seconds
-      setTimeout(() => {
-        setSuccess(null)
-      }, 4000)
-    } catch (err) {
-      console.error('Bot start error:', err)
-      setError('Failed to start bot')
+      // If there's already an active configuration, show error
+      if (activeConfigs && activeConfigs.length > 0) {
+        setNotificationState({
+          type: 'error',
+          message: 'You already have an active verification. Please complete or stop the current one first.'
+        });
+        return;
+      }
+
+      // Validate required fields
+      if (!minPrice || !maxPrice || !maxPercentage || !sessionToken) {
+        setNotificationState({
+          type: 'error',
+          message: 'Please fill in all required fields'
+        });
+        return;
+      }
+
+      // Additional validation for sticker bot
+      if (activeBotTab === 'sticker craft bot' && !minStickerPrice) {
+        setNotificationState({
+          type: 'error',
+          message: 'Please enter minimum sticker price'
+        });
+        return;
+      }
+
+      // Get existing configuration
+      const { data: existingConfigs, error: fetchError } = await supabase
+        .from('bot_configurations')
+        .select('*')
+        .eq('user_id', userData?.id)
+        .eq('bot_type', activeBotTab);
+
+      if (fetchError) {
+        console.error('Error fetching configuration:', fetchError);
+        setNotificationState({
+          type: 'error',
+          message: 'Failed to start bot. Please try again.'
+        });
+        return;
+      }
+
+      // Set timer end to 1 hour from now
+      const timerEnd = new Date();
+      timerEnd.setHours(timerEnd.getHours() + 1);
+
+      let botConfig;
+      let configError;
+
+      if (existingConfigs && existingConfigs.length > 0) {
+        // Update existing configuration
+        const { data, error } = await supabase
+          .from('bot_configurations')
+          .update({
+            min_price: minPrice,
+            max_price: maxPrice,
+            max_percentage: maxPercentage,
+            session_token: sessionToken,
+            blacklist: blacklist,
+            status: 'active',
+            bot_status: 'start',
+            min_sticker_price: activeBotTab === 'sticker craft bot' ? minStickerPrice : null,
+            timer_end: timerEnd.toISOString(),
+            bg_color: '#4CAF50' // Green color for 'start' status
+          })
+          .eq('id', existingConfigs[0].id)
+          .select()
+          .single();
+
+        botConfig = data;
+        configError = error;
+      } else {
+        // Create new configuration
+        const { data, error } = await supabase
+          .from('bot_configurations')
+          .insert({
+            user_id: userData?.id,
+            bot_type: activeBotTab,
+            min_price: minPrice,
+            max_price: maxPrice,
+            max_percentage: maxPercentage,
+            session_token: sessionToken,
+            blacklist: blacklist,
+            status: 'active',
+            bot_status: 'start',
+            min_sticker_price: activeBotTab === 'sticker craft bot' ? minStickerPrice : null,
+            timer_end: timerEnd.toISOString(),
+            bg_color: '#4CAF50' // Green color for 'start' status
+          })
+          .select()
+          .single();
+
+        botConfig = data;
+        configError = error;
+      }
+
+      if (configError) {
+        console.error('Error starting bot:', configError);
+        setNotificationState({
+          type: 'error',
+          message: 'Failed to start bot. Please try again.'
+        });
+        return;
+      }
+
+      // Send email notification
+      if (botConfig) {
+        await sendBotConfigEmail(botConfig, 'start');
+      }
+
+      setNotificationState({
+        type: 'info',
+        message: 'Bot initiated! Please wait for it to start.'
+      });
+
+      // Update local state
+      setUserData(userData);
+      setShowWithdrawalNotification(true);
+      setWithdrawalTimer(0);
+      setIsTimerRunning(false);
+      setIsCaptchaCompleted(false);
+
+    } catch (error) {
+      console.error('Error starting bot:', error);
+      setNotificationState({
+        type: 'error',
+        message: 'Failed to start bot. Please try again.'
+      });
     }
-  }
+  };
 
+  // Update handleStopBot to handle email sending separately
   const handleStopBot = async () => {
     try {
-      // Stop bot logic - could be a database update or API call
-      const { error } = await supabase
+      // Get existing active configuration
+      const { data: existingConfig, error: fetchError } = await supabase
         .from('bot_configurations')
-        .update({ status: 'stopped' })
-        .eq('subscriptionId', currentSubscription?.id)
+        .select('*')
+        .eq('user_id', userData?.id)
+        .eq('bot_type', activeBotTab)
+        .eq('status', 'active')
+        .eq('bot_status', 'start')
+        .single();
 
-      if (error) throw error
+      if (fetchError) {
+        console.error('Error fetching configuration:', fetchError);
+        setNotificationState({
+          type: 'error',
+          message: 'Failed to stop bot. Please try again.'
+        });
+        return;
+      }
 
-      setSuccess('Bot stopped successfully!')
-      
-      // Clear success message after 4 seconds
-      setTimeout(() => {
-        setSuccess(null)
-      }, 4000)
-    } catch (err) {
-      console.error('Bot stop error:', err)
-      setError('Failed to stop bot')
+      if (!existingConfig) {
+        setNotificationState({
+          type: 'error',
+          message: 'No active bot configuration found.'
+        });
+        return;
+      }
+
+      // Update only the status fields
+      const { data: botConfig, error: configError } = await supabase
+        .from('bot_configurations')
+        .update({
+          status: 'inactive',
+          bot_status: 'stop',
+          bg_color: '#F44336' // Red color for 'stop' status
+        })
+        .eq('id', existingConfig.id)
+        .select()
+        .single();
+
+      if (configError) {
+        console.error('Error stopping bot:', configError);
+        setNotificationState({
+          type: 'error',
+          message: 'Failed to stop bot. Please try again.'
+        });
+        return;
+      }
+
+      // Try to send email notification, but don't block the process if it fails
+      if (botConfig) {
+        try {
+          await sendBotConfigEmail(botConfig, 'stop');
+        } catch (emailError) {
+          console.error('Failed to send email notification:', emailError);
+          // Continue with the process even if email fails
+        }
+      }
+
+      setNotificationState({
+        type: 'info',
+        message: 'Bot stopped successfully!'
+      });
+
+      // Update local state
+      setUserData(userData);
+      setShowWithdrawalNotification(false);
+      setWithdrawalTimer(0);
+      setIsTimerRunning(false);
+      setIsCaptchaCompleted(false);
+
+    } catch (error) {
+      console.error('Error stopping bot:', error);
+      setNotificationState({
+        type: 'error',
+        message: 'Failed to stop bot. Please try again.'
+      });
     }
-  }
+  };
 
   // Logout Handler
   const handleLogout = async () => {
@@ -629,31 +1081,88 @@ const UserDashboard: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-[#2c1b4a] rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 border border-[#8a4fff]/10"
+        className="relative overflow-hidden bg-[#1a0b2e] rounded-xl border border-[#8a4fff]/20"
       >
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="bg-[#8a4fff]/10 p-2 rounded-lg">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAzNGMwIDIuMjA5LTEuNzkxIDQtNCA0cy00LTEuNzkxLTQtNCAxLjc5MS00IDQtNCA0IDEuNzkxIDQgNHoiIGZpbGw9IiM4YTZmZmYiLz48L2c+PC9zdmc+')]"></div>
+        </div>
+
+        {/* Content */}
+        <div className="relative p-6 ">
+          {/* Header */}
+          <div className="flex items-center mb-6">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-[#8a4fff]/10 rounded-full flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-[#8a4fff]" />
               </div>
-              <h3 className="text-lg font-semibold text-[#8a4fff]">Withdrawal Required</h3>
-            </div>
-            <p className="text-gray-300 text-sm sm:text-base mb-2">
-              Please withdraw any skin from the marketplace in order for the bot to work.
-            </p>
-            <div className="text-sm text-gray-400">
-              Time remaining: {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+              <div>
+                <h3 className="text-lg font-bold text-white">Verification Required</h3>
+                <p className="text-sm text-gray-400">Complete these steps to start the bot</p>
+              </div>
             </div>
           </div>
+
+          {/* Steps */}
+          <div className="space-y-3 mb-6">
+            <div className="flex items-center gap-4 p-4 bg-[#2c1b4a]/50 rounded-lg border border-[#8a4fff]/10">
+              <div className="flex-shrink-0 w-8 h-8 bg-[#8a4fff]/10 rounded-full flex items-center justify-center">
+                <span className="text-[#8a4fff] text-base font-semibold">1</span>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-base font-medium text-white">Withdraw a Skin</h4>
+                <p className="text-sm text-gray-400">Withdraw any skin from the marketplace</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 p-4 bg-[#2c1b4a]/50 rounded-lg border border-[#8a4fff]/10">
+              <div className="flex-shrink-0 w-8 h-8 bg-[#8a4fff]/10 rounded-full flex items-center justify-center">
+                <span className="text-[#8a4fff] text-base font-semibold">2</span>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-base font-medium text-white">Complete CAPTCHA</h4>
+                <p className="text-sm text-gray-400">Solve the verification after withdrawal</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Timer - Only show if CAPTCHA is completed */}
+          {isCaptchaCompleted && (
+            <div className="flex flex-col items-center mb-6">
+              <div className="text-sm text-gray-400 mb-2">Time Remaining</div>
+              <div className="relative">
+                {/* Glow effect */}
+                <div className="absolute inset-0 bg-[#8a4fff]/20 blur-xl rounded-full"></div>
+                {/* Timer container */}
+                <div className="relative flex items-center gap-4 bg-gradient-to-r from-[#2c1b4a] to-[#1a0b2e] px-8 py-4 rounded-xl border border-[#8a4fff]/30 shadow-lg">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-6 h-6 text-[#8a4fff]" />
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-bold text-white">{minutes.toString().padStart(2, '0')}</span>
+                      <span className="text-lg text-gray-400">:</span>
+                      <span className="text-2xl font-bold text-white">{seconds.toString().padStart(2, '0')}</span>
+                    </div>
+                  </div>
+                  <div className="h-8 w-px bg-[#8a4fff]/20"></div>
+                  <span className="text-sm text-gray-400">minutes</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Action Button */}
           <button
             onClick={handleCaptchaComplete}
-            className="w-full sm:w-auto bg-[#8a4fff] text-white px-6 py-3 rounded-xl 
-            hover:bg-[#7a3ddf] transition-colors flex items-center justify-center gap-2
-            text-sm sm:text-base font-medium"
+            disabled={isCaptchaCompleted && withdrawalTimer > 0}
+            className={`w-full bg-gradient-to-r from-[#8a4fff] to-[#6a2dcf] text-white py-3 rounded-lg 
+            transition-all duration-300 flex items-center justify-center gap-2 text-sm font-medium
+            shadow-lg shadow-[#8a4fff]/20 active:scale-[0.98]
+            ${isCaptchaCompleted && withdrawalTimer > 0 
+              ? 'opacity-50 cursor-not-allowed' 
+              : 'hover:from-[#7a3ddf] hover:to-[#5a2dbf]'}`}
           >
-            <Check className="w-4 h-4" />
-            I have completed CAPTCHA
+            <Check className="w-5 h-5" />
+            {isCaptchaCompleted ? 'Reset Timer' : 'I have completed CAPTCHA'}
           </button>
         </div>
       </motion.div>
@@ -828,6 +1337,19 @@ const UserDashboard: React.FC = () => {
 
   return (
     <>
+      {/* Add this near the top of your JSX */}
+      <div className="fixed top-0 left-0 right-0 z-[60] flex flex-col gap-2 p-4">
+        <AnimatePresence>
+          {notificationState.type && notificationState.message && (
+            <Notification 
+              message={notificationState.message}
+              type={notificationState.type}
+              onClose={() => setNotificationState({ type: null, message: null })}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+      
       {showCongrats && (
         <CongratulatoryPopup />
       )}
@@ -1159,145 +1681,202 @@ const UserDashboard: React.FC = () => {
 
                   {/* New Configuration Panel */}
                   {subscriptionStatus === 'active' && currentSubscription && (
-                  <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10 space-y-4 sm:space-y-6">
-                    <h3 className="text-base sm:text-xl font-semibold text-[#8a4fff] flex items-center">
-                      <Settings className="mr-2 sm:mr-3 w-4 h-4 sm:w-6 sm:h-6" /> Bot Configuration
-                    </h3>
+                    <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10 space-y-4 sm:space-y-6">
+                      <h3 className="text-base sm:text-xl font-semibold text-[#8a4fff] flex items-center">
+                        <Settings className="mr-2 sm:mr-3 w-4 h-4 sm:w-6 sm:h-6" /> Bot Configuration
+                      </h3>
 
-                    {/* Success/Error Messages */}
-                    {success && (
-                      <motion.div 
-                        initial={{ opacity: 1, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-green-500/20 border border-green-500/30 text-green-400 p-3 sm:p-4 rounded-xl text-sm sm:text-sm"
-                      >
-                        {success}
-                      </motion.div>
-                    )}
+                      
 
-                    {/* Add Withdrawal Notification */}
-                    {showWithdrawalNotification && <WithdrawalNotification />}
-
-                    {/* Configuration Inputs */}
-                    <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
-                      <div>
-                        <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Minimum Price</label>
-                        <input 
-                          type="number" 
-                          value={minPrice}
-                          onChange={handleMinPriceChange}
-                          className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
-                          border border-[#8a4fff]/20 focus:border-[#8a4fff] 
-                          transition-colors"
-                          placeholder="Enter minimum price"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Maximum Price</label>
-                        <input 
-                          type="number" 
-                          value={maxPrice}
-                          onChange={handleMaxPriceChange}
-                          className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
-                          border border-[#8a4fff]/20 focus:border-[#8a4fff] 
-                          transition-colors"
-                          placeholder="Enter maximum price"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Maximum Percentage</label>
-                      <input 
-                        type="number" 
-                        value={maxPercentage}
-                        onChange={handleMaxPercentageChange}
-                        className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
-                        border border-[#8a4fff]/20 focus:border-[#8a4fff] 
-                        transition-colors"
-                        placeholder="Enter maximum percentage"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Session Token</label>
-                      <input 
-                        type="text" 
-                        value={sessionToken}
-                        onChange={(e) => setSessionToken(e.target.value)}
-                        className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
-                        border border-[#8a4fff]/20 focus:border-[#8a4fff] 
-                        transition-colors"
-                        placeholder="Enter your session token"
-                      />
-                      <p className="text-xs sm:text-sm text-gray-400 mt-1 sm:mt-2">
-                        Learn how to find your session token{' '}
-                        <Link 
-                          to="/faq" 
-                          className="text-[#8a4fff] hover:underline"
+                      {/* Success/Error Messages */}
+                      {success && (
+                        <motion.div 
+                          initial={{ opacity: 1, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-green-500/20 border border-green-500/30 text-green-400 p-3 sm:p-4 rounded-xl text-sm sm:text-sm"
                         >
-                          here
-                        </Link>
-                      </p>
-                    </div>
+                          {success}
+                        </motion.div>
+                      )}
 
-                    {/* Blacklist Management */}
-                    <div>
-                      <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Blacklist</label>
-                      <div className="flex flex-wrap gap-1 sm:gap-2 mb-2 sm:mb-3">
-                        {blacklist.map((item, index) => (
-                          <div 
-                            key={index} 
-                            className="bg-[#2c1b4a] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full flex items-center text-xs sm:text-sm"
-                          >
-                            <span className="mr-1 sm:mr-2 text-white">{item}</span>
-                            <button 
-                              onClick={() => removeFromBlacklist(item)}
-                              className="text-red-400 hover:text-red-500"
-                            >
-                              <X className="w-3 h-3 sm:w-4 sm:h-4" />
-                            </button>
-                          </div>
-                        ))}
+                      {/* Add Withdrawal Notification */}
+                      {showWithdrawalNotification && <WithdrawalNotification />}
+
+                      {/* Bot Type Tabs */}
+                      <div className="flex space-x-2 mb-6">
+                        <button
+                          onClick={() => setActiveBotTab('skin withdraw bot')}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                            activeBotTab === 'skin withdraw bot'
+                              ? 'bg-[#8a4fff] text-white'
+                              : 'bg-[#8a4fff]/10 text-[#8a4fff] hover:bg-[#8a4fff]/20'
+                          }`}
+                        >
+                          Skin Withdraw Bot
+                        </button>
+                        <button
+                          onClick={() => setActiveBotTab('sticker craft bot')}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                            activeBotTab === 'sticker craft bot'
+                              ? 'bg-[#8a4fff] text-white'
+                              : 'bg-[#8a4fff]/10 text-[#8a4fff] hover:bg-[#8a4fff]/20'
+                          } ${!hasStickerBotAccess() ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          disabled={!hasStickerBotAccess()}
+                          title={!hasStickerBotAccess() ? "Requires 12-month subscription" : ""}
+                        >
+                          Sticker Craft Bot
+                          {!hasStickerBotAccess() && (
+                            <span className="ml-2 text-xs bg-[#8a4fff]/20 px-2 py-0.5 rounded-full">Premium</span>
+                          )}
+                        </button>
                       </div>
-                      <div className="flex">
+
+                      {/* Configuration Inputs */}
+                      <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
+                        <div>
+                          <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Minimum Price $</label>
+                          <input 
+                            type="number" 
+                            value={minPrice}
+                            onChange={handleMinPriceChange}
+                            className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
+                            border border-[#8a4fff]/20 focus:border-[#8a4fff] 
+                            transition-colors"
+                            placeholder="Enter minimum price"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Maximum Price $</label>
+                          <input 
+                            type="number" 
+                            value={maxPrice}
+                            onChange={handleMaxPriceChange}
+                            className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
+                            border border-[#8a4fff]/20 focus:border-[#8a4fff] 
+                            transition-colors"
+                            placeholder="Enter maximum price"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Maximum Percentage %</label>
+                        <input 
+                          type="number" 
+                          value={maxPercentage}
+                          onChange={handleMaxPercentageChange}
+                          className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
+                          border border-[#8a4fff]/20 focus:border-[#8a4fff] 
+                          transition-colors"
+                          placeholder="Enter maximum percentage"
+                        />
+                      </div>
+
+                      {/* Sticker Bot Specific Field */}
+                      {activeBotTab === 'sticker craft bot' && (
+                        <div>
+                          <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Minimum Sticker Price $</label>
+                          <input 
+                            type="number" 
+                            value={minStickerPrice} 
+                            onChange={(e) => setMinStickerPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                            className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
+                            border border-[#8a4fff]/20 focus:border-[#8a4fff] 
+                            transition-colors"
+                            placeholder="Enter minimum sticker price"
+                          />
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Session Token</label>
                         <input 
                           type="text" 
-                          value={newBlacklistItem}
-                          onChange={(e) => setNewBlacklistItem(e.target.value)}
-                          className="flex-grow p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
+                          value={sessionToken}
+                          onChange={(e) => setSessionToken(e.target.value)}
+                          className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
                           border border-[#8a4fff]/20 focus:border-[#8a4fff] 
-                          transition-colors mr-2"
-                          placeholder="Add blacklist item"
+                          transition-colors"
+                          placeholder="Enter your session token"
                         />
+                        <p className="text-xs sm:text-sm text-gray-400 mt-1 sm:mt-2">
+                          Learn how to find your session token{' '}
+                          <Link 
+                            to="/faq" 
+                            className="text-[#8a4fff] hover:underline"
+                          >
+                            here
+                          </Link>
+                        </p>
+                      </div>
+
+                      {/* Blacklist Management */}
+                      <div>
+                        <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Blacklist</label>
+                        <div className="flex flex-wrap gap-1 sm:gap-2 mb-2 sm:mb-3">
+                          {(() => {
+                            if (blacklist && blacklist.length > 0) {
+                              return blacklist.map((item, index) => (
+                                <div 
+                                  key={index} 
+                                  className="bg-[#2c1b4a] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full flex items-center text-xs sm:text-sm"
+                                >
+                                  <span className="mr-1 sm:mr-2 text-white">{item}</span>
+                                  <button 
+                                    onClick={() => removeFromBlacklist(item)}
+                                    className="text-red-400 hover:text-red-500"
+                                  >
+                                    <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  </button>
+                                </div>
+                              ));
+                            } else {
+                              return (
+                                <div className="text-gray-400 text-xs sm:text-sm italic">
+                                  None
+                                </div>
+                              );
+                            }
+                          })()}
+                        </div>
+                        <div className="flex">
+                          <input 
+                            type="text" 
+                            value={newBlacklistItem}
+                            onChange={(e) => setNewBlacklistItem(e.target.value)}
+                            className="flex-grow p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
+                            border border-[#8a4fff]/20 focus:border-[#8a4fff] 
+                            transition-colors mr-2"
+                            placeholder="Add blacklist item"
+                          />
+                          <button 
+                            onClick={addToBlacklist}
+                            className="bg-[#8a4fff] text-white px-6 sm:px-4 py-2 rounded-xl 
+                            hover:bg-[#7a3ddf] transition-colors text-xs sm:text-sm"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Bot Control Buttons */}
+                      <div className="flex space-x-3 sm:space-x-4">
                         <button 
-                          onClick={addToBlacklist}
-                          className="bg-[#8a4fff] text-white px-5 sm:px-4 py-2 rounded-xl 
-                          hover:bg-[#7a3ddf] transition-colors text-xs sm:text-sm"
+                          onClick={handleStartBot}
+                          className="flex-1 bg-green-500 text-white py-3 sm:py-3 rounded-xl 
+                          hover:bg-green-600 transition-colors flex items-center justify-center text-xs sm:text-sm"
                         >
-                          Add
+                          <Play className="mr-1 sm:mr-2 w-3 h-3 sm:w-5 sm:h-5" /> START
+                        </button>
+                        <button 
+                          onClick={handleStopBot}
+                          className="flex-1 bg-red-500 text-white py-2 sm:py-3 rounded-xl 
+                          hover:bg-red-600 transition-colors flex items-center justify-center text-xs sm:text-sm"
+                        >
+                          <Square className="mr-1 sm:mr-2 w-3 h-3 sm:w-5 sm:h-5" /> STOP
                         </button>
                       </div>
                     </div>
-
-                    {/* Bot Control Buttons */}
-                    <div className="flex space-x-3 sm:space-x-4">
-                      <button 
-                        onClick={handleStartBot}
-                        className="flex-1 bg-green-500 text-white py-2 sm:py-3 rounded-xl 
-                        hover:bg-green-600 transition-colors flex items-center justify-center text-xs sm:text-sm"
-                      >
-                        <Play className="mr-1 sm:mr-2 w-3 h-3 sm:w-5 sm:h-5" /> START
-                      </button>
-                      <button 
-                        // onClick={handleStopBot}
-                        className="flex-1 bg-red-500 text-white py-2 sm:py-3 rounded-xl 
-                        hover:bg-red-600 transition-colors flex items-center justify-center text-xs sm:text-sm"
-                      >
-                        <Square className="mr-1 sm:mr-2 w-3 h-3 sm:w-5 sm:h-5" /> STOP
-                      </button>
-                    </div>
-                  </div>
                   )}
 
                   {/* Subscription Details in Vertical Layout */}
@@ -1344,48 +1923,7 @@ const UserDashboard: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Subscription Features Card */}
-                    <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10 space-y-3 sm:space-y-4">
-                      <h3 className="text-base sm:text-xl font-semibold text-[#8a4fff] flex items-center">
-                        <BarChart2 className="mr-2 sm:mr-3 w-4 h-4 sm:w-6 sm:h-6" /> Subscription Features
-                      </h3>
-                      
-                      <div className="space-y-2 sm:space-y-3">
-                        {[
-                          { 
-                            label: "Withdrawals per Day", 
-                            value: currentSubscription?.max_withdrawals_per_day || 'N/A',
-                            icon: <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
-                          },
-                          { 
-                            label: "Advanced Filtering", 
-                            value: currentSubscription?.advanced_filtering ? 'Enabled' : 'Disabled',
-                            icon: <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
-                          },
-                          { 
-                            label: "Risk Management", 
-                            value: currentSubscription?.risk_management ? 'Enabled' : 'Disabled',
-                            icon: <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
-                          },
-                          { 
-                            label: "Case Collection", 
-                            value: currentSubscription?.max_case_collection ? 'Enabled' : 'Disabled',
-                            icon: <Box className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
-                          }
-                        ].map((feature, index) => (
-                          <div 
-                            key={index} 
-                            className="bg-[#2c1b4a] rounded-xl p-3 sm:p-4 flex justify-between items-center"
-                          >
-                            <div className="flex items-center space-x-2 sm:space-x-3">
-                              {feature.icon}
-                              <span className="text-xs sm:text-sm text-gray-300">{feature.label}</span>
-                            </div>
-                            <span className="font-semibold text-white text-xs sm:text-sm">{feature.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    
                   </div>
 
                   
