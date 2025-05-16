@@ -12,7 +12,6 @@ import {
   Star
 } from 'lucide-react'
 import { 
-  SiBitcoin, 
   SiEthereum, 
   SiTether,
   SiDiscord,
@@ -20,6 +19,15 @@ import {
 } from 'react-icons/si'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+
+// Add USDC Icon component
+const UsdcIcon = ({ className }: { className?: string }) => (
+  <img 
+    src="https://icones.pro/wp-content/uploads/2024/04/blue-usdc-icon-symbol-logo.png"
+    alt="USDC"
+    className={className}
+  />
+)
 
 const Footer = () => {
   const navigate = useNavigate()
@@ -48,9 +56,9 @@ const Footer = () => {
 
   const cryptoPayments = [
     { 
-      icon: <SiBitcoin className="w-6 h-6 sm:w-8 sm:h-8 text-[#F7931A] transform rotate-[-12deg]" />, 
-      name: "Bitcoin",
-      code: "BTC"
+      icon: <UsdcIcon className="w-6 h-6 sm:w-8 sm:h-8" />, 
+      name: "USDC",
+      code: "USDC"
     },
     { 
       icon: <SiEthereum className="w-6 h-6 sm:w-8 sm:h-8 text-[#627EEA]" />, 
@@ -151,7 +159,7 @@ const Footer = () => {
                 <Server className="mr-2 w-4 h-4 sm:w-5 sm:h-5" /> Community
               </h4>
               <a 
-                href="https://discord.gg/rollwithdraw" 
+                href="https://discord.gg/XxHsYT4m" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center bg-[#5865F2]/10 p-2 sm:p-3 rounded-lg hover:bg-[#5865F2]/20 transition-colors"

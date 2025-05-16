@@ -208,7 +208,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
               </button>
             </div>
             <a 
-              href="https://discord.gg/rollwithdraw" 
+              href="https://discord.gg/XxHsYT4m" 
               target="_blank" 
               rel="noopener noreferrer"
               className="bg-[#5865F2] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:bg-[#4752C4] transition-colors flex items-center text-[14px] sm:text-base"
@@ -442,7 +442,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
                   {/* Mobile Action Buttons */}
                   <div className="flex flex-col space-y-3 sm:space-y-4">
                     <a 
-                      href="https://discord.gg/rollwithdraw"
+                      href="https://discord.gg/XxHsYT4m"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex-1 bg-[#5865F2] text-white px-4 sm:px-6 py-2 mt-1 sm:py-3 rounded-xl hover:bg-[#4752C4] transition-colors flex items-center justify-center text-[14px] sm:text-base"

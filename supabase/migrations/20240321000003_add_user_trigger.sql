@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS users (
     status TEXT DEFAULT 'active',
     subscription_end_date TIMESTAMPTZ,
     total_referral_earnings NUMERIC(10, 2) DEFAULT 0.00,
-    last_login TIMESTAMPTZ
+    last_login TIMESTAMPTZ,
+    rewards_days integer DEFAULT 0
 );
 
 -- Add missing columns to users table
@@ -20,7 +21,8 @@ ADD COLUMN IF NOT EXISTS referral_code VARCHAR UNIQUE,
 ADD COLUMN IF NOT EXISTS referred_by VARCHAR,
 ADD COLUMN IF NOT EXISTS referral_count INTEGER DEFAULT 0,
 ADD COLUMN IF NOT EXISTS total_referral_earnings NUMERIC(10, 2) DEFAULT 0.00,
-ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ;
+ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS rewards_days integer DEFAULT 0;
 
 -- Create indexes if they don't exist
 CREATE INDEX IF NOT EXISTS idx_users_auth_id ON users(auth_id);
@@ -122,23 +124,31 @@ ON public.referrals USING btree (status) TABLESPACE pg_default;
 CREATE OR REPLACE FUNCTION handle_referral_completion()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Update referral status
-    UPDATE referrals
-    SET status = 'completed',
-        completed_at = now(),
-        updated_at = now()
-    WHERE id = NEW.id
-    AND NEW.status = 'completed'
-    AND OLD.status = 'pending';
+    -- Only proceed if status is being changed to 'completed'
+    IF NEW.status = 'completed' AND (OLD.status IS NULL OR OLD.status != 'completed') THEN
+        -- Create a referral reward record
+        INSERT INTO referral_rewards (
+            referral_id,
+            referrer_id,
+            reward_amount,
+            status,
+            created_at
+        ) VALUES (
+            NEW.id,
+            NEW.referrer_id,
+            NEW.reward_amount,
+            'pending',
+            NOW()
+        );
 
-    -- Create referral reward
-    INSERT INTO referral_rewards (referral_id, amount, status)
-    VALUES (NEW.id, NEW.reward_amount, 'pending');
+        -- Update the referrer's rewards_days
+        UPDATE users 
+        SET rewards_days = COALESCE(rewards_days, 0) + 7
+        WHERE id = NEW.referrer_id;
 
-    -- Update referrer's total_referral_earnings
-    UPDATE users
-    SET total_referral_earnings = total_referral_earnings + NEW.reward_amount
-    WHERE id = NEW.referrer_id;
+        -- Log the update for debugging
+        RAISE NOTICE 'Updated rewards_days for user %: added 7 days', NEW.referrer_id;
+    END IF;
 
     RETURN NEW;
 END;
@@ -164,9 +174,9 @@ BEGIN
         WHERE referral_code = NEW.referred_by;
         
         IF referrer_id IS NOT NULL THEN
-            -- Create referral record
-            INSERT INTO referrals (referrer_id, referred_id, status)
-            VALUES (referrer_id, NEW.id, 'pending');
+            -- Create referral record with reward amount
+            INSERT INTO referrals (referrer_id, referred_id, status, reward_amount)
+            VALUES (referrer_id, NEW.id, 'pending', 7);
         END IF;
     END IF;
     
@@ -238,6 +248,23 @@ CREATE POLICY "Enable insert for referral trigger" ON public.referrals
     FOR INSERT
     WITH CHECK (true);
 
+-- Drop existing policies for referral_rewards
+DROP POLICY IF EXISTS "Enable insert for authenticated users" ON public.referral_rewards;
+DROP POLICY IF EXISTS "Enable read for authenticated users" ON public.referral_rewards;
+
+-- Enable RLS on referral_rewards table
+ALTER TABLE public.referral_rewards ENABLE ROW LEVEL SECURITY;
+
+-- Allow authenticated users to insert referral rewards
+CREATE POLICY "Enable insert for authenticated users" ON public.referral_rewards
+    FOR INSERT
+    WITH CHECK (auth.role() = 'authenticated');
+
+-- Allow authenticated users to read referral rewards
+CREATE POLICY "Enable read for authenticated users" ON public.referral_rewards
+    FOR SELECT
+    USING (auth.role() = 'authenticated');
+
 -- Grant necessary permissions
 GRANT USAGE ON SCHEMA public TO postgres;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres;
@@ -260,3 +287,57 @@ GRANT INSERT ON public.referrals TO authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres;
 GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO postgres; 
+
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS on_user_status_update ON users;
+
+-- Create function to handle user status update
+CREATE OR REPLACE FUNCTION handle_user_status_update()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- If user status is being changed to 'active'
+    IF NEW.status = 'active' AND (OLD.status IS NULL OR OLD.status != 'active') THEN
+        -- Update the referral status to 'completed' if it exists
+        UPDATE referrals
+        SET status = 'completed',
+            completed_at = NOW(),
+            updated_at = NOW()
+        WHERE referred_id = NEW.id
+        AND status = 'pending';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger for user status update
+CREATE TRIGGER on_user_status_update
+    AFTER UPDATE ON users
+    FOR EACH ROW
+    EXECUTE FUNCTION handle_user_status_update();
+
+-- Drop existing foreign key constraint and index for referral_id
+ALTER TABLE public.referral_rewards 
+DROP CONSTRAINT IF EXISTS referral_rewards_referral_id_fkey;
+
+DROP INDEX IF EXISTS idx_referral_rewards_referral_id;
+
+-- Add referrer_id column
+ALTER TABLE public.referral_rewards
+ADD COLUMN referrer_id uuid;
+
+-- Add foreign key constraint for referrer_id
+ALTER TABLE public.referral_rewards
+ADD CONSTRAINT referral_rewards_referrer_id_fkey 
+FOREIGN KEY (referrer_id) 
+REFERENCES users(id) 
+ON DELETE CASCADE;
+
+-- Create index for referrer_id
+CREATE INDEX idx_referral_rewards_referrer_id 
+ON public.referral_rewards USING btree (referrer_id) 
+TABLESPACE pg_default;
+
+-- Drop referral_id column
+ALTER TABLE public.referral_rewards
+DROP COLUMN referral_id; 

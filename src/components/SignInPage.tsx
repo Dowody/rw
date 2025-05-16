@@ -233,7 +233,7 @@ const SignInPage: React.FC = () => {
           setError('An account with this email already exists. Please sign in instead.')
           setMode('signin')
         } else {
-          throw authError
+        throw authError
         }
         return
       }
@@ -268,7 +268,7 @@ const SignInPage: React.FC = () => {
             setError('An account with this email already exists. Please sign in instead.')
             setMode('signin')
           } else {
-            throw userError
+          throw userError
           }
           return
         }
@@ -318,7 +318,7 @@ const SignInPage: React.FC = () => {
         setError('An account with this email already exists. Please sign in instead.')
         setMode('signin')
       } else {
-        setError(error.message || 'An error occurred during signup')
+      setError(error.message || 'An error occurred during signup')
       }
     } finally {
       setLoading(false)

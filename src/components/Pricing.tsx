@@ -401,7 +401,6 @@ const Products = () => {
         "Priority Support",
         "No Withdrawals Limit",
         "Access to All Features",
-        "Ability to snipe expensive sticker crafts"
       ]
     },
     {

@@ -7,7 +7,7 @@ interface DiscordButtonProps {
 }
 
 export default function DiscordButton({ 
-  inviteLink = 'https://discord.gg/rollwithdraw'
+  inviteLink = 'https://discord.gg/XxHsYT4m'
 }: DiscordButtonProps) {
   const handleDiscordClick = () => {
     try {
