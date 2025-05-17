@@ -588,10 +588,9 @@ const CheckoutPage: React.FC = () => {
       }
       
       // Navigate to dashboard with success message
-      navigate('/dashboard', { 
-        state: { 
+      navigate('/dashboard', {
+        state: {
           section: 'purchases',
-          message: 'Purchase completed successfully! Your subscription is now active.',
           showCongrats: true
         }
       })
@@ -1540,7 +1539,7 @@ const CheckoutPage: React.FC = () => {
                     className="ml-1 text-[#8a4fff] hover:underline"
                         onClick={(e) => e.stopPropagation()}
                   >
-                    Policies
+                    Terms of Service
                   </Link>
                     </button>
                   </div>

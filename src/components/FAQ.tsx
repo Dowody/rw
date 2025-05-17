@@ -1,8 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
 
-const FAQItem = ({ question, answer }: { question: string, answer: string }) => {
-  const [isOpen, setIsOpen] = useState(false)
+const FAQItem = ({ question, answer, isOpen, onToggle }: { 
+  question: string, 
+  answer: string, 
+  isOpen: boolean, 
+  onToggle: () => void 
+}) => {
   const [height, setHeight] = useState(0)
   const contentRef = useRef<HTMLDivElement>(null)
 
@@ -12,15 +16,38 @@ const FAQItem = ({ question, answer }: { question: string, answer: string }) => 
     }
   }, [isOpen])
 
+  // Format the answer with proper line breaks and bullet points
+  const formatAnswer = (text: string) => {
+    return text.split('\n').map((line, index) => {
+      if (line.trim().startsWith('•')) {
+        return (
+          <div key={index} className="flex items-start mb-2">
+            <span className="mr-2">•</span>
+            <span>{line.substring(1).trim()}</span>
+          </div>
+        )
+      }
+      if (line.trim().match(/^\d+\./)) {
+        return (
+          <div key={index} className="flex items-start mb-2">
+            <span className="mr-2">{line.split('.')[0]}.</span>
+            <span>{line.split('.').slice(1).join('.').trim()}</span>
+          </div>
+        )
+      }
+      return <div key={index} className="mb-2">{line}</div>
+    })
+  }
+
   return (
     <div 
       className="bg-[#2c1b4a] rounded-xl mb-3 sm:mb-4 overflow-hidden transition-all duration-300 ease-in-out"
     >
       <button 
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={onToggle}
         className="w-full flex justify-between items-center p-3 sm:p-5 text-left focus:outline-none hover:bg-[#3a2b5c] transition-colors"
       >
-        <span className="text-[16px] sm:text-lg font-semibold text-[#8a4fff]">{question}</span>
+        <span className="text-[16px] sm:text-lg text-[#8a4fff] mr-4">{question}</span>
         <div 
           className={`transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
         >
@@ -39,7 +66,7 @@ const FAQItem = ({ question, answer }: { question: string, answer: string }) => 
           ref={contentRef} 
           className="p-3 sm:p-5 text-[14px] sm:text-base text-gray-300"
         >
-          {answer}
+          {formatAnswer(answer)}
         </div>
       </div>
     </div>
@@ -47,42 +74,56 @@ const FAQItem = ({ question, answer }: { question: string, answer: string }) => 
 }
 
 const FAQ = () => {
+  const [openIndex, setOpenIndex] = useState<number | null>(null)
+
+  const handleToggle = (index: number) => {
+    setOpenIndex(openIndex === index ? null : index)
+  }
+
   const faqs = [
     {
       question: "What is RollWithdraw?",
-      answer: "RollWithdraw is an advanced browser-based trading bot specifically designed for CSGORoll. Our platform provides automated withdrawal strategies, custom parameter configurations, and intelligent trading algorithms to maximize your trading potential."
+      answer: "RollWithdraw is an advanced browser-based trading bot specifically designed for CSGORoll. Our platform provides:\n\n• Automated withdrawal strategies\n• Custom parameter configurations\n• Intelligent trading algorithms\n\nAll designed to maximize your trading potential."
     },
     {
-      question: "How does the withdrawal bot work?",
-      answer: "Our bot connects directly to your CSGORoll account, using advanced AI algorithms to execute trades based on your predefined parameters. You can customize withdrawal strategies, set price ranges, and manage risk levels with precision."
-    },
-    {
-      question: "Is RollWithdraw secure?",
-      answer: "Security is our top priority. We use military-grade encryption, implement strict privacy protocols, and ensure your account credentials are protected. Our system follows rigorous security standards to safeguard your trading activities."
+      question: "How do I update or change my trading parameters on RollWithdraw?",
+      answer: "Updating your trading parameters is straightforward:\n\n1. Access your RollWithdraw configuration page\n2. Adjust your settings as needed\n3. Save your changes\n\nThe bot will automatically apply your new parameters."
     },
     {
       question: "What platforms are supported?",
-      answer: "Currently, RollWithdraw is optimized for CSGORoll. We are continuously expanding our platform support and welcome user feedback for future integrations."
+      answer: "Currently, RollWithdraw is optimized only for CSGORoll. We focus on providing the best possible experience for CSGORoll users."
     },
     {
-      question: "What pricing options are available?",
-      answer: "We offer flexible pricing tiers to suit different trading needs. Our plans range from basic daily case collectors (starting at €249.99) to advanced withdrawal bots with comprehensive features, with premium options up to €2,399.99."
+      question: "What makes RollWithdraw different from other CS2 trading bots?",
+      answer: "RollWithdraw stands out with these unique features:\n\n• Unlimited withdrawals\n• Sticker-craft bot functionality\n• Competitive pricing\n• Integrated high-speed servers\n• No VPS required"
     },
     {
-      question: "Can I customize the bot's settings?",
-      answer: "Absolutely! RollWithdraw provides extensive customization options. You can set minimum/maximum item prices, define markup percentages, configure trading strategies, and fine-tune risk management parameters to match your unique trading style."
+      question: "Do I need to use a VPS with RollWithdraw?",
+      answer: "No, you don't need a VPS. We have our own high-speed servers already integrated with the bot, making it ready to use immediately after configuration."
     },
     {
-      question: "Do you offer a trial or money-back guarantee?",
-      answer: "We provide a 7-day trial for our premium plans, allowing you to experience the full capabilities of RollWithdraw. Additionally, we offer a 30-day money-back guarantee to ensure your complete satisfaction with our service."
+      question: "Do I have to withdraw a skin from the marketplace every hour?",
+      answer: "Yes, this is required because:\n\n• It's a protection feature from CSGORoll\n• We cannot bypass this requirement\n• You need to withdraw a skin every 60 minutes\n\nWhile we handle most CAPTCHA challenges, this hourly withdrawal is mandatory."
     },
     {
-      question: "How to find your session token?",
-      answer: "1. Right-click anywhere on the CSGORoll website.\n2. Click on 'Inspect'.\n3. At the top of the window, click on the arrows and go to the 'Application' tab.\n4. In the left sidebar, click on 'Cookies' to expand it.\n5. Select 'https://csgoroll.com' from the list.\n6. On the right side, find the row labeled 'session', then click on it and copy the value shown."
+      question: "Is there a RollWithdraw community somewhere with more information?",
+      answer: "Yes! Join our community:\n\n• Click the \"Join Discord\" button on our website\n• Connect with other users\n• Get support and updates\n• Share experiences and tips"
+    },
+    {
+      question: "Can I get a free trial before purchasing a licence?",
+      answer: "Yes! We offer:\n\n• 1 day free trial\n• Full access to all features\n• No restrictions during trial\n• Experience all capabilities before purchasing"
+    },
+    {
+      question: "Is this service limited?",
+      answer: "Yes, we maintain service quality through:\n\n• Limited number of active licenses\n• Priority for existing premium users\n• License extension options for active users\n• New licenses may be out of stock when limit is reached"
+    },
+    {
+      question: "How do I find my session token?",
+      answer: "Follow these steps to find your session token:\n\n1. Right-click anywhere on the CSGORoll website\n2. Click on 'Inspect'\n3. At the top of the window, click on the arrows\n4. Go to the 'Application' tab\n5. In the left sidebar, click on 'Cookies'\n6. Select 'https://csgoroll.com'\n7. Find the row labeled 'session'\n8. Click on it and copy the value shown"
     },
     {
       question: "How can I snipe expensive sticker crafts?",
-      answer: "Currently, this feature is only available for the 12 month subscription. Once you purchase it, you will have access to both the regular withdraw bot and the sticker craft bot. With the sticker craft bot you can set a minimum applied sticker value, which will only pick items based on those values."
+      answer: "To access sticker craft sniping:\n\n• Available exclusively with 12-month subscription\n• Includes both regular withdraw bot and sticker craft bot\n• Set minimum applied sticker value\n• Bot will only pick items matching your value criteria\n\nThis feature helps you focus on high-value sticker crafts."
     }
   ]
 
@@ -103,7 +144,9 @@ const FAQ = () => {
             <FAQItem 
               key={index} 
               question={faq.question} 
-              answer={faq.answer} 
+              answer={faq.answer}
+              isOpen={openIndex === index}
+              onToggle={() => handleToggle(index)}
             />
           ))}
         </div>

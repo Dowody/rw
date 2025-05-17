@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
-type PolicyType = 'privacy' | 'terms' | 'refund'
+type PolicyType = 'privacy' | 'terms' 
 
 const PolicyPage: React.FC = () => {
   const navigate = useNavigate()
@@ -98,32 +98,6 @@ const PolicyPage: React.FC = () => {
           icon: <AlertTriangle className="w-6 h-6 text-red-500" />,
           title: "4. Limitation of Liability",
           description: "RollWithdraw is not liable for any financial losses, trading outcomes, or damages arising from the use of our service. Trading involves inherent risks."
-        }
-      ]
-    },
-    refund: {
-      title: "Refund Policy",
-      icon: <CreditCard className="w-12 h-12 text-[#8a4fff]" />,
-      sections: [
-        {
-          icon: <Clock className="w-6 h-6 text-[#8a4fff]" />,
-          title: "1. Refund Window",
-          description: "We offer a comprehensive 30-day money-back guarantee for all subscription plans. Refunds are processed within 5-7 business days of the request."
-        },
-        {
-          icon: <Zap className="w-6 h-6 text-green-500" />,
-          title: "2. Quick Processing",
-          description: "Refund requests are handled efficiently. Once approved, the refund will be credited to the original payment method within the specified timeframe."
-        },
-        {
-          icon: <AlertTriangle className="w-6 h-6 text-red-500" />,
-          title: "3. Non-Refundable Scenarios",
-          description: "Refunds are not applicable for accounts with fraudulent activity, Terms of Service violations, or subscriptions beyond the 30-day window."
-        },
-        {
-          icon: <ShieldCheck className="w-6 h-6 text-blue-500" />,
-          title: "4. Refund Guarantee",
-          description: "We stand behind the quality of our service. If you're unsatisfied within the first 30 days, we'll provide a full refund, no questions asked."
         }
       ]
     }
@@ -214,12 +188,10 @@ const PolicyPage: React.FC = () => {
           <div className="flex justify-center mb-3 sm:mb-4">
             {activePolicy === 'privacy' && <Eye className="w-8 h-8 sm:w-12 sm:h-12 text-blue-500" />}
             {activePolicy === 'terms' && <ShieldCheck className="w-8 h-8 sm:w-12 sm:h-12 text-green-500" />}
-            {activePolicy === 'refund' && <CreditCard className="w-8 h-8 sm:w-12 sm:h-12 text-green-500" />}
           </div>
           <p className="text-[14px] sm:text-base text-gray-400 max-w-2xl mx-auto">
             {activePolicy === 'privacy' && "We are committed to maintaining the highest standards of privacy and data protection."}
             {activePolicy === 'terms' && "By using RollWithdraw, you acknowledge and agree to these Terms of Service."}
-            {activePolicy === 'refund' && "We prioritize customer satisfaction and transparency in our refund process."}
           </p>
         </div>
       </div>

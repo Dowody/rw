@@ -15,6 +15,9 @@ import { supabase } from './lib/supabaseClient'
 import { motion } from 'framer-motion'
 import PasswordResetPage from './components/PasswordReset'
 import DiscordButton from './components/DiscordButton'
+import { requireAdmin } from './middleware/adminAuth'
+import AdminSignIn from './pages/AdminSignIn'
+import AdminDashboard from './pages/AdminDashboard'
 
 // Lazy load components
 const Home = React.lazy(() => import('./components/Home'))
@@ -22,7 +25,6 @@ const SignInPage = React.lazy(() => import('./components/SignInPage'))
 const CheckoutPage = React.lazy(() => import('./components/CheckoutPage'))
 const TermsOfService = React.lazy(() => import('./components/TermsOfService'))
 const PrivacyPolicy = React.lazy(() => import('./components/PrivacyPolicy'))
-const RefundPolicy = React.lazy(() => import('./components/RefundPolicy'))
 const PolicyPage = React.lazy(() => import('./components/PolicyPage'))
 const UserDashboard = React.lazy(() => import('./components/UserDashboard'))
 
@@ -145,6 +147,8 @@ const AppContent: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
   const location = useLocation()
+  const [isAdminRoute, setIsAdminRoute] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   const toggleCart = useCallback(() => {
     setIsCartOpen(prev => !prev)
@@ -188,8 +192,31 @@ const AppContent: React.FC = () => {
     }
   }, [])
 
-  if (!isInitialized) {
-    // return <LoadingSpinner />
+  useEffect(() => {
+    const checkAdminAccess = async () => {
+      const path = window.location.pathname
+      if (path.startsWith('/admin')) {
+        setIsAdminRoute(true)
+        if (path !== '/admin') {
+          const hasAccess = await requireAdmin()
+          if (!hasAccess) {
+            setIsLoading(false)
+            return
+          }
+        }
+      }
+      setIsLoading(false)
+    }
+
+    checkAdminAccess()
+  }, [])
+
+  if (!isInitialized || isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#04011C] to-[#0a0415] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-[#8a4fff]"></div>
+      </div>
+    )
   }
 
   return (
@@ -223,7 +250,6 @@ const AppContent: React.FC = () => {
           />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/refund" element={<RefundPolicy />} />
           <Route path="/policy" element={<PolicyPage />} />
           <Route 
             path="/dashboard" 
@@ -233,12 +259,47 @@ const AppContent: React.FC = () => {
               </PrivateRoute>
             } 
           />
-          <Route path="*" element={<Navigate to="/" replace />} />
           <Route path="/reset-password" element={<PasswordResetPage />} />
+          <Route path="/admin" element={<AdminSignIn />} />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedAdminRoute>
+                <AdminDashboard />
+              </ProtectedAdminRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AnimatePresence>
     </div>
   )
+}
+
+// Protected Admin Route Component
+const ProtectedAdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const [isAuthorized, setIsAuthorized] = useState(false)
+  const [isChecking, setIsChecking] = useState(true)
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const hasAccess = await requireAdmin()
+      setIsAuthorized(hasAccess)
+      setIsChecking(false)
+    }
+
+    checkAuth()
+  }, [])
+
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#04011C] to-[#0a0415] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-[#8a4fff]"></div>
+      </div>
+    )
+  }
+
+  return isAuthorized ? <>{children}</> : <Navigate to="/admin" replace />
 }
 
 // Root App with Router and Context

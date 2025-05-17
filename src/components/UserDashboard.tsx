@@ -652,7 +652,7 @@ const UserDashboard: React.FC = () => {
     if (notificationState.type && notificationState.message) {
       timeoutId = setTimeout(() => {
         setNotificationState({ type: null, message: null });
-      }, 4000); // 5 seconds
+      }, 8000); // 8 seconds
     }
 
     return () => {
@@ -1192,19 +1192,10 @@ const UserDashboard: React.FC = () => {
           transition={{ duration: 0.3 }}
           className="mb-8 w-full max-w-md mx-auto"
         >
-          <div className={`
-          ${error.includes('successfully') 
-            ? 'bg-green-500/20 border border-green-500 text-green-400 text-sm text-center lg:text-base w-[90%] mx-auto' 
-            : 'bg-red-500/10 border border-red-500 text-red-400 text-sm lg:text-base w-[90%] mx-auto'} 
-          p-4 rounded-xl flex flex-col items-center
-        `}>
-          {error.includes('successfully') ? (
-            <CheckCircle className="mb-2 w-5 h-5 lg:w-6 lg:h-6 " />
-          ) : (
+          <div className="bg-red-500/10 border border-red-500 text-red-400 text-sm lg:text-base w-[90%] mx-auto p-4 rounded-xl flex flex-col items-center">
             <AlertTriangle className="mb-2 w-6 h-6" />
-          )}
-          <p>{error}</p>
-        </div>
+            <p>{error}</p>
+          </div>
         </motion.div>
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-[#8a4fff]"></div>
       </div>
@@ -1703,33 +1694,30 @@ const UserDashboard: React.FC = () => {
                       {showWithdrawalNotification && <WithdrawalNotification />}
 
                       {/* Bot Type Tabs */}
-                      <div className="flex space-x-2 mb-6">
-                        <button
-                          onClick={() => setActiveBotTab('skin withdraw bot')}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                            activeBotTab === 'skin withdraw bot'
-                              ? 'bg-[#8a4fff] text-white'
-                              : 'bg-[#8a4fff]/10 text-[#8a4fff] hover:bg-[#8a4fff]/20'
-                          }`}
-                        >
-                          Skin Withdraw Bot
-                        </button>
-                        <button
-                          onClick={() => setActiveBotTab('sticker craft bot')}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                            activeBotTab === 'sticker craft bot'
-                              ? 'bg-[#8a4fff] text-white'
-                              : 'bg-[#8a4fff]/10 text-[#8a4fff] hover:bg-[#8a4fff]/20'
-                          } ${!hasStickerBotAccess() ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          disabled={!hasStickerBotAccess()}
-                          title={!hasStickerBotAccess() ? "Requires 12-month subscription" : ""}
-                        >
-                          Sticker Craft Bot
-                          {!hasStickerBotAccess() && (
-                            <span className="ml-2 text-xs bg-[#8a4fff]/20 px-2 py-0.5 rounded-full">Premium</span>
-                          )}
-                        </button>
-                      </div>
+                      {currentSubscription?.name.toLowerCase().includes('12 months') && (
+                        <div className="flex space-x-2 mb-6">
+                          <button
+                            onClick={() => setActiveBotTab('skin withdraw bot')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                              activeBotTab === 'skin withdraw bot'
+                                ? 'bg-[#8a4fff] text-white'
+                                : 'bg-[#8a4fff]/10 text-[#8a4fff] hover:bg-[#8a4fff]/20'
+                            }`}
+                          >
+                            Skin Withdraw Bot
+                          </button>
+                          <button
+                            onClick={() => setActiveBotTab('sticker craft bot')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                              activeBotTab === 'sticker craft bot'
+                                ? 'bg-[#8a4fff] text-white'
+                                : 'bg-[#8a4fff]/10 text-[#8a4fff] hover:bg-[#8a4fff]/20'
+                            }`}
+                          >
+                            Sticker Craft Bot
+                          </button>
+                        </div>
+                      )}
 
                       {/* Configuration Inputs */}
                       <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
@@ -1876,6 +1864,35 @@ const UserDashboard: React.FC = () => {
                           <Square className="mr-1 sm:mr-2 w-3 h-3 sm:w-5 sm:h-5" /> STOP
                         </button>
                       </div>
+
+                      {/* Working Hours Info */}
+                      <div className="mt-4 bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-3">
+                            <div className="bg-blue-500/20 p-2 rounded-lg">
+                              <Clock className="w-5 h-5 text-blue-400" />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-medium text-blue-400 mb-1">Working Hours</h4>
+                              <p className="text-sm text-gray-300">07:00-21:00 UTC</p>
+                              <p className="text-xs text-gray-400 mt-1">
+                              You can activate the bot during working hours. Team updates outside these hours.
+                              </p>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => {
+                              setNotificationState({
+                                type: 'info',
+                                message: 'Our team regularly updates the bot configuration during working hours to ensure optimal performance. If you activate the bot outside these hours, it will be automatically updated when our team is available.'
+                              });
+                            }}
+                            className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                          >
+                            More
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -1908,7 +1925,7 @@ const UserDashboard: React.FC = () => {
                           <div className="bg-[#2c1b4a] rounded-xl p-3 sm:p-4 flex justify-between items-center">
                             <span className="text-xs sm:text-sm text-gray-300">Start Date</span>
                             <span className="font-semibold text-white text-xs sm:text-sm">
-                              {currentSubscription?.startDate ? new Date(currentSubscription.startDate).toLocaleDateString() : 'N/A'}
+                              {billingHistory[0]?.date ? new Date(billingHistory[0].date).toLocaleDateString() : 'N/A'}
                             </span>
                           </div>
                           <div className="bg-[#2c1b4a] rounded-xl p-3 sm:p-4 flex justify-between items-center">
@@ -1945,7 +1962,7 @@ const UserDashboard: React.FC = () => {
                         <h3 className="text-2xl sm:text-2xl font-bold text-[#8a4fff] flex items-center">
                           <History className="mr-2 sm:mr-3 w-5 h-5 sm:w-7 sm:h-7" /> Billing History
                         </h3>
-                        <p className="text-xs sm:text-sm text-gray-400 mt-0.5 sm:mt-1 mb-4">
+                        <p className="text-sm sm:text-sm text-gray-400 mt-0.5 sm:mt-1 mb-4">
                           Overview of your recent transactions
                         </p>
                       </div>
@@ -1993,7 +2010,10 @@ const UserDashboard: React.FC = () => {
                                   Invoice #{1000 + index + 1}
                                 </h4>
                                 <p className="text-xs sm:text-sm text-gray-400">
-                                  {purchase.subscriptionName} • {purchase.date.toLocaleDateString()}
+                                  {purchase.subscriptionName}
+                                </p>
+                                <p className="text-xs sm:text-sm text-gray-400">
+                                  {purchase.date.toLocaleDateString()}
                                 </p>
                               </div>
                             </div>

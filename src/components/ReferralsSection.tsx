@@ -523,6 +523,48 @@ const ReferralsSection: React.FC = () => {
       transition={{ duration: 0.3 }}
       className="space-y-8"
     >
+      {/* Introduction */}
+      <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl p-6 border border-[#8a4fff]/10">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#8a4fff]/10 p-2 rounded-lg">
+              <Share2 className="w-5 h-5 text-[#8a4fff]" />
+            </div>
+            <h3 className="text-xl font-semibold text-[#8a4fff]">Referral Program</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <p className="text-gray-300">
+                Invite friends to join RollWithdraw and earn free subscription days for each successful referral.
+              </p>
+              <div className="flex items-center gap-2 text-[#8a4fff]">
+                <Gift className="w-4 h-4" />
+                <span className="text-sm font-medium">7 days free subscription per referral</span>
+              </div>
+            </div>
+            
+            <div className="bg-[#2c1b4a] rounded-xl p-4">
+              <h4 className="text-[#8a4fff] font-medium mb-3">How it works:</h4>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-gray-300">
+                  <div className="w-6 h-6 rounded-full bg-[#8a4fff]/10 flex items-center justify-center text-[#8a4fff] text-sm font-medium">1</div>
+                  <span className="text-sm">Generate your unique referral code</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-300">
+                  <div className="w-6 h-6 rounded-full bg-[#8a4fff]/10 flex items-center justify-center text-[#8a4fff] text-sm font-medium">2</div>
+                  <span className="text-sm">Share it with your friends</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-300">
+                  <div className="w-6 h-6 rounded-full bg-[#8a4fff]/10 flex items-center justify-center text-[#8a4fff] text-sm font-medium">3</div>
+                  <span className="text-sm">Earn rewards when they sign up</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl p-4 border border-[#8a4fff]/10">
