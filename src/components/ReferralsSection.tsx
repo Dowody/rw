@@ -470,9 +470,9 @@ const ReferralsSection: React.FC = () => {
 
     return (
       <motion.div
-        initial={{ opacity: 1, y: -20 }}
+        initial={{ opacity: 1, y: 0 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 1, y: -20 }}
+        exit={{ opacity: 1, y: 0 }}
         className={`fixed left-0 right-0 mx-auto z-[60] p-4 rounded-xl w-[calc(100%-2rem)] max-w-md relative overflow-hidden ${
           type === 'error' 
             ? 'bg-red-500 border border-red-500 text-white' 

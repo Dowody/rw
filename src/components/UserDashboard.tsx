@@ -1111,7 +1111,7 @@ const UserDashboard: React.FC = () => {
 
     return (
       <motion.div
-        initial={{ opacity: 1, y: 20 }}
+        initial={{ opacity: 1, y: 0 }}
         animate={{ opacity: 1, y: 0 }}
         className="relative overflow-hidden bg-[#1a0b2e] rounded-xl border border-[#8a4fff]/20"
       >
