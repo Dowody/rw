@@ -92,7 +92,7 @@ interface BotConfig {
 }
 
 const AdminDashboard: React.FC = () => {
-  const [activeSection, setActiveSection] = useState<AdminSection>('users')
+  const [activeSection, setActiveSection] = useState<AdminSection>('bot-config')
   const [users, setUsers] = useState<User[]>([])
   const [orders, setOrders] = useState<Order[]>([])
   const [botConfigs, setBotConfigs] = useState<BotConfig[]>([])

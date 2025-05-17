@@ -1001,7 +1001,7 @@ const UserDashboard: React.FC = () => {
 
     return (
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 1, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl p-4 sm:p-6 border border-[#8a4fff]/10 mb-6"
       >
@@ -1111,7 +1111,7 @@ const UserDashboard: React.FC = () => {
 
     return (
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 1, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="relative overflow-hidden bg-[#1a0b2e] rounded-xl border border-[#8a4fff]/20"
       >
@@ -1204,7 +1204,7 @@ const UserDashboard: React.FC = () => {
   // Add new component for pending activation message
   const PendingActivationMessage = () => (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 1, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="relative overflow-hidden bg-[#1a0b2e] rounded-xl border border-[#FFA500]/20 mb-6"
     >
@@ -1289,7 +1289,7 @@ const UserDashboard: React.FC = () => {
   // Update ExistingConfigDisplay component
   const ExistingConfigDisplay = () => (
     <motion.div 
-      initial={{ opacity: 0, y: -10 }}
+      initial={{ opacity: 1, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       className="relative overflow-hidden bg-[#1a0b2e] p-2 rounded-xl border border-[#8a4fff]/20 mb-4"
     >
@@ -2107,7 +2107,7 @@ const UserDashboard: React.FC = () => {
                         <>
                           <WithdrawalNotification />
                           <motion.div 
-                            initial={{ opacity: 0, y: -10 }}
+                            initial={{ opacity: 1, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="relative overflow-hidden bg-[#1a0b2e] rounded-xl border border-[#8a4fff]/20 mb-6 mt-6"
                           >
