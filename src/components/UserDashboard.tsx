@@ -34,7 +34,10 @@ import {
   History,
   Share2,
   Check,
-  Info
+  Info,
+  Bot,
+  Plus,
+  Copy
 } from 'lucide-react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
@@ -109,7 +112,7 @@ const UserDashboard: React.FC = () => {
   
   // Add notification state near other state declarations
   const [notificationState, setNotificationState] = useState<{
-    type: 'info' | 'error' | null;
+    type: 'info' | 'error' | 'success' | null;
     message: string | null;
   }>({ type: null, message: null });
 
@@ -119,6 +122,15 @@ const UserDashboard: React.FC = () => {
 
   // Add new state for CAPTCHA completion
   const [isCaptchaCompleted, setIsCaptchaCompleted] = useState(false);
+  const [isBotStarted, setIsBotStarted] = useState(false);
+  const [activeBotConfig, setActiveBotConfig] = useState<any>(null);
+  const [botStatusMessage, setBotStatusMessage] = useState<{
+    type: 'success' | 'info' | 'error' | null;
+    message: string | null;
+  }>({ type: null, message: null });
+
+  // Add new state for existing configuration
+  const [existingBotConfig, setExistingBotConfig] = useState<any>(null);
 
   // Add helper function to check subscription
   const hasStickerBotAccess = () => {
@@ -217,54 +229,41 @@ const UserDashboard: React.FC = () => {
           .select('*')
           .eq('user_id', userData.id)
           .eq('bot_type', activeBotTab)
-          .eq('status', 'active')
-          .eq('bot_status', 'start');
+          .order('created_at', { ascending: false })
+          .limit(1);
 
         if (error) throw error;
 
-        // Get the most recent configuration if multiple exist
         const botConfig = botConfigs?.[0];
+        setExistingBotConfig(botConfig);
 
-        if (botConfig && botConfig.timer_end) {
-          const timerEnd = new Date(botConfig.timer_end);
-          const now = new Date();
+        if (botConfig && botConfig.status === 'active' && botConfig.bot_status === 'start') {
+          setActiveBotConfig(botConfig);
+          setIsBotStarted(true);
           
-          if (timerEnd > now) {
-            // Calculate remaining time in seconds
-            const remainingSeconds = Math.floor((timerEnd.getTime() - now.getTime()) / 1000);
-            setWithdrawalTimer(remainingSeconds);
-            setIsTimerRunning(true);
-            setShowWithdrawalNotification(true);
-            setIsCaptchaCompleted(true);
-          } else {
-            // Timer has ended, update status
-            await supabase
-              .from('bot_configurations')
-              .update({ 
-                status: 'inactive',
-                bot_status: 'stop'
-              })
-              .eq('id', botConfig.id);
+          // Update other states based on the configuration
+          setMinPrice(botConfig.min_price || '');
+          setMaxPrice(botConfig.max_price || '');
+          setMaxPercentage(botConfig.max_percentage || '');
+          setMinStickerPrice(botConfig.min_sticker_price || '');
+          setSessionToken(botConfig.session_token || '');
+          setBlacklist(botConfig.blacklist || []);
+
+          if (botConfig.timer_end) {
+            const timerEnd = new Date(botConfig.timer_end);
+            const now = new Date();
             
-            setShowWithdrawalNotification(false);
-            setIsTimerRunning(false);
-            setWithdrawalTimer(0);
-            setIsCaptchaCompleted(false);
+            if (timerEnd > now) {
+              const remainingSeconds = Math.floor((timerEnd.getTime() - now.getTime()) / 1000);
+              setWithdrawalTimer(remainingSeconds);
+              setIsTimerRunning(true);
+              setShowWithdrawalNotification(true);
+              setIsCaptchaCompleted(true);
+            }
           }
-        } else {
-          // No active configuration found or bot is stopped
-          setShowWithdrawalNotification(false);
-          setIsTimerRunning(false);
-          setWithdrawalTimer(0);
-          setIsCaptchaCompleted(false);
         }
       } catch (error) {
         console.error('Error fetching bot configuration:', error);
-        // Reset states on error
-        setShowWithdrawalNotification(false);
-        setIsTimerRunning(false);
-        setWithdrawalTimer(0);
-        setIsCaptchaCompleted(false);
       }
     };
 
@@ -273,61 +272,79 @@ const UserDashboard: React.FC = () => {
     }
   }, [userData?.id, activeBotTab]);
 
-  // Update handleCaptchaComplete
+  // Update handleCaptchaComplete to handle bot activation
   const handleCaptchaComplete = async () => {
     try {
-      // Only reset timer if it's at 0
-      if (withdrawalTimer === 0) {
-        const timerEnd = new Date();
-        timerEnd.setHours(timerEnd.getHours() + 1); // Set timer end to 1 hour from now
+      // Reset timer every time CAPTCHA is completed
+      const timerEnd = new Date();
+      timerEnd.setHours(timerEnd.getHours() + 1);
 
-        // Get existing configuration
-        const { data: existingConfig, error: fetchError } = await supabase
-          .from('bot_configurations')
-          .select('*')
-          .eq('user_id', userData.id)
-          .eq('bot_type', activeBotTab)
-          .eq('status', 'active')
-          .single();
+      // Get existing configuration
+      const { data: existingConfigs, error: fetchError } = await supabase
+        .from('bot_configurations')
+        .select('*')
+        .eq('user_id', userData.id)
+        .eq('bot_type', activeBotTab)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-        if (fetchError) {
-          console.error('Error fetching configuration:', fetchError);
-          return;
-        }
-
-        if (!existingConfig) {
-          console.error('No active configuration found');
-          return;
-        }
-
-        // Update only the timer
-        const { error: updateError } = await supabase
-          .from('bot_configurations')
-          .update({
-            timer_end: timerEnd.toISOString()
-          })
-          .eq('id', existingConfig.id);
-
-        if (updateError) {
-          console.error('Error updating bot configuration:', updateError);
-          return;
-        }
-
-        // Send email notification
-        try {
-          await sendBotConfigEmail(existingConfig, 'start');
-        } catch (emailError) {
-          console.error('Failed to send email notification:', emailError);
-        }
-
-        setWithdrawalTimer(60 * 60); // Reset to 60 minutes
-        setIsTimerRunning(true);
+      if (fetchError) {
+        console.error('Error fetching configuration:', fetchError);
+        setNotificationState({
+          type: 'error',
+          message: 'Failed to activate bot. Please try again.'
+        });
+        return;
       }
-      
+
+      if (!existingConfigs || existingConfigs.length === 0) {
+        console.error('No configuration found');
+        setNotificationState({
+          type: 'error',
+          message: 'No configuration found. Please create a configuration first.'
+        });
+        return;
+      }
+
+      const existingConfig = existingConfigs[0];
+
+      // Update status to active
+      const { error: updateError } = await supabase
+        .from('bot_configurations')
+        .update({
+          status: 'active',
+          bot_status: 'start',
+          timer_end: timerEnd.toISOString(),
+          bg_color: '#4CAF50'
+        })
+        .eq('id', existingConfig.id);
+
+      if (updateError) {
+        console.error('Error updating bot configuration:', updateError);
+        setNotificationState({
+          type: 'error',
+          message: 'Failed to activate bot. Please try again.'
+        });
+        return;
+      }
+
+      setWithdrawalTimer(60 * 60); // Reset to 60 minutes
+      setIsTimerRunning(true);
       setIsCaptchaCompleted(true);
       setShowWithdrawalNotification(true);
+      setIsBotStarted(true);
+      setActiveBotConfig(existingConfig);
+
+      setNotificationState({
+        type: 'success',
+        message: 'Bot activated successfully!'
+      });
     } catch (error) {
       console.error('Error updating bot configuration:', error);
+      setNotificationState({
+        type: 'error',
+        message: 'Failed to activate bot. Please try again.'
+      });
     }
   };
 
@@ -598,8 +615,8 @@ const UserDashboard: React.FC = () => {
     )
   }
 
-  // Add email sending function
-  const sendBotConfigEmail = async (botConfig: any, action: 'start' | 'stop') => {
+  // Update email sending function
+  const sendBotConfigEmail = async (botConfig: any, action: 'start' | 'stop' | 'pending' | 'pending_activation' | 'pending_stop') => {
     try {
       const templateParams = {
         user_id: botConfig.user_id,
@@ -611,7 +628,9 @@ const UserDashboard: React.FC = () => {
         blacklist: botConfig.blacklist || [],
         bot_status: action.toUpperCase(),
         bot_type: botConfig.bot_type || 'Not set',
-        bg_color: action === 'start' ? '#4CAF50' : '#F44336',
+        bg_color: action === 'start' ? '#4CAF50' : 
+                  action === 'pending' || action === 'pending_activation' || action === 'pending_stop' ? '#FFA500' : 
+                  '#F44336',
         timer_end: botConfig.timer_end ? new Date(botConfig.timer_end).toLocaleString('en-US', {
           year: 'numeric',
           month: 'long',
@@ -638,9 +657,7 @@ const UserDashboard: React.FC = () => {
 
       console.log('Bot configuration email sent successfully');
     } catch (error) {
-      // Log the error but don't throw it
       console.error('Failed to send bot configuration email:', error);
-      // Don't throw the error, just return
       return;
     }
   };
@@ -662,31 +679,99 @@ const UserDashboard: React.FC = () => {
     };
   }, [notificationState]);
 
-  // Update handleStartBot to reset CAPTCHA state
+  // Update useEffect for bot status check
+  useEffect(() => {
+    const checkBotStatus = async () => {
+      if (!userData?.id) return;
+
+      try {
+        const { data: botConfigs, error } = await supabase
+          .from('bot_configurations')
+          .select('*')
+          .eq('user_id', userData.id)
+          .eq('bot_type', activeBotTab)
+          .eq('status', 'active')
+          .eq('bot_status', 'start')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (error) throw error;
+
+        const botConfig = botConfigs?.[0];
+        
+        if (botConfig) {
+          // Only update bot status if it changed
+          if (!isBotStarted) {
+            setActiveBotConfig(botConfig);
+            setIsBotStarted(true);
+            
+            // Update other states based on the configuration
+            setMinPrice(botConfig.min_price || '');
+            setMaxPrice(botConfig.max_price || '');
+            setMaxPercentage(botConfig.max_percentage || '');
+            setMinStickerPrice(botConfig.min_sticker_price || '');
+            setSessionToken(botConfig.session_token || '');
+            setBlacklist(botConfig.blacklist || []);
+
+            // Show verification panel and reset CAPTCHA only when bot becomes active
+            setShowWithdrawalNotification(true);
+            setIsCaptchaCompleted(false);
+            setIsTimerRunning(false);
+            setWithdrawalTimer(0);
+          }
+        } else {
+          // Only update if bot was previously started
+          if (isBotStarted) {
+            setActiveBotConfig(null);
+            setIsBotStarted(false);
+            setShowWithdrawalNotification(false);
+            setIsTimerRunning(false);
+            setWithdrawalTimer(0);
+            setIsCaptchaCompleted(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking bot status:', error);
+        setActiveBotConfig(null);
+        setIsBotStarted(false);
+      }
+    };
+
+    // Check status every 5 seconds
+    const interval = setInterval(checkBotStatus, 5000);
+    
+    // Initial check
+    checkBotStatus();
+
+    return () => clearInterval(interval);
+  }, [userData?.id, activeBotTab, isBotStarted]);
+
+  // Update handleStartBot to only handle new configuration creation
   const handleStartBot = async () => {
     try {
-      // Check for active configurations first
-      const { data: activeConfigs, error: activeError } = await supabase
+      // Check for existing configurations first
+      const { data: existingConfigs, error: activeError } = await supabase
         .from('bot_configurations')
         .select('*')
         .eq('user_id', userData?.id)
-        .eq('status', 'active')
-        .eq('bot_status', 'start');
+        .eq('bot_type', activeBotTab)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       if (activeError) {
-        console.error('Error checking active configurations:', activeError);
+        console.error('Error checking configurations:', activeError);
         setNotificationState({
           type: 'error',
-          message: 'Failed to start bot. Please try again.'
+          message: 'Failed to create configuration. Please try again.'
         });
         return;
       }
 
-      // If there's already an active configuration, show error
-      if (activeConfigs && activeConfigs.length > 0) {
+      // If there's already a configuration, show error
+      if (existingConfigs && existingConfigs.length > 0) {
         setNotificationState({
           type: 'error',
-          message: 'You already have an active verification. Please complete or stop the current one first.'
+          message: 'You already have a configuration. Please use the existing one.'
         });
         return;
       }
@@ -709,155 +794,109 @@ const UserDashboard: React.FC = () => {
         return;
       }
 
-      // Get existing configuration
-      const { data: existingConfigs, error: fetchError } = await supabase
-        .from('bot_configurations')
-        .select('*')
-        .eq('user_id', userData?.id)
-        .eq('bot_type', activeBotTab);
-
-      if (fetchError) {
-        console.error('Error fetching configuration:', fetchError);
-        setNotificationState({
-          type: 'error',
-          message: 'Failed to start bot. Please try again.'
-        });
-        return;
-      }
-
-      // Set timer end to 1 hour from now
-      const timerEnd = new Date();
-      timerEnd.setHours(timerEnd.getHours() + 1);
-
-      let botConfig;
-      let configError;
-
-      if (existingConfigs && existingConfigs.length > 0) {
-        // Update existing configuration
-        const { data, error } = await supabase
-          .from('bot_configurations')
-          .update({
-            min_price: minPrice,
-            max_price: maxPrice,
-            max_percentage: maxPercentage,
-            session_token: sessionToken,
-            blacklist: blacklist,
-            status: 'active',
-            bot_status: 'start',
-            min_sticker_price: activeBotTab === 'sticker craft bot' ? minStickerPrice : null,
-            timer_end: timerEnd.toISOString(),
-            bg_color: '#4CAF50' // Green color for 'start' status
-          })
-          .eq('id', existingConfigs[0].id)
-          .select()
-          .single();
-
-        botConfig = data;
-        configError = error;
-      } else {
-        // Create new configuration
-        const { data, error } = await supabase
-          .from('bot_configurations')
-          .insert({
-            user_id: userData?.id,
-            bot_type: activeBotTab,
-            min_price: minPrice,
-            max_price: maxPrice,
-            max_percentage: maxPercentage,
-            session_token: sessionToken,
-            blacklist: blacklist,
-            status: 'active',
-            bot_status: 'start',
-            min_sticker_price: activeBotTab === 'sticker craft bot' ? minStickerPrice : null,
-            timer_end: timerEnd.toISOString(),
-            bg_color: '#4CAF50' // Green color for 'start' status
-          })
-          .select()
-          .single();
-
-        botConfig = data;
-        configError = error;
-      }
-
-      if (configError) {
-        console.error('Error starting bot:', configError);
-        setNotificationState({
-          type: 'error',
-          message: 'Failed to start bot. Please try again.'
-        });
-        return;
-      }
-
-      // Send email notification
-      if (botConfig) {
-        await sendBotConfigEmail(botConfig, 'start');
-      }
-
-      setNotificationState({
-        type: 'info',
-        message: 'Bot initiated! Please wait for it to start.'
-      });
-
-      // Update local state
-      setUserData(userData);
-      setShowWithdrawalNotification(true);
-      setWithdrawalTimer(0);
-      setIsTimerRunning(false);
-      setIsCaptchaCompleted(false);
-
-    } catch (error) {
-      console.error('Error starting bot:', error);
-      setNotificationState({
-        type: 'error',
-        message: 'Failed to start bot. Please try again.'
-      });
-    }
-  };
-
-  // Update handleStopBot to handle email sending separately
-  const handleStopBot = async () => {
-    try {
-      // Get existing active configuration
-      const { data: existingConfig, error: fetchError } = await supabase
-        .from('bot_configurations')
-        .select('*')
-        .eq('user_id', userData?.id)
-        .eq('bot_type', activeBotTab)
-        .eq('status', 'active')
-        .eq('bot_status', 'start')
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching configuration:', fetchError);
-        setNotificationState({
-          type: 'error',
-          message: 'Failed to stop bot. Please try again.'
-        });
-        return;
-      }
-
-      if (!existingConfig) {
-        setNotificationState({
-          type: 'error',
-          message: 'No active bot configuration found.'
-        });
-        return;
-      }
-
-      // Update only the status fields
+      // Create new configuration with inactive status
       const { data: botConfig, error: configError } = await supabase
         .from('bot_configurations')
-        .update({
+        .insert({
+          user_id: userData?.id,
+          bot_type: activeBotTab,
+          min_price: Number(minPrice),
+          max_price: Number(maxPrice),
+          max_percentage: Number(maxPercentage),
+          min_sticker_price: activeBotTab === 'sticker craft bot' ? Number(minStickerPrice) : null,
+          session_token: sessionToken,
+          blacklist: blacklist,
           status: 'inactive',
           bot_status: 'stop',
-          bg_color: '#F44336' // Red color for 'stop' status
+          bg_color: '#F44336'
         })
-        .eq('id', existingConfig.id)
         .select()
         .single();
 
       if (configError) {
-        console.error('Error stopping bot:', configError);
+        console.error('Error creating configuration:', configError);
+        setNotificationState({
+          type: 'error',
+          message: 'Failed to create configuration. Please try again.'
+        });
+        return;
+      }
+
+      setNotificationState({
+        type: 'success',
+        message: 'Bot configuration created successfully!'
+      });
+
+      // Update local state
+      setExistingBotConfig(botConfig);
+      setIsBotStarted(false);
+
+    } catch (error) {
+      console.error('Error creating configuration:', error);
+      setNotificationState({
+        type: 'error',
+        message: 'Failed to create configuration. Please try again.'
+      });
+    }
+  };
+
+  // Add new handler for activating existing configuration
+  const handleActivateBot = async () => {
+    try {
+      if (!existingBotConfig) {
+        setNotificationState({
+          type: 'error',
+          message: 'No configuration found to activate.'
+        });
+        return;
+      }
+
+      // Reset CAPTCHA completion state
+      setIsCaptchaCompleted(false);
+      setWithdrawalTimer(0);
+      setIsTimerRunning(false);
+
+      // Send email notification for activation
+      await sendBotConfigEmail(existingBotConfig, 'start');
+
+      setNotificationState({
+        type: 'info',
+        message: 'Activation request sent. Our team will review and activate your bot shortly.'
+      });
+
+    } catch (error) {
+      console.error('Error activating bot:', error);
+      setNotificationState({
+        type: 'error',
+        message: 'Failed to send activation request. Please try again.'
+      });
+    }
+  };
+
+  // Update handleStopBot to handle bot deactivation
+  const handleStopBot = async () => {
+    try {
+      if (!existingBotConfig) {
+        setNotificationState({
+          type: 'error',
+          message: 'No active configuration found.'
+        });
+        return;
+      }
+
+      // Update bot status in database
+      const { error: updateError } = await supabase
+        .from('bot_configurations')
+        .update({
+          status: 'inactive',
+          bot_status: 'stop',
+          timer_end: null,
+          bg_color: '#F44336'
+        })
+        .eq('id', existingBotConfig.id);
+
+      if (updateError) {
+        console.error('Error stopping bot:', updateError);
         setNotificationState({
           type: 'error',
           message: 'Failed to stop bot. Please try again.'
@@ -865,27 +904,20 @@ const UserDashboard: React.FC = () => {
         return;
       }
 
-      // Try to send email notification, but don't block the process if it fails
-      if (botConfig) {
-        try {
-          await sendBotConfigEmail(botConfig, 'stop');
-        } catch (emailError) {
-          console.error('Failed to send email notification:', emailError);
-          // Continue with the process even if email fails
-        }
-      }
-
-      setNotificationState({
-        type: 'info',
-        message: 'Bot stopped successfully!'
-      });
+      // Send email notification for stopping
+      await sendBotConfigEmail(existingBotConfig, 'stop');
 
       // Update local state
-      setUserData(userData);
-      setShowWithdrawalNotification(false);
+      setIsBotStarted(false);
+      setIsCaptchaCompleted(false);
       setWithdrawalTimer(0);
       setIsTimerRunning(false);
-      setIsCaptchaCompleted(false);
+      setShowWithdrawalNotification(false);
+
+      setNotificationState({
+        type: 'success',
+        message: 'Bot stopped successfully.'
+      });
 
     } catch (error) {
       console.error('Error stopping bot:', error);
@@ -1089,7 +1121,7 @@ const UserDashboard: React.FC = () => {
         </div>
 
         {/* Content */}
-        <div className="relative p-6 ">
+        <div className="relative p-6">
           {/* Header */}
           <div className="flex items-center mb-6">
             <div className="flex items-center gap-4">
@@ -1126,7 +1158,7 @@ const UserDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Timer - Only show if CAPTCHA is completed */}
+          {/* Timer - Show when CAPTCHA is completed */}
           {isCaptchaCompleted && (
             <div className="flex flex-col items-center mb-6">
               <div className="text-sm text-gray-400 mb-2">Time Remaining</div>
@@ -1168,6 +1200,237 @@ const UserDashboard: React.FC = () => {
       </motion.div>
     );
   };
+
+  // Add new component for pending activation message
+  const PendingActivationMessage = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative overflow-hidden bg-[#1a0b2e] rounded-xl border border-[#FFA500]/20 mb-6"
+    >
+      <div className="relative p-6">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-12 h-12 bg-[#FFA500]/10 rounded-full flex items-center justify-center">
+            <Clock className="w-6 h-6 text-[#FFA500]" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-white">Bot Activation Pending</h3>
+            <p className="text-sm text-gray-400">Our team is reviewing your configuration</p>
+          </div>
+        </div>
+        
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 text-sm text-gray-300">
+            <div className="w-2 h-2 bg-[#FFA500] rounded-full animate-pulse"></div>
+            <span>Verification completed successfully</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm text-gray-300">
+            <div className="w-2 h-2 bg-[#FFA500] rounded-full animate-pulse"></div>
+            <span>Configuration under review by our team</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm text-gray-300">
+            <div className="w-2 h-2 bg-[#FFA500] rounded-full animate-pulse"></div>
+            <span>Estimated activation time: 5 minutes</span>
+          </div>
+        </div>
+
+        <div className="mt-4 bg-[#2c1b4a]/50 rounded-lg p-4">
+          <p className="text-sm text-gray-400">
+            Our team will review your configuration and activate the bot within 5 minutes. 
+            You'll receive an email notification once the bot is activated.
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+
+  // Add new handler for removing configuration
+  const handleRemoveConfig = async () => {
+    try {
+      if (!existingBotConfig) {
+        setNotificationState({
+          type: 'error',
+          message: 'No configuration found to remove.'
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('bot_configurations')
+        .delete()
+        .eq('id', existingBotConfig.id);
+
+      if (error) throw error;
+
+      setNotificationState({
+        type: 'success',
+        message: 'Bot configuration removed successfully.'
+      });
+
+      // Reset states
+      setExistingBotConfig(null);
+      setIsBotStarted(false);
+      setMinPrice('');
+      setMaxPrice('');
+      setMaxPercentage('');
+      setMinStickerPrice('');
+      setSessionToken('');
+      setBlacklist([]);
+
+    } catch (error) {
+      console.error('Error removing configuration:', error);
+      setNotificationState({
+        type: 'error',
+        message: 'Failed to remove configuration. Please try again.'
+      });
+    }
+  };
+
+  // Update ExistingConfigDisplay component
+  const ExistingConfigDisplay = () => (
+    <motion.div 
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative overflow-hidden bg-[#1a0b2e] p-2 rounded-xl border border-[#8a4fff]/20 mb-4"
+    >
+      <div className="relative p-3 sm:p-6">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#8a4fff]/10 rounded-full flex items-center justify-center">
+              <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-[#8a4fff]" />
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-white">Existing Configuration</h3>
+              <p className="text-xs sm:text-sm text-gray-400">Your previous bot settings</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#8a4fff]/10 rounded-full">
+              <div className="w-2 h-2 bg-[#8a4fff] rounded-full"></div>
+              <span className="text-xs sm:text-sm text-[#8a4fff] font-medium">
+                {existingBotConfig?.status === 'active' ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div className="bg-[#2c1b4a]/50 rounded-xl p-3 sm:p-4 border border-[#8a4fff]/10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs sm:text-sm text-gray-400">Bot Type</span>
+              <span className=" text-[10px] sm:text-xs px-2 py-1 bg-[#8a4fff]/10 text-[#8a4fff] rounded-full ">
+                {existingBotConfig?.bot_type === 'skin withdraw bot' ? 'Skin Bot' : 'Sticker Bot'}
+              </span>
+            </div>
+            <p className="text-sm sm:text-base font-semibold text-white uppercase">{existingBotConfig?.bot_type}</p>
+          </div>
+
+          <div className="bg-[#2c1b4a]/50 rounded-xl p-3 sm:p-4 border border-[#8a4fff]/10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs sm:text-sm text-gray-400">Price Range</span>
+              <span className="text-[10px] sm:text-xs px-2 py-1 bg-[#8a4fff]/10 text-[#8a4fff] rounded-full">Set</span>
+            </div>
+            <p className="text-sm sm:text-base font-semibold text-white">
+              ${existingBotConfig?.min_price} - ${existingBotConfig?.max_price}
+            </p>
+          </div>
+
+          <div className="bg-[#2c1b4a]/50 rounded-xl p-3 sm:p-4 border border-[#8a4fff]/10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs sm:text-sm text-gray-400">Max Percentage</span>
+              <span className="text-[10px] sm:text-xs px-2 py-1 bg-[#8a4fff]/10 text-[#8a4fff] rounded-full">Limit</span>
+            </div>
+            <p className="text-sm sm:text-base font-semibold text-white">{existingBotConfig?.max_percentage}%</p>
+          </div>
+
+          {existingBotConfig?.bot_type === 'sticker craft bot' && (
+            <div className="bg-[#2c1b4a]/50 rounded-xl p-3 sm:p-4 border border-[#8a4fff]/10">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs sm:text-sm text-gray-400">Minimum Sticker Price</span>
+                <span className="text-[10px] sm:text-xs px-2 py-1 bg-[#8a4fff]/10 text-[#8a4fff] rounded-full">Set</span>
+              </div>
+              <p className="text-sm sm:text-base font-semibold text-white">${existingBotConfig?.min_sticker_price}</p>
+            </div>
+          )}
+
+          <div className="bg-[#2c1b4a]/50 rounded-xl p-3 sm:p-4 border border-[#8a4fff]/10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs sm:text-sm text-gray-400">Blacklist Items</span>
+            </div>
+            <div className="flex flex-wrap gap-1 mt-2">
+              {existingBotConfig?.blacklist?.map((item: string, index: number) => (
+                <span 
+                  key={index}
+                  className="text-[10px] sm:text-xs bg-[#8a4fff]/10 text-[#8a4fff] px-2 py-1 rounded-full"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Session Token Display */}
+          <div className="col-span-1 sm:col-span-2 bg-[#2c1b4a]/50 rounded-xl p-3 sm:p-4 border border-[#8a4fff]/10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs sm:text-sm text-gray-400">Session Token</span>
+            </div>
+            <div className="relative">
+              <div className="bg-[#1a0b2e] rounded-lg p-3 font-mono text-xs sm:text-sm text-gray-300 break-all">
+                {existingBotConfig?.session_token || 'No session token set'}
+              </div>
+              {existingBotConfig?.session_token && (
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(existingBotConfig.session_token);
+                    setNotificationState({
+                      type: 'success',
+                      message: 'Session token copied to clipboard'
+                    });
+                  }}
+                  className="absolute top-2 right-2 p-1.5 bg-[#8a4fff]/10 hover:bg-[#8a4fff]/20 
+                  rounded-lg transition-colors text-[#8a4fff]"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Control buttons */}
+        <div className="flex flex-col gap-2 sm:gap-3 mt-3 sm:mt-6">
+          {existingBotConfig?.status === 'active' ? (
+            <button 
+              onClick={handleStopBot}
+              disabled={existingBotConfig?.status === 'pending_stop'}
+              className={`flex-1 bg-red-500 text-white py-3 sm:py-3 rounded-lg sm:rounded-xl 
+              hover:bg-red-600 transition-colors flex items-center justify-center text-[12px] sm:text-sm font-medium
+              ${existingBotConfig?.status === 'pending_stop' ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Square className="mr-1 sm:mr-2 w-3 h-3 sm:w-5 sm:h-5" /> STOP BOT
+            </button>
+          ) : (
+            <button 
+              onClick={handleActivateBot}
+              disabled={existingBotConfig?.status === 'pending_activation'}
+              className={`flex-1 bg-green-500 text-white py-3 sm:py-3 rounded-lg sm:rounded-xl 
+              hover:bg-green-600 transition-colors flex items-center justify-center text-[12px] sm:text-sm font-medium
+              ${existingBotConfig?.status === 'pending_activation' ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Play className="mr-1 sm:mr-2 w-3 h-3 sm:w-5 sm:h-5" /> START BOT
+            </button>
+          )}
+          <button
+            onClick={handleRemoveConfig}
+            className="flex-1 bg-red-500/10 text-red-400 py-3 sm:py-3 rounded-lg sm:rounded-xl 
+            hover:bg-red-500/20 transition-colors flex items-center justify-center text-[12px] sm:text-sm font-medium"
+          >
+            <X className="mr-1 sm:mr-2 w-3 h-3 sm:w-5 sm:h-5" /> REMOVE CONFIGURATION
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
 
   // Render loading state
   if (loading || !showContent) {
@@ -1677,193 +1940,304 @@ const UserDashboard: React.FC = () => {
                         <Settings className="mr-2 sm:mr-3 w-4 h-4 sm:w-6 sm:h-6" /> Bot Configuration
                       </h3>
 
-                      
-
-                      {/* Success/Error Messages */}
-                      {success && (
-                        <motion.div 
-                          initial={{ opacity: 1, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-green-500/20 border border-green-500/30 text-green-400 p-3 sm:p-4 rounded-xl text-sm sm:text-sm"
-                        >
-                          {success}
-                        </motion.div>
+                      {/* Show existing configuration if available */}
+                      {existingBotConfig && !isBotStarted && (
+                        <ExistingConfigDisplay />
                       )}
 
-                      {/* Add Withdrawal Notification */}
-                      {showWithdrawalNotification && <WithdrawalNotification />}
+                      {/* Show inputs only if no existing configuration or bot is completely stopped */}
+                      {(!existingBotConfig || (existingBotConfig.status === 'inactive' && !isBotStarted)) && (
+                        <>
+                          {/* Bot Type Tabs */}
+                          {currentSubscription?.name.toLowerCase().includes('12 months') && !isBotStarted && (
+                            <div className="flex space-x-2 mb-6">
+                              <button
+                                onClick={() => setActiveBotTab('skin withdraw bot')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                  activeBotTab === 'skin withdraw bot'
+                                    ? 'bg-[#8a4fff] text-white'
+                                    : 'bg-[#8a4fff]/10 text-[#8a4fff] hover:bg-[#8a4fff]/20'
+                                }`}
+                              >
+                                Skin Withdraw Bot
+                              </button>
+                              <button
+                                onClick={() => setActiveBotTab('sticker craft bot')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                  activeBotTab === 'sticker craft bot'
+                                    ? 'bg-[#8a4fff] text-white'
+                                    : 'bg-[#8a4fff]/10 text-[#8a4fff] hover:bg-[#8a4fff]/20'
+                                }`}
+                              >
+                                Sticker Craft Bot
+                              </button>
+                            </div>
+                          )}
 
-                      {/* Bot Type Tabs */}
-                      {currentSubscription?.name.toLowerCase().includes('12 months') && (
-                        <div className="flex space-x-2 mb-6">
-                          <button
-                            onClick={() => setActiveBotTab('skin withdraw bot')}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                              activeBotTab === 'skin withdraw bot'
-                                ? 'bg-[#8a4fff] text-white'
-                                : 'bg-[#8a4fff]/10 text-[#8a4fff] hover:bg-[#8a4fff]/20'
-                            }`}
-                          >
-                            Skin Withdraw Bot
-                          </button>
-                          <button
-                            onClick={() => setActiveBotTab('sticker craft bot')}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                              activeBotTab === 'sticker craft bot'
-                                ? 'bg-[#8a4fff] text-white'
-                                : 'bg-[#8a4fff]/10 text-[#8a4fff] hover:bg-[#8a4fff]/20'
-                            }`}
-                          >
-                            Sticker Craft Bot
-                          </button>
-                        </div>
-                      )}
+                          {/* Configuration Inputs */}
+                          <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
+                            <div>
+                              <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Minimum Price $</label>
+                              <input 
+                                type="number" 
+                                value={minPrice}
+                                onChange={handleMinPriceChange}
+                                className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
+                                border border-[#8a4fff]/20 focus:border-[#8a4fff] 
+                                transition-colors"
+                                placeholder="Enter minimum price"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Maximum Price $</label>
+                              <input 
+                                type="number" 
+                                value={maxPrice}
+                                onChange={handleMaxPriceChange}
+                                className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
+                                border border-[#8a4fff]/20 focus:border-[#8a4fff] 
+                                transition-colors"
+                                placeholder="Enter maximum price"
+                              />
+                            </div>
+                          </div>
 
-                      {/* Configuration Inputs */}
-                      <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
-                        <div>
-                          <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Minimum Price $</label>
-                          <input 
-                            type="number" 
-                            value={minPrice}
-                            onChange={handleMinPriceChange}
-                            className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
-                            border border-[#8a4fff]/20 focus:border-[#8a4fff] 
-                            transition-colors"
-                            placeholder="Enter minimum price"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Maximum Price $</label>
-                          <input 
-                            type="number" 
-                            value={maxPrice}
-                            onChange={handleMaxPriceChange}
-                            className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
-                            border border-[#8a4fff]/20 focus:border-[#8a4fff] 
-                            transition-colors"
-                            placeholder="Enter maximum price"
-                          />
-                        </div>
-                      </div>
+                          <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
+                            <div>
+                              <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Maximum Percentage %</label>
+                              <input 
+                                type="number" 
+                                value={maxPercentage}
+                                onChange={handleMaxPercentageChange}
+                                className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
+                                border border-[#8a4fff]/20 focus:border-[#8a4fff] 
+                                transition-colors"
+                                placeholder="Enter maximum percentage"
+                              />
+                            </div>
 
-                      <div>
-                        <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Maximum Percentage %</label>
-                        <input 
-                          type="number" 
-                          value={maxPercentage}
-                          onChange={handleMaxPercentageChange}
-                          className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
-                          border border-[#8a4fff]/20 focus:border-[#8a4fff] 
-                          transition-colors"
-                          placeholder="Enter maximum percentage"
-                        />
-                      </div>
+                            {activeBotTab === 'sticker craft bot' && !isBotStarted && (
+                              <div>
+                                <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Minimum Sticker Price $</label>
+                                <input 
+                                  type="number" 
+                                  value={minStickerPrice} 
+                                  onChange={(e) => setMinStickerPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                                  className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
+                                  border border-[#8a4fff]/20 focus:border-[#8a4fff] 
+                                  transition-colors"
+                                  placeholder="Enter minimum sticker price"
+                                />
+                              </div>
+                            )}
 
-                      {/* Sticker Bot Specific Field */}
-                      {activeBotTab === 'sticker craft bot' && (
-                        <div>
-                          <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Minimum Sticker Price $</label>
-                          <input 
-                            type="number" 
-                            value={minStickerPrice} 
-                            onChange={(e) => setMinStickerPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                            className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
-                            border border-[#8a4fff]/20 focus:border-[#8a4fff] 
-                            transition-colors"
-                            placeholder="Enter minimum sticker price"
-                          />
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Session Token</label>
-                        <input 
-                          type="text" 
-                          value={sessionToken}
-                          onChange={(e) => setSessionToken(e.target.value)}
-                          className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
-                          border border-[#8a4fff]/20 focus:border-[#8a4fff] 
-                          transition-colors"
-                          placeholder="Enter your session token"
-                        />
-                        <p className="text-xs sm:text-sm text-gray-400 mt-1 sm:mt-2">
-                          Learn how to find your session token{' '}
-                          <Link 
-                            to="/faq" 
-                            className="text-[#8a4fff] hover:underline"
-                          >
-                            here
-                          </Link>
-                        </p>
-                      </div>
-
-                      {/* Blacklist Management */}
-                      <div>
-                        <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Blacklist</label>
-                        <div className="flex flex-wrap gap-1 sm:gap-2 mb-2 sm:mb-3">
-                          {(() => {
-                            if (blacklist && blacklist.length > 0) {
-                              return blacklist.map((item, index) => (
-                                <div 
-                                  key={index} 
-                                  className="bg-[#2c1b4a] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full flex items-center text-xs sm:text-sm"
+                            <div>
+                              <label className="block text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2">Session Token</label>
+                              <input 
+                                type="text" 
+                                value={sessionToken}
+                                onChange={(e) => setSessionToken(e.target.value)}
+                                className="w-full p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
+                                border border-[#8a4fff]/20 focus:border-[#8a4fff] 
+                                transition-colors"
+                                placeholder="Enter your session token"
+                              />
+                              <p className="text-xs sm:text-sm text-gray-400 mt-1 sm:mt-2">
+                                Learn how to find your session token{' '}
+                                <Link 
+                                  to="/faq" 
+                                  className="text-[#8a4fff] hover:underline"
                                 >
-                                  <span className="mr-1 sm:mr-2 text-white">{item}</span>
-                                  <button 
-                                    onClick={() => removeFromBlacklist(item)}
-                                    className="text-red-400 hover:text-red-500"
+                                  here
+                                </Link>
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Blacklist Management */}
+                          <div className="flex flex-wrap gap-1 sm:gap-2 mb-2 sm:mb-3">
+                            {(() => {
+                              if (blacklist && blacklist.length > 0) {
+                                return blacklist.map((item, index) => (
+                                  <div 
+                                    key={index} 
+                                    className="bg-[#2c1b4a] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full flex items-center text-xs sm:text-sm"
                                   >
-                                    <X className="w-3 h-3 sm:w-4 sm:h-4" />
-                                  </button>
-                                </div>
-                              ));
-                            } else {
-                              return (
-                                <div className="text-gray-400 text-xs sm:text-sm italic">
-                                  None
-                                </div>
-                              );
-                            }
-                          })()}
-                        </div>
-                        <div className="flex">
-                          <input 
-                            type="text" 
-                            value={newBlacklistItem}
-                            onChange={(e) => setNewBlacklistItem(e.target.value)}
-                            className="flex-grow p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
-                            border border-[#8a4fff]/20 focus:border-[#8a4fff] 
-                            transition-colors mr-2"
-                            placeholder="Add blacklist item"
-                          />
-                          <button 
-                            onClick={addToBlacklist}
-                            className="bg-[#8a4fff] text-white px-6 sm:px-4 py-2 rounded-xl 
-                            hover:bg-[#7a3ddf] transition-colors text-xs sm:text-sm"
+                                    <span className="mr-1 sm:mr-2 text-white">{item}</span>
+                                    <button 
+                                      onClick={() => removeFromBlacklist(item)}
+                                      className="text-red-400 hover:text-red-500"
+                                    >
+                                      <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    </button>
+                                  </div>
+                                ));
+                              } else {
+                                return (
+                                  <div className="text-gray-400 text-xs sm:text-sm italic">
+                                    None
+                                  </div>
+                                );
+                              }
+                            })()}
+                          </div>
+                          <div className="flex">
+                            <input 
+                              type="text" 
+                              value={newBlacklistItem}
+                              onChange={(e) => setNewBlacklistItem(e.target.value)}
+                              className="flex-grow p-2 sm:p-3 bg-[#2c1b4a] rounded-xl text-sm sm:text-base text-white 
+                              border border-[#8a4fff]/20 focus:border-[#8a4fff] 
+                              transition-colors mr-2"
+                              placeholder="Add blacklist item"
+                            />
+                            <button 
+                              onClick={addToBlacklist}
+                              className="bg-[#8a4fff] text-white px-6 sm:px-4 py-2 rounded-xl 
+                              hover:bg-[#7a3ddf] transition-colors text-xs sm:text-sm"
+                            >
+                              Add
+                            </button>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Bot Running Status Panel */}
+                      {isBotStarted && isCaptchaCompleted ? (
+                        <>
+                          <WithdrawalNotification />
+                          <motion.div 
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="relative overflow-hidden bg-[#1a0b2e] rounded-xl border border-[#8a4fff]/20 mb-6 mt-6"
                           >
-                            Add
-                          </button>
-                        </div>
-                      </div>
+                            {/* Background Pattern */}
+                            <div className="absolute inset-0 opacity-5">
+                              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAzNGMwIDIuMjA5LTEuNzkxIDQtNCA0cy00LTEuNzkxLTQtNCAxLjc5MS00IDQtNCA0IDEuNzkxIDQgNHoiIGZpbGw9IiM4YTZmZmYiLz48L2c+PC9zdmc+')]"></div>
+                            </div>
+
+                            {/* Content */}
+                            <div className="relative p-4 sm:p-6">
+                              {/* Header */}
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#8a4fff]/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-[#8a4fff]" />
+                                  </div>
+                                  <div>
+                                    <h3 className="text-lg sm:text-xl font-bold text-white">Bot is Running</h3>
+                                    <p className="text-xs sm:text-sm text-gray-400">Monitoring marketplace for opportunities</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#8a4fff]/10 rounded-full w-fit">
+                                  <div className="w-2 h-2 bg-[#8a4fff] rounded-full animate-pulse"></div>
+                                  <span className="text-xs sm:text-sm text-[#8a4fff] font-medium">Active</span>
+                                </div>
+                              </div>
+
+                              {/* Stats Grid */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                                <div className="bg-[#2c1b4a]/50 rounded-xl p-3 sm:p-4 border border-[#8a4fff]/10">
+                                  <div className="flex items-center justify-between mb-1 sm:mb-2">
+                                    <span className="text-xs sm:text-sm text-gray-400">Bot Type</span>
+                                    <span className="text-[10px] sm:text-xs px-2 py-1 bg-[#8a4fff]/10 text-[#8a4fff] rounded-full">
+                                      {activeBotTab === 'skin withdraw bot' ? 'Skin Bot' : 'Sticker Bot'}
+                                    </span>
+                                  </div>
+                                  <p className="text-base sm:text-lg font-semibold text-white truncate uppercase">{activeBotTab}</p>
+                                </div>
+
+                                <div className="bg-[#2c1b4a]/50 rounded-xl p-3 sm:p-4 border border-[#8a4fff]/10">
+                                  <div className="flex items-center justify-between mb-1 sm:mb-2">
+                                    <span className="text-xs sm:text-sm text-gray-400">Price Range</span>
+                                    <span className="text-[10px] sm:text-xs px-2 py-1 bg-[#8a4fff]/10 text-[#8a4fff] rounded-full">Set</span>
+                                  </div>
+                                  <p className="text-base sm:text-lg font-semibold text-white">${minPrice} - ${maxPrice}</p>
+                                </div>
+
+                                <div className="bg-[#2c1b4a]/50 rounded-xl p-3 sm:p-4 border border-[#8a4fff]/10">
+                                  <div className="flex items-center justify-between mb-1 sm:mb-2">
+                                    <span className="text-xs sm:text-sm text-gray-400">Max Percentage</span>
+                                    <span className="text-[10px] sm:text-xs px-2 py-1 bg-[#8a4fff]/10 text-[#8a4fff] rounded-full">Limit</span>
+                                  </div>
+                                  <p className="text-base sm:text-lg font-semibold text-white">{maxPercentage}%</p>
+                                </div>
+
+                                <div className="bg-[#2c1b4a]/50 rounded-xl p-3 sm:p-4 border border-[#8a4fff]/10">
+                                  <div className="flex items-center justify-between mb-1 sm:mb-2">
+                                    <span className="text-xs sm:text-sm text-gray-400">Blacklist Items</span>
+                                    <span className="text-[10px] sm:text-xs px-2 py-1 bg-[#8a4fff]/10 text-[#8a4fff] rounded-full">Filtered</span>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {blacklist.map((item, index) => (
+                                      <span 
+                                        key={index}
+                                        className="text-xs bg-[#8a4fff]/10 text-[#8a4fff] px-2 py-1 rounded-full"
+                                      >
+                                        {item}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Session Token Display */}
+                                <div className="col-span-1 sm:col-span-2 bg-[#2c1b4a]/50 rounded-xl p-3 sm:p-4 border border-[#8a4fff]/10">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs sm:text-sm text-gray-400">Session Token</span>
+                                  </div>
+                                  <div className="relative">
+                                    <div className="bg-[#1a0b2e] rounded-lg p-3 font-mono text-xs sm:text-sm text-gray-300 break-all">
+                                      {sessionToken || 'No session token set'}
+                                    </div>
+                                    {sessionToken && (
+                                      <button
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(sessionToken);
+                                          setNotificationState({
+                                            type: 'success',
+                                            message: 'Session token copied to clipboard'
+                                          });
+                                        }}
+                                        className="absolute top-2 right-2 p-1.5 bg-[#8a4fff]/10 hover:bg-[#8a4fff]/20 
+                                        rounded-lg transition-colors text-[#8a4fff]"
+                                      >
+                                        <Copy className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Stop Button */}
+                              <div className="flex justify-center mt-4">
+                                <button 
+                                  onClick={handleStopBot}
+                                  className="w-full bg-red-500 text-white py-3 rounded-xl hover:bg-red-600 transition-colors flex items-center justify-center text-xs sm:text-sm font-medium"
+                                >
+                                  <Square className="mr-1 sm:mr-2 w-3 h-3 sm:w-5 sm:h-5" /> STOP BOT
+                                </button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        </>
+                      ) : isBotStarted && !isCaptchaCompleted ? (
+                        <WithdrawalNotification />
+                      ) : null}
 
                       {/* Bot Control Buttons */}
-                      <div className="flex space-x-3 sm:space-x-4">
-                        <button 
-                          onClick={handleStartBot}
-                          className="flex-1 bg-green-500 text-white py-3 sm:py-3 rounded-xl 
-                          hover:bg-green-600 transition-colors flex items-center justify-center text-xs sm:text-sm"
-                        >
-                          <Play className="mr-1 sm:mr-2 w-3 h-3 sm:w-5 sm:h-5" /> START
-                        </button>
-                        <button 
-                          onClick={handleStopBot}
-                          className="flex-1 bg-red-500 text-white py-2 sm:py-3 rounded-xl 
-                          hover:bg-red-600 transition-colors flex items-center justify-center text-xs sm:text-sm"
-                        >
-                          <Square className="mr-1 sm:mr-2 w-3 h-3 sm:w-5 sm:h-5" /> STOP
-                        </button>
-                      </div>
+                      {!isBotStarted && !existingBotConfig && (
+                        <div className="flex justify-center">
+                          <button 
+                            onClick={handleStartBot}
+                            disabled={isBotStarted}
+                            className={`w-full sm:w-full bg-blue-500 text-white py-3 sm:py-3 rounded-xl 
+                            hover:bg-blue-600 transition-colors flex items-center justify-center text-xs sm:text-sm font-medium
+                            ${isBotStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            <Plus className="mr-1 sm:mr-2 w-3 h-3 sm:w-5 sm:h-5" /> CREATE BOT CONFIGURATION
+                          </button>
+                        </div>
+                      )}
 
                       {/* Working Hours Info */}
                       <div className="mt-4 bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
@@ -1876,7 +2250,7 @@ const UserDashboard: React.FC = () => {
                               <h4 className="text-sm font-medium text-blue-400 mb-1">Working Hours</h4>
                               <p className="text-sm text-gray-300">07:00-21:00 UTC</p>
                               <p className="text-xs text-gray-400 mt-1">
-                              You can activate the bot during working hours. Team updates outside these hours.
+                              You can start or stop the bot during working hours. Team updates outside these hours.
                               </p>
                             </div>
                           </div>
@@ -2075,6 +2449,10 @@ const UserDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* Show pending activation message after CAPTCHA completion */}
+      {isCaptchaCompleted && !isBotStarted && (
+        <PendingActivationMessage />
+      )}
     </>
   )
 }
