@@ -106,6 +106,16 @@ const CheckoutPage: React.FC = () => {
   // Memoized calculations for performance
   const subtotal = useMemo(() => getTotalPrice(), [cart])
   const total = useMemo(() => subtotal, [subtotal])
+  const [isReferred, setIsReferred] = useState(false)
+  const [discountedTotal, setDiscountedTotal] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (isReferred) {
+      setDiscountedTotal(Number((total * 0.9).toFixed(2)))
+    } else {
+      setDiscountedTotal(null)
+    }
+  }, [isReferred, total])
 
   const [skinMarketplaces, setSkinMarketplaces] = useState([
     {
@@ -209,6 +219,17 @@ const CheckoutPage: React.FC = () => {
         
         if (user) {
           setEmail(user.email || '')
+          // Fetch referred_by
+          const { data: userData } = await supabase
+            .from('users')
+            .select('referred_by')
+            .eq('auth_id', user.id)
+            .single()
+          if (userData && userData.referred_by) {
+            setIsReferred(true)
+          } else {
+            setIsReferred(false)
+          }
         }
 
         // Check if we're coming from a successful order placement
@@ -428,7 +449,7 @@ const CheckoutPage: React.FC = () => {
         .from('orders')
         .insert({
           user_id: userData.data.id,
-          amount: total,
+          amount: discountedTotal !== null ? discountedTotal : total,
           status: 'completed',
           subscription_id: finalSubscriptionId,
           expiration_date: subscriptionEndDate.toISOString(),
@@ -455,7 +476,7 @@ const CheckoutPage: React.FC = () => {
           order_id: order.id,
           subscription_id: finalSubscriptionId,
           quantity: 1,
-          price: total
+          price: discountedTotal !== null ? discountedTotal : total
         })
       
       if (orderItemsError) {
@@ -499,8 +520,8 @@ const CheckoutPage: React.FC = () => {
             order_id: orderData.id,
             user_id: userData.data.id,
             status: orderData.status,
-            amount: total,
-            total_amount: total,
+            amount: discountedTotal !== null ? discountedTotal : total,
+            total_amount: discountedTotal !== null ? discountedTotal : total,
             transaction_date: new Date().toISOString(),
             subscription_id: finalSubscriptionId,
             expiration_date: subscriptionEndDate.toISOString(),
@@ -512,7 +533,7 @@ const CheckoutPage: React.FC = () => {
           const userTemplateParams = {
             username: userData.data.username || userData.data.email?.split('@')[0],
             id: orderData.id,
-            total_amount: total,
+            total_amount: discountedTotal !== null ? discountedTotal : total,
             transaction_date: new Date().toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
@@ -531,7 +552,7 @@ const CheckoutPage: React.FC = () => {
               price: item.price
             })),
             cost: {
-              total: total
+              total: discountedTotal !== null ? discountedTotal : total
             },
             email: userData.data.email,
             created_at: new Date().toLocaleDateString('en-US', {
@@ -551,7 +572,7 @@ const CheckoutPage: React.FC = () => {
               order_id: orderData.id,
               user_id: userData.data.id,
               status: orderData.status,
-              total_amount: total,
+              total_amount: discountedTotal !== null ? discountedTotal : total,
               transaction_date: new Date().toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
@@ -601,7 +622,7 @@ const CheckoutPage: React.FC = () => {
           id: order.id,
           subscriptionName: selectedSubscription.name,
           date: new Date(),
-          amount: total,
+          amount: discountedTotal !== null ? discountedTotal : total,
           items: cart,
           duration_days: selectedSubscription.duration_days,
           transactionHash: transactionHash || undefined
@@ -692,7 +713,7 @@ const CheckoutPage: React.FC = () => {
       }
 
       // Calculate amount in ETH with proper decimal handling
-      const euroAmount = total;
+      const euroAmount = discountedTotal !== null ? discountedTotal : total;
       const amountInEth = Number((euroAmount / 2000).toFixed(8));
       
       if (isNaN(amountInEth) || amountInEth <= 0) {
@@ -903,6 +924,14 @@ const CheckoutPage: React.FC = () => {
       return
     }
 
+    if (!isConnected && !isOnlyFreeTrialInCart) {
+      setNotificationState({
+        type: 'error',
+        message: 'Please connect your wallet before proceeding with the payment.'
+      })
+      return
+    }
+
     setIsProcessingPayment(true)
     setCurrentStep(1)
     handleWalletPayment()
@@ -1076,7 +1105,7 @@ const CheckoutPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl border border-[#8a4fff]/20 shadow-lg hover:border-[#8a4fff] transition-all duration-300">
+        <div className="mt-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl  shadow-lg hover:border-[#8a4fff] transition-all duration-300">
           <div className="p-4">
             <div className="flex items-center mb-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#8a4fff]/30 to-[#8a4fff]/10 flex items-center justify-center mr-3 shadow-inner">
@@ -1253,7 +1282,7 @@ const CheckoutPage: React.FC = () => {
                   {cart.map((item) => (
                     <div 
                       key={item.id} 
-                      className="flex items-center justify-between p-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl border border-[#8a4fff]/20"
+                      className="flex items-center justify-between p-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl "
                     >
                       <div className="flex items-center space-x-4">
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#8a4fff]/30 to-[#8a4fff]/10 flex items-center justify-center shadow-inner">
@@ -1318,7 +1347,7 @@ const CheckoutPage: React.FC = () => {
 
                     {/* Skins Option */}
                     {paymentOptions.filter(p => p.type === 'skin').map((payment) => (
-                  <button
+                      <button
                         key={payment.id}
                         onClick={() => setSelectedPayment({
                           id: payment.id,
@@ -1341,7 +1370,7 @@ const CheckoutPage: React.FC = () => {
                           <SiTradingview className="w-6 h-6 text-[#1E73A4]" />
                           <SiSteam className="w-6 h-6 text-blue-500" />
                         </div>
-                  </button>
+                      </button>
                     ))}
                 </div>
               </div>
@@ -1360,68 +1389,79 @@ const CheckoutPage: React.FC = () => {
                 <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-[#8a4fff]/10">
                   {selectedPayment.type === 'skin' ? (
                     <>
-              <h2 className="text-[18px] sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
+                      <h2 className="text-[18px] sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
                         <Gamepad2 className="mr-2 sm:mr-3 w-6 h-6 sm:w-6 sm:h-6" /> Select Marketplace
-              </h2>
+                      </h2>
                       <div className="space-y-3">
-                        {[
-                          {
-                            id: 'bitskins',
-                            name: 'BitSkins',
-                            logo: <SiJoomla className="w-5 h-5 text-purple-500" />,
-                            description: "Trusted skin trading platform",
-                            url: "https://bitskins.com/",
-                            status: 'active'
-                          },
-                          {
-                            id: 'tradeit',
-                            name: 'TradeIt.gg',
-                            logo: <SiSteam className="w-5 h-5 text-blue-500" />,
-                            description: "Instant skin trading platform",
-                            url: "https://tradeit.gg/",
-                            status: 'active'
-                          }
-                        ].map((marketplace) => (
-                          <button
-                            key={marketplace.id}
-                            onClick={() => window.open(marketplace.url, '_blank', 'noopener,noreferrer')}
-                            className={`
-                              w-full flex items-center p-3 rounded-lg transition-all duration-300
-                              ${marketplace.status === 'active' 
-                                ? 'bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 hover:from-[#8a4fff]/30 hover:to-[#8a4fff]/10 border border-[#8a4fff]/20 hover:border-[#8a4fff]' 
-                                : 'bg-gray-800/50 cursor-not-allowed'}
-                            `}
-                          >
-                            <div className="w-8 h-8 mr-3 flex items-center justify-center">
-                              {marketplace.logo}
+                        <div className="p-6 bg-[#1a0b2e]/50 rounded-xl ">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-12 h-12 rounded-xl bg-[#8a4fff]/10 flex items-center justify-center">
+                                <Gamepad2 className="w-6 h-6 text-[#8a4fff]" />
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-semibold text-white">Skin Payment</h3>
+                                <p className="text-sm text-gray-400">Coming Soon</p>
+                              </div>
                             </div>
-                            <div className="flex-1 text-left">
-                              <p className="text-sm font-medium text-white">{marketplace.name}</p>
-                              <p className="text-xs text-gray-400">{marketplace.description}</p>
-                            </div>
-                            <div className="ml-3">
-                              <svg className="w-5 h-5 text-[#8a4fff]" viewBox="0 0 24 24" fill="none">
-                                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="mt-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl border border-[#8a4fff]/20 shadow-lg hover:border-[#8a4fff] transition-all duration-300">
-                        <div className="p-4">
-                          <div className="flex items-center mb-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#8a4fff]/30 to-[#8a4fff]/10 flex items-center justify-center mr-3 shadow-inner">
-                              <ShieldCheck className="w-5 h-5 text-[#8a4fff]" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-semibold text-white">Marketplace Security</h3>
-                              <p className="text-xs text-[#8a4fff]/70">Stay protected</p>
+                            <div className="px-3 py-1 bg-[#8a4fff]/10 rounded-full">
+                              <span className="text-sm text-[#8a4fff]">Beta</span>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-300 pl-13 leading-relaxed">
-                            We only work with verified marketplaces. Double-check trade details and never accept offers from unofficial sources.
-                          </p>
+                          
+                          <div className="grid md:grid-cols-2 gap-3 mb-4">
+                            {[
+                              {
+                                id: 'bitskins',
+                                name: 'BitSkins',
+                                logo: <SiJoomla className="w-5 h-5 text-purple-500" />,
+                                description: "Trusted skin trading platform",
+                                status: 'coming_soon'
+                              },
+                              {
+                                id: 'tradeit',
+                                name: 'TradeIt.gg',
+                                logo: <SiSteam className="w-5 h-5 text-blue-500" />,
+                                description: "Instant skin trading platform",
+                                status: 'coming_soon'
+                              }
+                            ].map((marketplace) => (
+                              <div 
+                                key={marketplace.id}
+                                className="p-4 bg-[#2c1b4a] rounded-xl border border-[#8a4fff]/10 opacity-50"
+                              >
+                                <div className="flex items-center space-x-3 mb-2">
+                                  {marketplace.logo}
+                                  <h4 className="text-base font-medium text-white">{marketplace.name}</h4>
+                                </div>
+                                <p className="text-sm text-gray-400">{marketplace.description}</p>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl  p-4">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <ShieldCheck className="w-5 h-5 text-[#8a4fff]" />
+                              <h4 className="text-base font-medium text-white">Marketplace Security</h4>
+                            </div>
+                            <p className="text-sm text-gray-400">
+                              We only work with verified marketplaces. Double-check trade details and never accept offers from unofficial sources.
+                            </p>
+                          </div>
+
+                          <div className="mt-4 flex justify-center">
+                            <button
+                              onClick={() => setSelectedPayment({
+                                id: 'usdc',
+                                name: 'USDC',
+                                type: 'crypto'
+                              })}
+                              className="w-full py-3 bg-gradient-to-r from-[#8a4fff] via-[#6a2dcf] to-[#4a1daf] text-white rounded-lg hover:from-[#7a3ddf] hover:via-[#5a2dbf] hover:to-[#3a1d9f] active:scale-[0.98] shadow-lg shadow-[#8a4fff]/20 transition-all duration-300 flex items-center justify-center gap-2"
+                            >
+                              <Wallet className="w-4 h-4" />
+                              Switch to Crypto Payment
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </>
@@ -1433,7 +1473,7 @@ const CheckoutPage: React.FC = () => {
                       {!isConnected ? (
                         <div>
                           <div className="py-6 px-2">
-                            <div className="flex items-center gap-6 mb-8 p-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl border border-[#8a4fff]/20">
+                            <div className="flex items-center gap-6 mb-8 p-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl ">
                               <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-[#8a4fff]/30 to-[#8a4fff]/10 flex items-center justify-center shadow-inner">
                                 <Wallet className="w-7 h-7 text-[#8a4fff]" />
                               </div>
@@ -1442,14 +1482,14 @@ const CheckoutPage: React.FC = () => {
                                 <p className="text-sm text-gray-400">Connect your crypto wallet to continue</p>
                               </div>
                             </div>
-                            <div className="scale-110 ml-2 w-fit p-1 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-full border border-[#8a4fff]/20">
+                            <div className="scale-110 ml-2 w-fit p-1 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-full ">
                               <appkit-button />
                             </div>
                           </div>
                         </div>
                       ) : (
                         <div className="space-y-4">
-                          <div className="flex items-center justify-between p-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl border border-[#8a4fff]/20">
+                          <div className="flex items-center justify-between p-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl ">
                             <div className="flex items-center space-x-4">
                               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#8a4fff]/30 to-[#8a4fff]/10 flex items-center justify-center shadow-inner">
                                 {selectedPayment.id === 'usdc' && <UsdcIcon className="w-7 h-7" />}
@@ -1472,7 +1512,7 @@ const CheckoutPage: React.FC = () => {
               </div>
 
                           <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl border border-[#8a4fff]/20">
+                            <div className="p-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl ">
                               <div className="flex items-center space-x-2 mb-2">
                                 <Wallet className="w-5 h-5 text-[#8a4fff]" />
                                 <p className="text-sm text-gray-400">Balance</p>
@@ -1488,7 +1528,7 @@ const CheckoutPage: React.FC = () => {
                               </p>
                             </div>
 
-                            <div className="p-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl border border-[#8a4fff]/20">
+                            <div className="p-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl ">
                               <div className="flex items-center space-x-2 mb-2">
                                 <Link2 className="w-5 h-5 text-[#8a4fff]" />
                                 <p className="text-sm text-gray-400">Network</p>
@@ -1502,7 +1542,7 @@ const CheckoutPage: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between p-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl border border-[#8a4fff]/20">
+                          <div className="flex items-center justify-between p-4 bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl ">
                             <div className="flex items-center space-x-3">
                               <SiEthereum className="w-5 h-5 text-[#627EEA]" />
                               <div>
@@ -1535,8 +1575,18 @@ const CheckoutPage: React.FC = () => {
                         <span className="text-sm text-gray-400">Total Amount</span>
                       </div>
                     </div>
-                    <div className="flex items-center">
-                      <span className="text-xl font-medium text-white">€{total.toFixed(2)}</span>
+                    <div className="flex flex-col items-end">
+                      {isReferred && discountedTotal !== null ? (
+                        <>
+                          <span className="text-xs text-gray-400 line-through mb-0.5">€{total.toFixed(2)}</span>
+                          <span className="text-2xl font-semibold text-white">€{discountedTotal.toFixed(2)}</span>
+                          <span className="flex items-center gap-1 text-xs text-gray-400 mt-1">
+                            <Info className="w-3 h-3" /> 10% Referral discount
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-2xl font-semibold text-white">€{total.toFixed(2)}</span>
+                      )}
                     </div>
                   </div>
               </div>
@@ -1627,7 +1677,7 @@ const CheckoutPage: React.FC = () => {
                           <div className="flex items-center justify-center">
                             <CreditCard className="w-4 h-4 mr-2" />
                             <span className="text-base font-medium">
-                              {isOnlyFreeTrialInCart ? 'Activate Free Trial' : `Pay €${total.toFixed(2)}`}
+                              {isOnlyFreeTrialInCart ? 'Activate Free Trial' : `Pay €${discountedTotal !== null ? discountedTotal.toFixed(2) : total.toFixed(2)}`}
                             </span>
                           </div>
                         )}

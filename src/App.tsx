@@ -18,6 +18,7 @@ import DiscordButton from './components/DiscordButton'
 import { requireAdmin } from './middleware/adminAuth'
 import AdminSignIn from './pages/AdminSignIn'
 import AdminDashboard from './pages/AdminDashboard'
+import SessionTokenPage from './pages/SessionTokenPage'
 import { initializeIPTracking } from './lib/ipTracker'
 
 // Lazy load components
@@ -29,12 +30,6 @@ const PrivacyPolicy = React.lazy(() => import('./components/PrivacyPolicy'))
 const PolicyPage = React.lazy(() => import('./components/PolicyPage'))
 const UserDashboard = React.lazy(() => import('./components/UserDashboard'))
 
-// Loading spinner
-// const LoadingSpinner = () => (
-//   <div className="fixed inset-0 flex items-center justify-center bg-[#04011C] z-50">
-//     <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-[#8a4fff]"></div>
-//   </div>
-// )
 
 // Initial Load Wrapper
 const InitialLoadWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -47,11 +42,6 @@ const InitialLoadWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return () => clearTimeout(timer)
   }, [])
-
-  // if (isInitialLoad) {
-  //   return <LoadingSpinner />
-  // }
-
   return (
     <motion.div
       initial={{ opacity: 1 }}
@@ -226,59 +216,43 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="bg-[#0a0415] text-white min-h-screen">
-      <Header onCartToggle={toggleCart} />
-      <CartDropdown isOpen={isCartOpen} onClose={closeCart} />
-      <DiscordButton />
-
-      <AnimatePresence mode="wait" initial={false}>
-        <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<Home />} />
-          <Route 
-            path="/signin" 
-            element={
-              isAuthenticated ? <Navigate to="/" replace /> : <SignInPage />
-            } 
-          />
-          <Route 
-            path="/signup" 
-            element={
-              isAuthenticated ? <Navigate to="/" replace /> : <SignInPage />
-            } 
-          />
-          <Route 
-            path="/checkout" 
-            element={
-              <PrivateRoute>
-                <CheckoutPage />
-              </PrivateRoute>
-            } 
-          />
-          <Route path="/terms" element={<TermsOfService />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/policy" element={<PolicyPage />} />
-          <Route 
-            path="/dashboard" 
-            element={
-              <PrivateRoute>
-                <UserDashboard />
-              </PrivateRoute>
-            } 
-          />
-          <Route path="/reset-password" element={<PasswordResetPage />} />
-          <Route path="/admin" element={<AdminSignIn />} />
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedAdminRoute>
-                <AdminDashboard />
-              </ProtectedAdminRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AnimatePresence>
-    </div>
+    <CartProvider>
+      <div className="min-h-screen bg-gradient-to-br from-[#04011C] to-[#0a0415]">
+        {!isAdminRoute && <Header onCartToggle={toggleCart} />}
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<Home />} />
+            <Route path="/signin" element={<SignInPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/policy" element={<PolicyPage />} />
+            <Route path="/session-token" element={<SessionTokenPage />} />
+            <Route
+              path="/dashboard/*"
+              element={
+                <PrivateRoute>
+                  <UserDashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route path="/admin" element={<AdminSignIn />} />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminDashboard />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route path="/reset-password" element={<PasswordResetPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AnimatePresence>
+        {!isAdminRoute && <CartDropdown isOpen={isCartOpen} onClose={closeCart} />}
+        {!isAdminRoute && <DiscordButton />}
+      </div>
+    </CartProvider>
   )
 }
 

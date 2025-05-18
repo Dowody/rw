@@ -89,11 +89,11 @@ const Footer = () => {
         <div className="grid md:grid-cols-5 gap-8 sm:gap-12">
           {/* Brand & Trustpilot Reviews */}
           <div className="md:col-span-2">
-            <div className="flex items-center mb-4 sm:mb-6">
-              <Gamepad2 className="text-[#8a4fff] mr-2 sm:mr-3 w-8 h-8 sm:w-10 sm:h-10" />
-              <h4 className="text-[24px] sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
+            <div className="flex items-center space-x-3 sm:space-x-4 mb-5">
+              <img src="logo.png" alt="RollWithdraw Logo" className="w-10 h-10 sm:w-10 sm:h-10 md:w-12 md:h-12" />
+              <span className="text-[24px] sm:text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#8a4fff] to-[#6E42DB]">
                 RollWithdraw
-              </h4>
+              </span>
             </div>
             <p className="text-[14px] sm:text-base text-gray-300 mb-4 sm:mb-6">
               Revolutionizing trading with intelligent, automated withdrawal solutions for CSGORoll enthusiasts.

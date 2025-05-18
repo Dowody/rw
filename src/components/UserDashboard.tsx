@@ -107,7 +107,7 @@ const UserDashboard: React.FC = () => {
   
   // Add new state variables for withdrawal
   const [showWithdrawalNotification, setShowWithdrawalNotification] = useState(false)
-  const [withdrawalTimer, setWithdrawalTimer] = useState(60) // 60 minutes in seconds
+  const [withdrawalTimer, setWithdrawalTimer] = useState(30 * 60) // 30 minutes in seconds
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   
   // Add notification state near other state declarations
@@ -277,7 +277,7 @@ const UserDashboard: React.FC = () => {
     try {
       // Reset timer every time CAPTCHA is completed
       const timerEnd = new Date();
-      timerEnd.setHours(timerEnd.getHours() + 1);
+      timerEnd.setMinutes(timerEnd.getMinutes() + 30); // Set to 30 minutes instead of 60
 
       // Get existing configuration
       const { data: existingConfigs, error: fetchError } = await supabase
@@ -328,7 +328,7 @@ const UserDashboard: React.FC = () => {
         return;
       }
 
-      setWithdrawalTimer(60 * 60); // Reset to 60 minutes
+      setWithdrawalTimer(30 * 60); // Reset to 30 minutes
       setIsTimerRunning(true);
       setIsCaptchaCompleted(true);
       setShowWithdrawalNotification(true);
@@ -777,7 +777,7 @@ const UserDashboard: React.FC = () => {
       }
 
       // Validate required fields
-      if (!minPrice || !maxPrice || !maxPercentage || !sessionToken) {
+      if (minPrice === '' || maxPrice === '' || maxPercentage === '' || !sessionToken) {
         setNotificationState({
           type: 'error',
           message: 'Please fill in all required fields'
@@ -1759,7 +1759,7 @@ const UserDashboard: React.FC = () => {
                             <Share2 className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" /> Referral Program
                           </h3>
                           <p className="text-gray-400 text-sm lg:text-base sm:text-sm">
-                            Invite friends and earn 7 days of free subscription for each successful referral
+                            Invite friends and earn 5 days of free subscription for each successful referral
                           </p>
                         </div>
                         <motion.button
@@ -2318,7 +2318,7 @@ const UserDashboard: React.FC = () => {
                   )}
 
                   {/* Subscription Details in Vertical Layout */}
-                  <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="grid md:grid-cols-1 gap-4 sm:gap-6">
                     {/* Subscription Details Card */}
                     <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-3xl p-4 sm:p-6 border border-[#8a4fff]/10 space-y-3 sm:space-y-4">
                       <div className="flex justify-between items-center">

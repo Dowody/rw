@@ -152,7 +152,7 @@ const ReferralsSection: React.FC = () => {
                 email: user.email || 'Unknown'
         },
               referral_status: referralData?.referral_status || 'Signed Up',
-              rewardAmount: 7, // 7 days free subscription
+              rewardAmount: 5, // 5 days free subscription
               createdAt: new Date(user.created_at),
               completedAt: referralData?.completed_at ? new Date(referralData.completed_at) : undefined
             }
@@ -166,7 +166,7 @@ const ReferralsSection: React.FC = () => {
       const totalSignedUp = signedUpReferrals + redeemedReferrals
         
       // Calculate total rewards based on pending referrals
-        const totalRewards = signedUpReferrals * 7
+        const totalRewards = signedUpReferrals * 5
 
         // Update rewards_days in the database
         const { error: updateError } = await supabase
@@ -229,11 +229,11 @@ const ReferralsSection: React.FC = () => {
         throw codeError
       }
 
-      toast.success('New referral code generated!')
+      toast.success('New referral link generated!')
       await fetchReferralData() // Refresh the data
     } catch (err) {
-      console.error('Error generating referral code:', err)
-      toast.error('Failed to generate referral code')
+      console.error('Error generating referral link:', err)
+      toast.error('Failed to generate referral link')
     } finally {
       setIsGeneratingCode(false)
     }
@@ -312,8 +312,8 @@ const ReferralsSection: React.FC = () => {
 
       console.log('Pending referrals before update:', pendingReferrals)
 
-      // Calculate total reward days (7 days per pending referral)
-      const totalRewardDays = (pendingReferrals?.length || 0) * 7
+      // Calculate total reward days (5 days per pending referral)
+      const totalRewardDays = (pendingReferrals?.length || 0) * 5
 
       if (totalRewardDays <= 0) {
         setNotificationState({
@@ -624,7 +624,7 @@ const ReferralsSection: React.FC = () => {
               </p>
               <div className="flex items-center gap-2 text-[#8a4fff]">
                 <Gift className="w-4 h-4" />
-                <span className="text-sm font-medium">7 days free subscription per referral</span>
+                <span className="text-sm font-medium">5 days free subscription per referral</span>
               </div>
             </div>
             
@@ -633,7 +633,7 @@ const ReferralsSection: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-gray-300">
                   <div className="w-6 h-6 rounded-full bg-[#8a4fff]/10 flex items-center justify-center text-[#8a4fff] text-sm font-medium">1</div>
-                  <span className="text-sm">Generate your unique referral code</span>
+                  <span className="text-sm">Generate your unique referral link</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-300">
                   <div className="w-6 h-6 rounded-full bg-[#8a4fff]/10 flex items-center justify-center text-[#8a4fff] text-sm font-medium">2</div>
@@ -706,10 +706,10 @@ const ReferralsSection: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div>
             <h3 className="text-lg sm:text-xl font-semibold text-[#8a4fff] flex items-center gap-2">
-                <Share2 className="w-4 h-4 sm:w-5 sm:h-5" /> Your Referral Codes
+                <Share2 className="w-4 h-4 sm:w-5 sm:h-5" /> Your Referral Link
             </h3>
               <p className="text-sm sm:text-sm text-gray-400 mt-0.5">
-              Share these codes with friends to earn rewards
+              Share this link with friends to earn rewards
             </p>
           </div>
           <motion.button
@@ -727,7 +727,7 @@ const ReferralsSection: React.FC = () => {
               </>
             ) : (
               <>
-                <RefreshCw className="w-4 h-4" /> Generate New Code
+                <RefreshCw className="w-4 h-4" /> Generate New Link
               </>
             )}
           </motion.button>
@@ -737,16 +737,16 @@ const ReferralsSection: React.FC = () => {
           {isGeneratingCode ? (
               <div className="text-center py-6 sm:py-8 text-gray-400">
                 <RefreshCw className="w-5 h-5 sm:w-6 sm:h-6 animate-spin mx-auto mb-2" />
-                <p className="text-sm">Generating new referral code...</p>
+                <p className="text-sm">Generating new referral link...</p>
             </div>
           ) : loading ? (
               <div className="text-center py-6 sm:py-8 text-gray-400">
                 <RefreshCw className="w-5 h-5 sm:w-6 sm:h-6 animate-spin mx-auto mb-2" />
-                <p className="text-sm">Loading referral codes...</p>
+                <p className="text-sm">Loading referral link...</p>
             </div>
           ) : referralCodes.length === 0 ? (
               <div className="text-center py-6 sm:py-8 text-gray-400">
-                <p className="text-sm">No referral codes generated yet</p>
+                <p className="text-sm">No referral link generated yet</p>
             </div>
           ) : (
             referralCodes.map((code) => (
@@ -760,7 +760,7 @@ const ReferralsSection: React.FC = () => {
                         <Share2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#8a4fff]" />
                   </div>
                   <div className="min-w-0 flex-1">
-                        <p className="text-sm sm:text-base text-white font-medium truncate">{code.code}</p>
+                        <p className="text-sm sm:text-base text-white font-medium truncate">https://dowody.github.io/rw/signin?ref={code.code}</p>
                         <p className="text-xs sm:text-sm text-gray-400">
                       Created {code.createdAt.toLocaleDateString()}
                     </p>

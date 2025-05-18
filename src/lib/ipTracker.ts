@@ -6,7 +6,7 @@ const IPIFY_API_KEY = 'at_HdANd8rHmn0Li0wWj7Iu7taZMOkLq'
 let cachedIP: string | null = null
 let isUpdatingIP = false
 let lastUpdateTime = 0
-const UPDATE_COOLDOWN = 5000 // 5 seconds cooldown between updates
+const UPDATE_COOLDOWN = 1200000 // 5 minutes cooldown between updates
 
 // Function to get user's IP address using ipify Geolocation API
 export const getUserIP = async () => {
@@ -144,11 +144,11 @@ export const ensureIPUpdated = async (userId: string, forceUpdate: boolean = fal
       throw currentUserError
     }
 
-    // Update IP if force update is true, or if it's different or hasn't been updated in the last hour
+    // Update IP if force update is true, or if it's different or hasn't been updated in the last 24 hours
     const shouldUpdate = forceUpdate || !currentUserData.ip_address || 
       currentUserData.ip_address !== newIP ||
       !currentUserData.last_ip_update ||
-      (new Date().getTime() - new Date(currentUserData.last_ip_update).getTime() > 3600000)
+      (new Date().getTime() - new Date(currentUserData.last_ip_update).getTime() > 86400000) // 24 hours
 
     if (shouldUpdate) {
       const updateResult = await updateUserIP(correctUserId, newIP, forceUpdate)
@@ -194,8 +194,8 @@ export const initializeIPTracking = () => {
     }
   }
 
-  // Run initial check after a delay to ensure auth is ready
-  setTimeout(checkCurrentSession, 5000)
+  // Run initial check after a longer delay to ensure auth is ready
+  setTimeout(checkCurrentSession, 15000) // 15 seconds delay
 
   return () => {
     subscription.unsubscribe()
