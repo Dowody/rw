@@ -440,7 +440,7 @@ const CheckoutPage: React.FC = () => {
       } else {
         // No existing subscription, calculate end date based on trial or regular subscription
         subscriptionEndDate = cart[0].id === 'free-trial'
-          ? new Date(subscriptionStartDate.getTime() + (2 * 24 * 60 * 60 * 1000)) // 2 days for trial
+          ? new Date(subscriptionStartDate.getTime() + (1 * 24 * 60 * 60 * 1000)) // 2 days for trial
           : new Date(subscriptionStartDate.setDate(subscriptionStartDate.getDate() + selectedSubscription.duration_days))
       }
   

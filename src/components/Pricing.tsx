@@ -355,7 +355,7 @@ const Products = () => {
       category: "Limited Access",
       icon: <Sparkles />, 
       price: 0,
-      duration_days: 2,
+      duration_days: 1,
       image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/b95e8765126337.60af5cc76e5df.jpg",
       features: [
         "Original Price: €49.99",

@@ -6,22 +6,46 @@ const IPIFY_API_KEY = 'at_HdANd8rHmn0Li0wWj7Iu7taZMOkLq'
 let cachedIP: string | null = null
 let isUpdatingIP = false
 let lastUpdateTime = 0
-const UPDATE_COOLDOWN = 1200000 // 5 minutes cooldown between updates
+const UPDATE_COOLDOWN = 86400000 // 24 hours cooldown between updates
+const SESSION_CHECK_DELAY = 1200000 // 20 minutes delay for initial session check
+let pendingIPPromise: Promise<string | null> | null = null
 
 // Function to get user's IP address using ipify Geolocation API
 export const getUserIP = async () => {
-  try {
-    const response = await fetch(`https://geo.ipify.org/api/v2/country?apiKey=${IPIFY_API_KEY}`)
-    
-    if (!response.ok) {
-      throw new Error(`ipify API responded with status: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return data.ip
-  } catch (error) {
-    return null
+  // If we have a cached IP and it's less than 24 hours old, use it
+  if (cachedIP && (Date.now() - lastUpdateTime) < UPDATE_COOLDOWN) {
+    return cachedIP
   }
+
+  // If there's already a pending IP fetch, return that promise
+  if (pendingIPPromise) {
+    return pendingIPPromise
+  }
+
+  // Create a new promise for this IP fetch
+  pendingIPPromise = (async () => {
+    try {
+      const response = await fetch(`https://geo.ipify.org/api/v2/country?apiKey=${IPIFY_API_KEY}`)
+      
+      if (!response.ok) {
+        throw new Error(`ipify API responded with status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      cachedIP = data.ip
+      lastUpdateTime = Date.now()
+      return data.ip
+    } catch (error) {
+      return null
+    } finally {
+      // Clear the pending promise after a short delay to prevent race conditions
+      setTimeout(() => {
+        pendingIPPromise = null
+      }, 100)
+    }
+  })()
+
+  return pendingIPPromise
 }
 
 // Function to update user's IP address in Supabase
@@ -39,7 +63,6 @@ export const updateUserIP = async (userId: string, ipAddress: string, forceUpdat
   try {
     while (retryCount < maxRetries) {
       try {
-        // First verify the user exists and get current data
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('id, ip_address')
@@ -54,7 +77,6 @@ export const updateUserIP = async (userId: string, ipAddress: string, forceUpdat
           return false
         }
 
-        // Update the user's IP address
         const updateData = { 
           ip_address: ipAddress,
           last_ip_update: new Date().toISOString()
@@ -92,48 +114,39 @@ export const updateUserIP = async (userId: string, ipAddress: string, forceUpdat
 
 // Function to ensure IP is updated
 export const ensureIPUpdated = async (userId: string, forceUpdate: boolean = false) => {
-  // Check if we've already updated IP in this session
   const sessionKey = `ip_updated_${userId}`
-  if (!forceUpdate && sessionStorage.getItem(sessionKey)) {
-    return true
+  const lastSessionUpdate = sessionStorage.getItem(sessionKey)
+  
+  if (!forceUpdate && lastSessionUpdate) {
+    const lastUpdate = parseInt(lastSessionUpdate)
+    if (Date.now() - lastUpdate < UPDATE_COOLDOWN) {
+      return true
+    }
   }
 
   try {
-    // First verify the user is authenticated and get the correct user ID
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return false
     }
 
-    // Get the correct user ID from the auth session
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('id')
       .eq('auth_id', user.id)
       .single()
 
-    if (userError) {
-      return false 
-    }
-
-    if (!userData) {
+    if (userError || !userData) {
       return false
     }
 
     const correctUserId = userData.id
 
-    // Get new IP
     const newIP = await getUserIP()
     if (!newIP) {
       return false
     }
 
-    // If force update is true, skip the cache check
-    if (!forceUpdate && cachedIP === newIP) {
-      return true
-    }
-
-    // Then check if user exists and get current IP
     const { data: currentUserData, error: currentUserError } = await supabase
       .from('users')
       .select('ip_address, last_ip_update')
@@ -144,23 +157,21 @@ export const ensureIPUpdated = async (userId: string, forceUpdate: boolean = fal
       throw currentUserError
     }
 
-    // Update IP if force update is true, or if it's different or hasn't been updated in the last 24 hours
-    const shouldUpdate = forceUpdate || !currentUserData.ip_address || 
+    const shouldUpdate = forceUpdate || 
+      !currentUserData.ip_address || 
       currentUserData.ip_address !== newIP ||
       !currentUserData.last_ip_update ||
-      (new Date().getTime() - new Date(currentUserData.last_ip_update).getTime() > 86400000) // 24 hours
+      (new Date().getTime() - new Date(currentUserData.last_ip_update).getTime() > UPDATE_COOLDOWN)
 
     if (shouldUpdate) {
       const updateResult = await updateUserIP(correctUserId, newIP, forceUpdate)
       if (updateResult) {
-        // Mark IP as updated in this session
-        sessionStorage.setItem(sessionKey, 'true')
+        sessionStorage.setItem(sessionKey, Date.now().toString())
       }
       return updateResult
     }
 
-    // Mark IP as checked in this session even if no update was needed
-    sessionStorage.setItem(sessionKey, 'true')
+    sessionStorage.setItem(sessionKey, Date.now().toString())
     return true
   } catch (error) {
     return false
@@ -169,24 +180,18 @@ export const ensureIPUpdated = async (userId: string, forceUpdate: boolean = fal
 
 // Function to handle auth state changes
 export const handleAuthStateChange = async (event: string, session: any) => {
-  // Only handle SIGNED_IN event
   if (event !== 'SIGNED_IN' || !session?.user) return
-
-  // Force update IP on sign in
   ensureIPUpdated(session.user.id, true).catch(() => {})
 }
 
 // Initialize IP tracking
 export const initializeIPTracking = () => {
-  // Set up auth state change listener
   const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange)
 
-  // Check and update IP for current session in background
   const checkCurrentSession = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        // Force update on initial session check
         ensureIPUpdated(session.user.id, true).catch(() => {})
       }
     } catch (error) {
@@ -194,8 +199,7 @@ export const initializeIPTracking = () => {
     }
   }
 
-  // Run initial check after a longer delay to ensure auth is ready
-  setTimeout(checkCurrentSession, 15000) // 15 seconds delay
+  setTimeout(checkCurrentSession, SESSION_CHECK_DELAY)
 
   return () => {
     subscription.unsubscribe()

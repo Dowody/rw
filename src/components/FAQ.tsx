@@ -103,7 +103,7 @@ const FAQ = () => {
     },
     {
       question: "Do I have to withdraw a skin from the marketplace every hour?",
-      answer: "Yes, this is required because:\n\n• It's a protection feature from CSGORoll\n• We cannot bypass this requirement\n• You need to withdraw a skin every 60 minutes\n\nWhile we handle most CAPTCHA challenges, this hourly withdrawal is mandatory."
+      answer: "Yes, this is required because:\n\n• It's a protection feature from CSGORoll\n• We cannot bypass this requirement\n• You need to withdraw a skin every 30 minutes\n\nWhile we handle most CAPTCHA challenges, this hourly withdrawal is mandatory."
     },
     {
       question: "Is there a RollWithdraw community somewhere with more information?",
