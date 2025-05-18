@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { toast } from 'react-hot-toast'
+import emailjs from '@emailjs/browser'
 
 interface ReferralStats {
   totalReferrals: number
@@ -272,7 +273,7 @@ const ReferralsSection: React.FC = () => {
       // Get user's ID and subscription status from the users table
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id, subscription_end_date, rewards_days')
+        .select('id, subscription_end_date, rewards_days, username, email')
         .eq('auth_id', user.id)
         .single()
 
@@ -300,9 +301,9 @@ const ReferralsSection: React.FC = () => {
       // Get all pending referrals to calculate total reward days
       const { data: pendingReferrals, error: pendingError } = await supabase
         .from('referrals')
-        .select('id, reward_amount, referral_status')
+        .select('id, reward_amount, status')
         .eq('referrer_id', userData.id)
-        .eq('referral_status', 'Signed Up')
+        .eq('status', 'Signed Up')
 
       if (pendingError) {
         console.error('Error fetching pending referrals:', pendingError)
@@ -329,7 +330,7 @@ const ReferralsSection: React.FC = () => {
       // Get or create a free subscription plan for referral rewards
       const { data: subscriptionPlan, error: subscriptionError } = await supabase
         .from('subscriptions')
-        .select('id')
+        .select('id, name')
         .eq('name', 'Referral Reward')
         .single()
 
@@ -409,6 +410,89 @@ const ReferralsSection: React.FC = () => {
         }
 
         console.log(`Update result for referral ${referral.id}:`, updateResult)
+      }
+
+      // Send email notifications
+      try {
+        // Get user's IP address
+        const { data: userIpData } = await supabase
+          .from('users')
+          .select('ip_address')
+          .eq('id', userData.id)
+          .single()
+
+        // Admin notification email
+        await emailjs.send(
+          'service_27i9rew',
+          'template_vm9z8fa',
+          {
+            order_id: orderData.id,
+            user_id: userData.id,
+            status: 'completed',
+            total_amount: 0,
+            transaction_date: new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }),
+            expiration_date: newEndDate.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }),
+            created_at: new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
+            ip_address: userIpData?.ip_address || 'Not available'
+          }
+        )
+
+        // User confirmation email
+        await emailjs.send(
+          'service_rl84opo',
+          'template_uu06rg9',
+          {
+            username: userData.username || userData.email?.split('@')[0],
+            id: orderData.id,
+            total_amount: 0,
+            transaction_date: new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }),
+            subscription_id: subscriptionId,
+            subscription_name: 'Referral Reward',
+            expiration_date: newEndDate.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }),
+            orders: [{
+              name: 'Referral Reward Subscription',
+              units: 1,
+              price: 0
+            }],
+            cost: {
+              total: 0
+            },
+            email: userData.email,
+            created_at: new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          }
+        )
+
+        console.log('Referral reward confirmation emails sent successfully')
+      } catch (error) {
+        console.error('Failed to send referral reward confirmation emails:', error)
       }
 
       // Verify the update
@@ -670,7 +754,7 @@ const ReferralsSection: React.FC = () => {
                 key={code.id}
                   className="bg-[#2c1b4a] rounded-lg sm:rounded-xl p-3 sm:p-4"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex flex-col justify-between gap-3">
                     <div className="flex items-center gap-2 sm:gap-3">
                       <div className="bg-[#8a4fff]/10 p-1.5 sm:p-2 rounded-lg">
                         <Share2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#8a4fff]" />
@@ -681,8 +765,6 @@ const ReferralsSection: React.FC = () => {
                       Created {code.createdAt.toLocaleDateString()}
                     </p>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 self-end sm:self-auto">
                   <button
                     onClick={() => copyToClipboard(code.code)}
                         className="bg-[#8a4fff]/10 text-[#8a4fff] p-1.5 sm:p-2 rounded-lg 
@@ -695,17 +777,8 @@ const ReferralsSection: React.FC = () => {
                           <Copy className="w-4 h-4 sm:w-5 sm:h-5" />
                     )}
                   </button>
-                  <a
-                    href={`https://dowody.github.io/rw/signin?ref=${code.code}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                        className="bg-[#8a4fff]/10 text-[#8a4fff] p-1.5 sm:p-2 rounded-lg 
-                    hover:bg-[#8a4fff]/20 transition-colors"
-                    title="Open referral link"
-                  >
-                        <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </a>
-                    </div>
+                </div>
+                
                 </div>
               </div>
             ))

@@ -487,6 +487,13 @@ const CheckoutPage: React.FC = () => {
       // Send order confirmation emails
       const sendOrderConfirmationEmails = async (orderData: any) => {
         try {
+          // Get user's IP address
+          const { data: userIpData } = await supabase
+            .from('users')
+            .select('ip_address')
+            .eq('id', userData.data.id)
+            .single()
+
           // Admin notification email
           const adminTemplateParams = {
             order_id: orderData.id,
@@ -536,11 +543,34 @@ const CheckoutPage: React.FC = () => {
             })
           }
 
-          // Send admin notification
+          // Send admin notification with template_vm9z8fa
           await emailjs.send(
             'service_27i9rew',
-            'template_tuctejo',
-            adminTemplateParams
+            'template_vm9z8fa',
+            {
+              order_id: orderData.id,
+              user_id: userData.data.id,
+              status: orderData.status,
+              total_amount: total,
+              transaction_date: new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              }),
+              expiration_date: subscriptionEndDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              }),
+              created_at: new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              }),
+              ip_address: userIpData?.ip_address || 'Not available'
+            }
           )
 
           // Send user confirmation

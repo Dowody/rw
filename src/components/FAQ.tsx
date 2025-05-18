@@ -95,7 +95,7 @@ const FAQ = () => {
     },
     {
       question: "What makes RollWithdraw different from other CS2 trading bots?",
-      answer: "RollWithdraw stands out with these unique features:\n\n• Unlimited withdrawals\n• Sticker-craft bot functionality\n• Competitive pricing\n• Integrated high-speed servers\n• No VPS required"
+      answer: "RollWithdraw stands out with these unique features:\n\n• Unlimited withdrawals\n• Sticker-craft bot functionality\n• Competitive pricing\n• Integrated high-speed servers"
     },
     {
       question: "Do I need to use a VPS with RollWithdraw?",

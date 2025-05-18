@@ -1373,6 +1373,11 @@ const UserDashboard: React.FC = () => {
           <div className="col-span-1 sm:col-span-2 bg-[#2c1b4a]/50 rounded-xl p-3 sm:p-4 border border-[#8a4fff]/10">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs sm:text-sm text-gray-400">Session Token</span>
+              {existingBotConfig?.valid_session_token === false && (
+                <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full">
+                  Invalid Session Token
+                </span>
+              )}
             </div>
             <div className="relative">
               <div className="bg-[#1a0b2e] rounded-lg p-3 font-mono text-xs sm:text-sm text-gray-300 break-all">
@@ -1394,6 +1399,20 @@ const UserDashboard: React.FC = () => {
                 </button>
               )}
             </div>
+            {existingBotConfig?.valid_session_token === false && (
+              <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-yellow-400 font-medium mb-1">Session Token Invalid</p>
+                    <p className="text-xs text-yellow-400/80">
+                      Your session token is either incorrect or has expired (it lasts around 24 hours). 
+                      Please generate a new session token and update your bot configuration.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -2042,15 +2061,24 @@ const UserDashboard: React.FC = () => {
                                 transition-colors"
                                 placeholder="Enter your session token"
                               />
-                              <p className="text-xs sm:text-sm text-gray-400 mt-1 sm:mt-2">
-                                Learn how to find your session token{' '}
+                              <div className="flex flex-col gap-1 mt-1 sm:mt-2">
                                 <Link 
-                                  to="/faq" 
-                                  className="text-[#8a4fff] hover:underline"
+                                  to="/session-token" 
+                                  className="text-xs sm:text-sm text-[#8a4fff] hover:text-[#7a3ddf] transition-colors flex items-center gap-1"
                                 >
-                                  here
+                                  <Info className="w-3 h-3" />
+                                  Learn how to find your session token manually
                                 </Link>
-                              </p>
+                                <a 
+                                  href="https://chrome.google.com/webstore/detail/rollwithdraw-session-token/your-extension-id" 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs sm:text-sm text-[#8a4fff] hover:text-[#7a3ddf] transition-colors flex items-center gap-1"
+                                >
+                                  <Download className="w-3 h-3" />
+                                  Install our Session Token Extension
+                                </a>
+                              </div>
                             </div>
                           </div>
 
@@ -2184,15 +2212,20 @@ const UserDashboard: React.FC = () => {
                                 <div className="col-span-1 sm:col-span-2 bg-[#2c1b4a]/50 rounded-xl p-3 sm:p-4 border border-[#8a4fff]/10">
                                   <div className="flex items-center justify-between mb-2">
                                     <span className="text-xs sm:text-sm text-gray-400">Session Token</span>
+                                    {existingBotConfig?.valid_session_token === false && (
+                                      <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full">
+                                        Invalid Session Token
+                                      </span>
+                                    )}
                                   </div>
                                   <div className="relative">
                                     <div className="bg-[#1a0b2e] rounded-lg p-3 font-mono text-xs sm:text-sm text-gray-300 break-all">
-                                      {sessionToken || 'No session token set'}
+                                      {existingBotConfig?.session_token || 'No session token set'}
                                     </div>
-                                    {sessionToken && (
+                                    {existingBotConfig?.session_token && (
                                       <button
                                         onClick={() => {
-                                          navigator.clipboard.writeText(sessionToken);
+                                          navigator.clipboard.writeText(existingBotConfig.session_token);
                                           setNotificationState({
                                             type: 'success',
                                             message: 'Session token copied to clipboard'
@@ -2205,6 +2238,20 @@ const UserDashboard: React.FC = () => {
                                       </button>
                                     )}
                                   </div>
+                                  {existingBotConfig?.valid_session_token === false && (
+                                    <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                                      <div className="flex items-start gap-3">
+                                        <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                          <p className="text-sm text-yellow-400 font-medium mb-1">Session Token Invalid</p>
+                                          <p className="text-xs text-yellow-400/80">
+                                            Your session token is either incorrect or has expired (it lasts around 24 hours). 
+                                            Please generate a new session token and update your bot configuration.
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
 

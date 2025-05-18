@@ -32,10 +32,45 @@ import {
   Save,
   X,
   Crown,
-  User
+  User,
+  Percent
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+
+// Add this function to get IP address
+const getUserIP = async () => {
+  try {
+    const response = await fetch('https://api.ipify.org?format=json')
+    const data = await response.json()
+    return data.ip
+  } catch (error) {
+    console.error('Error fetching IP:', error)
+    return null
+  }
+}
+
+// Add this function to update user's IP address
+const updateUserIP = async (userId: string, ipAddress: string) => {
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ ip_address: ipAddress })
+      .eq('id', userId)
+
+    if (error) throw error
+  } catch (error) {
+    console.error('Error updating IP:', error)
+  }
+}
+
+// Add this function to handle user login
+const handleUserLogin = async (userId: string) => {
+  const ipAddress = await getUserIP()
+  if (ipAddress) {
+    await updateUserIP(userId, ipAddress)
+  }
+}
 
 type AdminSection = 'users' | 'orders' | 'bot-config'
 
@@ -49,6 +84,7 @@ interface User {
   subscription_end_date: string | null
   subscription_name?: string
   current_subscription_id?: string
+  ip_address?: string
 }
 
 interface Order {
@@ -68,6 +104,7 @@ interface Order {
   users: {
     email: string
     username: string
+    ip_address?: string
   } | null
 }
 
@@ -85,6 +122,7 @@ interface BotConfig {
   blacklist: string[]
   created_at: string
   timer_end?: string
+  valid_session_token?: boolean
   users?: {
     email: string
     username: string
@@ -105,11 +143,20 @@ const AdminDashboard: React.FC = () => {
   }>({ type: null, message: null })
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState({
-    status: 'all',
-    dateRange: 'all',
-    type: 'all'
+    users: {
+      subscription: 'all'
+    },
+    orders: {
+      status: 'all',
+      subscription: 'all'
+    },
+    botConfig: {
+      status: 'all',
+      type: 'all'
+    }
   })
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [selectedBotConfigUser, setSelectedBotConfigUser] = useState<{ email: string; username: string } | null>(null)
 
   const navigate = useNavigate()
 
@@ -153,7 +200,8 @@ const AdminDashboard: React.FC = () => {
           ),
           users:user_id (
             email,
-            username
+            username,
+            ip_address
           )
         `)
         .order('transaction_date', { ascending: false })
@@ -273,6 +321,37 @@ const AdminDashboard: React.FC = () => {
     }
   }
 
+  const handleToggleValidSessionToken = async (configId: string, currentState: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('bot_configurations')
+        .update({ valid_session_token: !currentState })
+        .eq('id', configId)
+
+      if (error) throw error
+
+      // Update local state
+      setBotConfigs(prevConfigs => 
+        prevConfigs.map(config => 
+          config.id === configId 
+            ? { ...config, valid_session_token: !currentState }
+            : config
+        )
+      )
+
+      setNotification({
+        type: 'success',
+        message: `Session token ${!currentState ? 'validated' : 'invalidated'} successfully`
+      })
+
+    } catch (err: any) {
+      setNotification({
+        type: 'error',
+        message: err.message
+      })
+    }
+  }
+
   const filterUsers = (users: User[]) => {
     return users.filter(user => {
       const matchesSearch = 
@@ -280,9 +359,11 @@ const AdminDashboard: React.FC = () => {
         user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.id.toLowerCase().includes(searchQuery.toLowerCase())
 
-      const matchesStatus = filters.status === 'all' || user.status === filters.status
+      const matchesSubscription = filters.users.subscription === 'all' || 
+        (filters.users.subscription === 'with' && user.current_subscription_id) ||
+        (filters.users.subscription === 'without' && !user.current_subscription_id)
 
-      return matchesSearch && matchesStatus
+      return matchesSearch && matchesSubscription
     })
   }
 
@@ -292,22 +373,30 @@ const AdminDashboard: React.FC = () => {
         order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.subscription_name?.toLowerCase().includes(searchQuery.toLowerCase())
 
-      const matchesStatus = filters.status === 'all' || order.status === filters.status
+      const matchesStatus = filters.orders.status === 'all' || order.status === filters.orders.status
+      const matchesSubscription = filters.orders.subscription === 'all' || order.subscription_name === filters.orders.subscription
 
-      return matchesSearch && matchesStatus
+      return matchesSearch && matchesStatus && matchesSubscription
     })
   }
 
   const filterBotConfigs = (configs: BotConfig[]) => {
     return configs.filter(config => {
+      const userEmail = config.users?.email?.toLowerCase() || '';
+      const username = config.users?.username?.toLowerCase() || '';
+      const userId = config.user_id.toLowerCase();
+      
       const matchesSearch = 
         config.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        config.bot_type.toLowerCase().includes(searchQuery.toLowerCase())
+        config.bot_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        userEmail.includes(searchQuery.toLowerCase()) ||
+        username.includes(searchQuery.toLowerCase()) ||
+        userId.includes(searchQuery.toLowerCase());
 
-      const matchesStatus = filters.status === 'all' || config.status === filters.status
-      const matchesType = filters.type === 'all' || config.bot_type === filters.type
+      const matchesStatus = filters.botConfig.status === 'all' || config.status === filters.botConfig.status;
+      const matchesType = filters.botConfig.type === 'all' || config.bot_type === filters.botConfig.type;
 
-      return matchesSearch && matchesStatus && matchesType
+      return matchesSearch && matchesStatus && matchesType;
     })
   }
 
@@ -428,11 +517,12 @@ const AdminDashboard: React.FC = () => {
 
     return (
       <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-[9999]">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-md" />
         <motion.div
           initial={{ opacity: 1, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 1, scale: 0.95 }}
-          className="bg-[#1a0b2e]/80 backdrop-blur-xl rounded-2xl w-[calc(100%-2rem)] max-w-2xl relative border border-white/5 shadow-2xl"
+          className="bg-[#1a0b2e]/80 backdrop-blur-xl rounded-2xl w-[calc(100%-2rem)] max-w-2xl relative border border-white/5 shadow-2xl z-[10000]"
         >
           {/* Close button */}  
           <button
@@ -456,84 +546,87 @@ const AdminDashboard: React.FC = () => {
                 <h2 className="text-lg font-medium text-white">{user.username}</h2>
                 <p className="text-sm text-gray-400">{user.email}</p>
                 <p className="text-xs text-gray-500">ID: {user.id}</p>
+                <p className="text-xs text-gray-500">IP: {user.ip_address || 'N/A'}</p>
               </div>
             </div>
           </div>
 
           {/* Content */}
-          <div className="p-6 space-y-6">
-            {/* Account Info */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/5">
-              <p className="text-xs text-gray-400 mb-1.5">Current Subscription</p>
-              <p className="text-sm font-medium text-white">
-                {user.subscription_name || 'No active subscription'}
-              </p>
-              {user.subscription_end_date && (
-                <div className="mt-2 pt-2 border-t border-white/5">
-                  <p className="text-xs text-gray-400 mb-1">Ends</p>
-                  <p className="text-sm font-medium text-white">
-                    {new Date(user.subscription_end_date).toLocaleDateString()}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Orders Section */}
-            <div>
-              <h3 className="text-sm font-medium text-white mb-4">Order History</h3>
-              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                {userOrders.length > 0 ? (
-                  userOrders.map((order) => (
-                    <div key={order.id} className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/5">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <ShoppingCart className="w-4 h-4 text-[#8a4fff]" />
-                          <span className="text-sm text-white">Order #{order.id}</span>
-                        </div>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          order.status === 'completed' 
-                            ? 'bg-green-500/20 text-green-400' 
-                            : 'bg-yellow-500/20 text-yellow-400'
-                        }`}>
-                          {order.status}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 mt-3">
-                        <div>
-                          <p className="text-xs text-gray-400 mb-1">Paid</p>
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="w-4 h-4 text-[#8a4fff]" />
-                            <span className="text-sm text-white">
-                              €{(order.total_amount || order.amount).toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-400 mb-1">Purchase Date</p>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-[#8a4fff]" />
-                            <span className="text-sm text-white">
-                              {new Date(order.transaction_date || order.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      {order.subscription_name && (
-                        <div className="mt-3 pt-3 border-t border-white/5">
-                          <p className="text-xs text-gray-400 mb-1">Subscription</p>
-                          <div className="flex items-center gap-2">
-                            <Crown className="w-4 h-4 text-[#8a4fff]" />
-                            <span className="text-sm text-white">{order.subscription_name}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/5">
-                    <p className="text-sm text-gray-400">No orders found</p>
+          <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+            <div className="space-y-4">
+              {/* Account Info */}
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/5">
+                <p className="text-xs text-gray-400 mb-1.5">Current Subscription</p>
+                <p className="text-sm font-medium text-white">
+                  {user.subscription_name || 'No active subscription'}
+                </p>
+                {user.subscription_end_date && (
+                  <div className="mt-2 pt-2 border-t border-white/5">
+                    <p className="text-xs text-gray-400 mb-1">Ends</p>
+                    <p className="text-sm font-medium text-white">
+                      {new Date(user.subscription_end_date).toLocaleDateString()}
+                    </p>
                   </div>
                 )}
+              </div>
+
+              {/* Orders Section */}
+              <div>
+                <h3 className="text-sm font-medium text-white mb-4">Order History</h3>
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                  {userOrders.length > 0 ? (
+                    userOrders.map((order) => (
+                      <div key={order.id} className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/5">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <ShoppingCart className="w-4 h-4 text-[#8a4fff]" />
+                            <span className="text-sm text-white">Order #{order.id}</span>
+                          </div>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            order.status === 'completed' 
+                              ? 'bg-green-500/20 text-green-400' 
+                              : 'bg-yellow-500/20 text-yellow-400'
+                          }`}>
+                            {order.status}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 mt-3">
+                          <div>
+                            <p className="text-xs text-gray-400 mb-1">Paid</p>
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="w-4 h-4 text-[#8a4fff]" />
+                              <span className="text-sm text-white">
+                                €{(order.total_amount || order.amount).toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-400 mb-1">Purchase Date</p>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-[#8a4fff]" />
+                              <span className="text-sm text-white">
+                                {new Date(order.transaction_date || order.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        {order.subscription_name && (
+                          <div className="mt-3 pt-3 border-t border-white/5">
+                            <p className="text-xs text-gray-400 mb-1">Subscription</p>
+                            <div className="flex items-center gap-2">
+                              <Crown className="w-4 h-4 text-[#8a4fff]" />
+                              <span className="text-sm text-white">{order.subscription_name}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/5">
+                      <p className="text-sm text-gray-400">No orders found</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -541,6 +634,188 @@ const AdminDashboard: React.FC = () => {
       </div>
     )
   }
+
+  // Add BotConfigModal component
+  const BotConfigModal = ({ user, configs, onClose }: { user: { email: string; username: string }; configs: BotConfig[]; onClose: () => void }) => {
+    return (
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-[9999]">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-md" />
+        <motion.div
+          initial={{ opacity: 1, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 1, scale: 0.95 }}
+          className="bg-[#1a0b2e]/80 backdrop-blur-xl rounded-2xl w-[calc(100%-2rem)] max-w-2xl relative border border-white/5 shadow-2xl z-[10000]"
+        >
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          {/* Header */}
+          <div className="p-6 border-b border-white/5">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#8a4fff] to-[#6a2dcf] flex items-center justify-center shadow-lg shadow-[#8a4fff]/20">
+                  <span className="text-lg font-medium text-white">
+                    {user.username.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <h2 className="text-lg font-medium text-white">{user.username}</h2>
+                <p className="text-sm text-gray-400">{user.email}</p>
+                <p className="text-xs text-gray-500">ID: {configs[0].user_id}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+            <div className="space-y-4">
+              {configs.map((config) => (
+                <div key={config.id} className="bg-white/5 rounded-xl overflow-hidden">
+                  {/* Top Bar */}
+                  <div className="px-4 py-3 bg-[#8a4fff]/5 border-b border-[#8a4fff]/10">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <Bot className="w-5 h-5 text-[#8a4fff]" />
+                        <span className="uppercase text-sm font-medium text-white">{config.bot_type}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleToggleValidSessionToken(config.id, config.valid_session_token || false)}
+                          className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-colors ${
+                            config.valid_session_token
+                              ? 'text-green-400 hover:bg-green-500/10'
+                              : 'text-yellow-400 hover:bg-yellow-500/10'
+                          }`}
+                          title={config.valid_session_token ? 'Session Token is Valid' : 'Session Token is Invalid'}
+                        >
+                          {config.valid_session_token ? (
+                            <CheckCircle className="w-4 h-4" />
+                          ) : (
+                            <AlertTriangle className="w-4 h-4" />
+                          )}
+                          <span className="text-xs">
+                            {config.valid_session_token ? 'Valid Session Token' : 'Invalid Session Token'}
+                          </span>
+                        </button>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          config.status === 'active' 
+                            ? 'bg-green-500/20 text-green-400' 
+                            : 'bg-red-500/20 text-red-400'
+                        }`}>
+                          {config.status}
+                        </span>
+                        <button
+                          onClick={() => handleBotActivation(config.id, config.status !== 'active')}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            config.status === 'active'
+                              ? 'text-red-400 hover:bg-red-500/10'
+                              : 'text-green-400 hover:bg-green-500/10'
+                          }`}
+                          title={config.status === 'active' ? 'Deactivate Bot' : 'Activate Bot'}
+                        >
+                          {config.status === 'active' ? (
+                            <PowerOff className="w-4 h-4" />
+                          ) : (
+                            <Power className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Settings Grid */}
+                  <div className="p-4 grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-400 mb-1">Price Range</p>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-4 h-4 text-[#8a4fff]" />
+                        <span className="text-sm text-white">
+                          €{config.min_price} - €{config.max_price}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-1">Max Percentage</p>
+                      <div className="flex items-center gap-2">
+                        <Percent className="w-4 h-4 text-[#8a4fff]" />
+                        <span className="text-sm text-white">
+                          {config.max_percentage}%
+                        </span>
+                      </div>
+                    </div>
+                    {config.min_sticker_price && (
+                      <div className="col-span-2">
+                        <p className="text-xs text-gray-400 mb-1">Min Sticker Price</p>
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="w-4 h-4 text-[#8a4fff]" />
+                          <span className="text-sm text-white">€{config.min_sticker_price}</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="col-span-2">
+                      <p className="text-xs text-gray-400 mb-1">Session Token</p>
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-[#8a4fff]" />
+                        <span className="text-sm text-white font-mono bg-white/5 px-2 py-1 rounded">
+                          {config.session_token}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Blacklist */}
+                  <div className="px-4 py-3 bg-white/5 border-t border-white/5">
+                    <p className="text-xs text-gray-400 mb-2">Blacklist Items</p>
+                    <div className="flex flex-wrap gap-2">
+                      {config.blacklist.length > 0 ? (
+                        config.blacklist.map((item, index) => (
+                          <span
+                            key={index}
+                            className="px-2 py-1 bg-[#8a4fff]/10 text-[#8a4fff] rounded-lg text-xs"
+                          >
+                            {item}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-gray-400">No blacklist items</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-4 py-3 bg-white/5 border-t border-white/5 flex items-center justify-between text-xs text-gray-400">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      <span>Activated: {new Date(config.created_at).toLocaleString()}</span>
+                    </div>
+                    {config.timer_end && (
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        <span>
+                          {(() => {
+                            const endTime = new Date(config.timer_end).getTime();
+                            const now = new Date().getTime();
+                            const hoursLeft = Math.ceil((endTime - now) / (1000 * 60 * 60));
+                            return `Verification ends in ${hoursLeft} hours`;
+                          })()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -576,13 +851,49 @@ const AdminDashboard: React.FC = () => {
         )}
       </AnimatePresence>
 
+      {/* Modals Backdrop */}
+      <AnimatePresence>
+        {(selectedUser || selectedBotConfigUser) && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-md z-[9998]" />
+        )}
+      </AnimatePresence>
+
       {/* Add UserOverviewModal */}
       <AnimatePresence>
         {selectedUser && (
-          <UserOverviewModal
-            user={selectedUser}
-            onClose={() => setSelectedUser(null)}
-          />
+          <div className="fixed inset-0 flex items-center justify-center z-[9999]">
+            <motion.div
+              initial={{ opacity: 1, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 1, scale: 0.95 }}
+              className="bg-[#1a0b2e]/80 backdrop-blur-xl rounded-2xl w-[calc(100%-2rem)] max-w-2xl relative border border-white/5 shadow-2xl"
+            >
+              <UserOverviewModal
+                user={selectedUser}
+                onClose={() => setSelectedUser(null)}
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add BotConfigModal */}
+      <AnimatePresence>
+        {selectedBotConfigUser && (
+          <div className="fixed inset-0 flex items-center justify-center z-[9999]">
+            <motion.div
+              initial={{ opacity: 1, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 1, scale: 0.95 }}
+              className="bg-[#1a0b2e]/80 backdrop-blur-xl rounded-2xl w-[calc(100%-2rem)] max-w-2xl relative border border-white/5 shadow-2xl"
+            >
+              <BotConfigModal
+                user={selectedBotConfigUser}
+                configs={botConfigs.filter(config => config.users?.email === selectedBotConfigUser.email)}
+                onClose={() => setSelectedBotConfigUser(null)}
+              />
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
@@ -685,54 +996,114 @@ const AdminDashboard: React.FC = () => {
           <AnimatePresence>
             {showFilters && (
               <motion.div
-                initial={{ opacity: 1, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 1, height: 0 }}
-                transition={{ duration: 0.2, ease: 'easeInOut' }}
-                className="mt-4 p-4 bg-[#1a0b2e] rounded-lg border border-[#8a4fff]/20 overflow-hidden"
+                initial={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  duration: 0.2,
+                  ease: [0.4, 0, 0.2, 1],
+                  opacity: { duration: 0.15 }
+                }}
+                className="mt-4 p-4 bg-[#1a0b2e] rounded-lg border border-[#8a4fff]/20"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs sm:text-sm text-gray-400 mb-2">Status</label>
-                    <select
-                      value={filters.status}
-                      onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-lg 
-                      text-sm text-white focus:border-[#8a4fff] transition-colors"
+                  {activeSection === 'users' && (
+                    <motion.div
+                      initial={{ opacity: 1, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 }}
                     >
-                      <option value="all">All</option>
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs sm:text-sm text-gray-400 mb-2">Date Range</label>
-                    <select
-                      value={filters.dateRange}
-                      onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-lg 
-                      text-sm text-white focus:border-[#8a4fff] transition-colors"
-                    >
-                      <option value="all">All Time</option>
-                      <option value="today">Today</option>
-                      <option value="week">This Week</option>
-                      <option value="month">This Month</option>
-                    </select>
-                  </div>
-                  {activeSection === 'bot-config' && (
-                    <div>
-                      <label className="block text-xs sm:text-sm text-gray-400 mb-2">Bot Type</label>
+                      <label className="block text-xs sm:text-sm text-gray-400 mb-2">Subscription</label>
                       <select
-                        value={filters.type}
-                        onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+                        value={filters.users.subscription}
+                        onChange={(e) => setFilters({ ...filters, users: { ...filters.users, subscription: e.target.value } })}
                         className="w-full px-3 py-2 bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-lg 
                         text-sm text-white focus:border-[#8a4fff] transition-colors"
                       >
-                        <option value="all">All Types</option>
-                        <option value="skin withdraw bot">Skin Withdraw Bot</option>
-                        <option value="sticker craft bot">Sticker Craft Bot</option>
+                        <option value="all">All Users</option>
+                        <option value="with">With Subscription</option>
+                        <option value="without">Without Subscription</option>
                       </select>
-                    </div>
+                    </motion.div>
+                  )}
+
+                  {activeSection === 'orders' && (
+                    <>
+                      <motion.div
+                        initial={{ opacity: 1, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 }}
+                      >
+                        <label className="block text-xs sm:text-sm text-gray-400 mb-2">Status</label>
+                        <select
+                          value={filters.orders.status}
+                          onChange={(e) => setFilters({ ...filters, orders: { ...filters.orders, status: e.target.value } })}
+                          className="w-full px-3 py-2 bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-lg 
+                          text-sm text-white focus:border-[#8a4fff] transition-colors"
+                        >
+                          <option value="all">All</option>
+                          <option value="completed">Completed</option>
+                          <option value="pending">Pending</option>
+                        </select>
+                      </motion.div>
+                      <motion.div
+                        initial={{ opacity: 1, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.15 }}
+                      >
+                        <label className="block text-xs sm:text-sm text-gray-400 mb-2">Subscription</label>
+                        <select
+                          value={filters.orders.subscription}
+                          onChange={(e) => setFilters({ ...filters, orders: { ...filters.orders, subscription: e.target.value } })}
+                          className="w-full px-3 py-2 bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-lg 
+                          text-sm text-white focus:border-[#8a4fff] transition-colors"
+                        >
+                          <option value="all">All Subscriptions</option>
+                          <option value="basic">Basic</option>
+                          <option value="premium">Premium</option>
+                          <option value="pro">Pro</option>
+                        </select>
+                      </motion.div>
+                    </>
+                  )}
+
+                  {activeSection === 'bot-config' && (
+                    <>
+                      <motion.div
+                        initial={{ opacity: 1, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 }}
+                      >
+                        <label className="block text-xs sm:text-sm text-gray-400 mb-2">Status</label>
+                        <select
+                          value={filters.botConfig.status}
+                          onChange={(e) => setFilters({ ...filters, botConfig: { ...filters.botConfig, status: e.target.value } })}
+                          className="w-full px-3 py-2 bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-lg 
+                          text-sm text-white focus:border-[#8a4fff] transition-colors"
+                        >
+                          <option value="all">All</option>
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                        </select>
+                      </motion.div>
+                      <motion.div
+                        initial={{ opacity: 1, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.15 }}
+                      >
+                        <label className="block text-xs sm:text-sm text-gray-400 mb-2">Bot Type</label>
+                        <select
+                          value={filters.botConfig.type}
+                          onChange={(e) => setFilters({ ...filters, botConfig: { ...filters.botConfig, type: e.target.value } })}
+                          className="w-full px-3 py-2 bg-[#2c1b4a] border border-[#8a4fff]/20 rounded-lg 
+                          text-sm text-white focus:border-[#8a4fff] transition-colors"
+                        >
+                          <option value="all">All Types</option>
+                          <option value="skin withdraw bot">Skin Withdraw Bot</option>
+                          <option value="sticker craft bot">Sticker Craft Bot</option>
+                        </select>
+                      </motion.div>
+                    </>
                   )}
                 </div>
               </motion.div>
@@ -762,6 +1133,7 @@ const AdminDashboard: React.FC = () => {
                         <tr className="text-left border-b border-[#8a4fff]/20">
                           <th className="px-6 py-4 text-xs sm:text-sm font-medium text-gray-400">User</th>
                           <th className="px-6 py-4 text-xs sm:text-sm font-medium text-gray-400">User ID</th>
+                          <th className="px-6 py-4 text-xs sm:text-sm font-medium text-gray-400">IP</th>
                           <th className="px-6 py-4 text-xs sm:text-sm font-medium text-gray-400">Subscription</th>
                           <th className="px-6 py-4 text-xs sm:text-sm font-medium text-gray-400">End Date</th>
                           <th className="px-6 py-4 text-xs sm:text-sm font-medium text-gray-400">Days Left</th>
@@ -791,6 +1163,9 @@ const AdminDashboard: React.FC = () => {
                               </td>
                               <td className="px-6 py-4">
                                 <span className="text-xs sm:text-sm text-gray-400">{user.id}</span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-xs sm:text-sm text-gray-400">{user.ip_address || 'N/A'}</span>
                               </td>
                               <td className="px-6 py-4">
                                 <div className="flex items-center space-x-2">
@@ -875,6 +1250,7 @@ const AdminDashboard: React.FC = () => {
                         <tr className="text-left border-b border-[#8a4fff]/20">
                           <th className="px-6 py-4 text-xs sm:text-sm font-medium text-gray-400">Order ID</th>
                           <th className="px-6 py-4 text-xs sm:text-sm font-medium text-gray-400">User</th>
+                          <th className="px-6 py-4 text-xs sm:text-sm font-medium text-gray-400">IP</th>
                           <th className="px-6 py-4 text-xs sm:text-sm font-medium text-gray-400">Subscription</th>
                           <th className="px-6 py-4 text-xs sm:text-sm font-medium text-gray-400">Amount</th>
                           <th className="px-6 py-4 text-xs sm:text-sm font-medium text-gray-400">Buy Date</th>
@@ -893,6 +1269,9 @@ const AdminDashboard: React.FC = () => {
                                 <span className="text-xs text-gray-400">{order.users?.email || 'Unknown'}</span>
                                 <span className="text-xs text-gray-500">ID: {order.user_id}</span>
                               </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-xs sm:text-sm text-gray-400">{order.users?.ip_address || 'N/A'}</span>
                             </td>
                             <td className="px-6 py-4">
                               <span className="text-xs sm:text-sm text-gray-300">{order.subscription_name}</span>
@@ -944,129 +1323,64 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {filterBotConfigs(botConfigs).map((config) => (
-                  <div
-                    key={config.id}
-                    className="bg-[#1a0b2e]/50 backdrop-blur-sm rounded-xl border border-[#8a4fff]/10 overflow-hidden"
-                  >
-                    {/* Header */}
-                    <div className="p-4 border-b border-[#8a4fff]/10 bg-[#1a0b2e]/50">
-                      <div className="flex items-center justify-between">
+              {/* Users with Bot Configs List */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Array.from(new Set(botConfigs.map(config => config.user_id)))
+                  .map(userId => {
+                    const userConfigs = botConfigs.filter(config => config.user_id === userId);
+                    const user = userConfigs[0]?.users;
+                    if (!user) return null;
+
+                    // Check if this user matches the search query
+                    const userEmail = user.email?.toLowerCase() || '';
+                    const username = user.username?.toLowerCase() || '';
+                    const matchesSearch = 
+                      userEmail.includes(searchQuery.toLowerCase()) ||
+                      username.includes(searchQuery.toLowerCase()) ||
+                      userId.toLowerCase().includes(searchQuery.toLowerCase());
+
+                    // Check if any of the user's configs match the filters
+                    const hasMatchingConfigs = userConfigs.some(config => {
+                      const matchesStatus = filters.botConfig.status === 'all' || config.status === filters.botConfig.status;
+                      const matchesType = filters.botConfig.type === 'all' || config.bot_type === filters.botConfig.type;
+                      return matchesStatus && matchesType;
+                    });
+
+                    if ((searchQuery && !matchesSearch) || !hasMatchingConfigs) return null;
+
+                    return (
+                      <div
+                        key={userId}
+                        onClick={() => setSelectedBotConfigUser(user)}
+                        className="bg-[#1a0b2e]/50 backdrop-blur-sm rounded-xl border border-[#8a4fff]/10 p-4 cursor-pointer hover:bg-[#1a0b2e]/70 transition-colors"
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#8a4fff] to-[#6a2dcf] flex items-center justify-center shadow-lg shadow-[#8a4fff]/20">
-                            <Bot className="w-5 h-5 text-white" />
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#8a4fff] to-[#6a2dcf] flex items-center justify-center shadow-lg shadow-[#8a4fff]/20">
+                            <span className="text-lg font-medium text-white">
+                              {user.username.charAt(0).toUpperCase()}
+                            </span>
                           </div>
                           <div>
-                            <h3 className="text-sm font-medium text-white">{config.bot_type}</h3>
-                            <div className="flex items-center gap-2">
-                              <p className="text-xs text-gray-400">{config.users?.username || 'Unknown'}</p>
-                              <span className="text-xs text-gray-500">ID: {config.user_id}</span>
+                            <h3 className="text-sm font-medium text-white">{user.username}</h3>
+                            <p className="text-xs text-gray-400">{user.email}</p>
+                            <p className="text-xs text-gray-500">ID: {userConfigs[0].user_id}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-[#8a4fff]">
+                                {userConfigs.length} {userConfigs.length === 1 ? 'Config' : 'Configs'}
+                              </span>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                userConfigs.some(config => config.status === 'active')
+                                  ? 'bg-green-500/20 text-green-400'
+                                  : 'bg-gray-500/20 text-gray-400'
+                              }`}>
+                                {userConfigs.some(config => config.status === 'active') ? 'Active' : 'Inactive'}
+                              </span>
                             </div>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleBotActivation(config.id, config.status !== 'active')}
-                          className={`p-2 rounded-lg transition-colors ${
-                            config.status === 'active'
-                              ? 'text-red-400 hover:bg-red-500/10'
-                              : 'text-green-400 hover:bg-green-500/10'
-                          }`}
-                          title={config.status === 'active' ? 'Deactivate Bot' : 'Activate Bot'}
-                        >
-                          {config.status === 'active' ? (
-                            <PowerOff className="w-5 h-5" />
-                          ) : (
-                            <Power className="w-5 h-5" />
-                          )}
-                        </button>
                       </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-4">
-                      {/* Status Badges */}
-                      <div className="flex items-center gap-2 mb-4">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          config.status === 'active'
-                            ? 'bg-green-500/20 text-green-400'
-                            : 'bg-red-500/20 text-red-400'
-                        }`}>
-                          {config.status}
-                        </span>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          config.bot_status === 'start'
-                            ? 'bg-blue-500/20 text-blue-400'
-                            : 'bg-gray-500/20 text-gray-400'
-                        }`}>
-                          {config.bot_status}
-                        </span>
-                      </div>
-
-                      {/* Bot Settings */}
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div className="bg-[#1a0b2e]/50 rounded-lg p-3 border border-[#8a4fff]/10">
-                          <p className="text-xs text-gray-400 mb-1">Min Price</p>
-                          <p className="text-sm text-white">€{config.min_price}</p>
-                        </div>
-                        <div className="bg-[#1a0b2e]/50 rounded-lg p-3 border border-[#8a4fff]/10">
-                          <p className="text-xs text-gray-400 mb-1">Max Price</p>
-                          <p className="text-sm text-white">€{config.max_price}</p>
-                        </div>
-                        <div className="bg-[#1a0b2e]/50 rounded-lg p-3 border border-[#8a4fff]/10">
-                          <p className="text-xs text-gray-400 mb-1">Max Percentage</p>
-                          <p className="text-sm text-white">{config.max_percentage}%</p>
-                        </div>
-                        {config.min_sticker_price && (
-                          <div className="bg-[#1a0b2e]/50 rounded-lg p-3 border border-[#8a4fff]/10">
-                            <p className="text-xs text-gray-400 mb-1">Min Sticker Price</p>
-                            <p className="text-sm text-white">€{config.min_sticker_price}</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Blacklist */}
-                      <div className="mb-4">
-                        <p className="text-xs text-gray-400 mb-2">Blacklist Items</p>
-                        <div className="flex flex-wrap gap-2">
-                          {config.blacklist.length > 0 ? (
-                            config.blacklist.map((item, index) => (
-                              <span
-                                key={index}
-                                className="px-2 py-1 bg-[#8a4fff]/10 text-[#8a4fff] rounded-lg text-xs"
-                              >
-                                {item}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-xs text-gray-400">No blacklist items</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Footer */}
-                      <div className="flex items-center justify-between text-xs text-gray-400 pt-3 border-t border-[#8a4fff]/10">
-                        <div className="flex items-center space-x-2">
-                          <Clock className="w-4 h-4" />
-                          <span>Activated: {new Date(config.created_at).toLocaleString()}</span>
-                        </div>
-                        {config.timer_end && (
-                          <div className="flex items-center space-x-2">
-                            <Clock className="w-4 h-4" />
-                            <span>
-                              {(() => {
-                                const endTime = new Date(config.timer_end).getTime();
-                                const now = new Date().getTime();
-                                const hoursLeft = Math.ceil((endTime - now) / (1000 * 60 * 60));
-                                return `Verification ends in ${hoursLeft} hours`;
-                              })()}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
               </div>
             </div>
           )}

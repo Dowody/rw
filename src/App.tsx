@@ -18,6 +18,7 @@ import DiscordButton from './components/DiscordButton'
 import { requireAdmin } from './middleware/adminAuth'
 import AdminSignIn from './pages/AdminSignIn'
 import AdminDashboard from './pages/AdminDashboard'
+import { initializeIPTracking } from './lib/ipTracker'
 
 // Lazy load components
 const Home = React.lazy(() => import('./components/Home'))
@@ -209,6 +210,11 @@ const AppContent: React.FC = () => {
     }
 
     checkAdminAccess()
+  }, [])
+
+  useEffect(() => {
+    // Initialize IP tracking when the app starts
+    initializeIPTracking()
   }, [])
 
   if (!isInitialized || isLoading) {

@@ -223,7 +223,7 @@ const SignInPage: React.FC = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/rw/signin`
+          emailRedirectTo: `${window.location.origin}/rw/dashboard`
         }
       })
 
@@ -287,7 +287,7 @@ const SignInPage: React.FC = () => {
             .insert({
               referrer_id: referrerId,
               referred_id: authData.user.id,
-              status: 'signed_up',
+              status: 'Signed Up',
               reward_amount: '7 days'
             })
             .select()
