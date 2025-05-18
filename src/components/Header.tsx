@@ -169,7 +169,7 @@ const Header = ({ onCartToggle }: { onCartToggle: () => void }) => {
           onClick={() => handleNavigation('/', '#hero')}
           className="flex items-center space-x-1 sm:space-x-4 cursor-pointer hover:scale-105 transition-transform"
         >
-          <img src="logo.png" alt="RollWithdraw Logo" className="w-14 h-14 sm:w-14 sm:h-14 md:w-14 md:h-14" />
+          <img src="logo.png" alt="RollWithdraw Logo" className="w-10 h-10 mr-2 md:mr-0 sm:w-12 sm:h-12 md:w-12 md:h-12" />
           <span className="text-[24px] sm:text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#8a4fff] to-[#6E42DB]">
             RollWithdraw
           </span>
