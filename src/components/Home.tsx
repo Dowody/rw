@@ -118,136 +118,6 @@ const Home: React.FC = () => {
       <HowItWorks />
       <Products />
       
-      {/* Dark-Themed Reviews Section */}
-      {/* <section 
-        className="py-16 bg-[#04011C] relative overflow-hidden"
-        id="community-reviews"
-      >
-        <div className="container mx-auto px-4 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <img 
-                  src="/trustpilot-logo.png" 
-                  alt="TrustPilot Logo" 
-                  className="h-20 mb-5 mx-auto"
-                />
-            <h2 className="text-4xl font-bold mb-4 
-              text-transparent bg-clip-text 
-              bg-gradient-to-r from-[#8a4fff] to-[#5e3c9b]">
-
-            </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            Verified stories from clients who withdrew funds smoothly with our script.            </p>
-          </motion.div>
-
-          <Swiper
-            modules={[Autoplay, Pagination]}
-            spaceBetween={30}
-            slidesPerView={1}
-            centeredSlides={true}
-            loop={true}
-            autoplay={{
-              delay: 3000,
-              disableOnInteraction: false,
-              pauseOnMouseEnter: true
-            }}
-            pagination={{ 
-              clickable: true,
-              bulletClass: 'swiper-pagination-bullet',
-              bulletActiveClass: 'swiper-pagination-bullet-active'
-            }}
-            breakpoints={{
-              640: {
-                slidesPerView: 2,
-                spaceBetween: 20,
-              },
-              1024: {
-                slidesPerView: 3,
-                spaceBetween: 30,
-              },
-            }}
-            className="reviews-swiper h-[300px]" // Fixed height for the entire swiper
-          >
-            {trustpilotReviews.map((review, index) => (
-              <SwiperSlide key={index} className="flex items-stretch">
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5 }}
-                  className="bg-[#1a0b2e] rounded-3xl p-6 w-full flex flex-col justify-between 
-                  border border-[#8a4fff]/10 hover:border-[#8a4fff]/30 
-                  transform transition-all duration-300 hover:scale-105"
-                >
-                  <div className="flex-grow">
-                    <div className="flex items-center mb-4">
-                      <div className="flex space-x-1 text-[#8a4fff] mr-4">
-                        {[...Array(review.rating)].map((_, i) => (
-                          <Star key={i} className="w-5 h-5 fill-current" />
-                        ))}
-                        {[...Array(5 - review.rating)].map((_, i) => (
-                          <Star key={i} className="w-5 h-5 text-gray-600" />
-                        ))}
-                      </div>
-                      <span className="text-gray-400 text-sm">{review.platform}</span>
-                    </div>
-                    <p className="text-gray-300 mb-4 italic min-h-[120px]">
-                      <span className="block mb-2">{review.text.en}</span>
-                      <span className="text-sm text-gray-500 block">{review.text.ru}</span>
-                    </p>
-                  </div>
-                  <div className="flex items-center mt-4">
-                    <img 
-                      src={review.profilePic} 
-                      alt={review.name} 
-                      className="w-12 h-12 rounded-full mr-4 object-cover 
-                      border-2 border-[#8a4fff]/30"
-                    />
-                    <div>
-                      <div className="flex items-center">
-                        <span className="font-medium text-white mr-2">{review.name}</span>
-                        <CheckCircle className="w-4 h-4 text-[#8a4fff]" />
-                      </div>
-                      <div className="text-sm text-gray-400">Verified User</div>
-                    </div>
-                  </div>
-                </motion.div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mt-12"
-          >
-            <div className="flex flex-col items-center justify-center">
-              <div className="flex items-center space-x-2 mb-2 column">
-                <span className="text-2xl font-bold text-[#00B67A]">4.8</span>
-                <img 
-                  src="/stars-5.svg"  // Replace with your actual 5-star rating SVG path
-                  alt="5 Star Rating" 
-                  className="h-7"
-                />
-              </div>
-              <p className="text-gray-400">Based on 300+ Verified Reviews</p>
-            </div>
-          </motion.div>
-        </div>
-
-        <div 
-          className="absolute inset-0 pointer-events-none opacity-20"
-          style={{
-            background: 'radial-gradient(circle at 75% 25%, rgba(138, 79, 255, 0.2), transparent 50%)',
-          }}
-        />
-      </section> */}
-
       {/* <Features /> */}
       <FAQ />
       <Footer />
@@ -256,9 +126,9 @@ const Home: React.FC = () => {
       <AnimatePresence>
         {showCookieConsent && (
           <motion.div
-            initial={{ y: 100, opacity: 0 }}
+            initial={{ y: 100, opacity: 1 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
+            exit={{ y: 100, opacity: 1 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed bottom-0 left-0 right-0 z-50"
           >

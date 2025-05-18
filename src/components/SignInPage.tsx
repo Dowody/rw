@@ -51,7 +51,7 @@ const SignInPage: React.FC = () => {
       // If authenticated, redirect to home or previous page
       if (session) {
         const state = location.state as { from?: string }
-        const destinationPath = state?.from || '/dashboard'
+        const destinationPath = state?.from || '/rw/dashboard'
         navigate(destinationPath, { replace: true })
       }
     }
@@ -153,7 +153,7 @@ const SignInPage: React.FC = () => {
       }
 
       // Redirect to dashboard or home page after successful sign in
-      navigate('/dashboard')
+      navigate('/rw/dashboard')
     } catch (err) {
       setError('An unexpected error occurred')
     } finally {

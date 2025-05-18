@@ -101,7 +101,7 @@ const Footer = () => {
             
             {/* Trustpilot Reviews Button */}
             <a 
-              href="https://www.trustpilot.com/review/rollwithdraw" 
+              href="https://www.trustpilot.com/review/rollwithdraw.com" 
               target="_blank" 
               rel="noopener noreferrer"
               className="bg-[#2c1b4a] rounded-xl p-2 sm:p-3 flex items-center hover:bg-[#3a2b5c] transition-colors"

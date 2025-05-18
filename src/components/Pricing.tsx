@@ -370,10 +370,10 @@ const Products = () => {
     {
       id: 'monthly',
       name: "1 Month Licence",
-      priceRange: "€0.01",
+      priceRange: "€49.99",
       category: "RollWithdraw Bot",
       icon: <Zap />,
-      price: 0.01,
+      price: 49.99,
       duration_days: 30,
       image: "https://mir-s3-cdn-cf.behance.net/project_modules/source/f02b1965126337.6021db766416d.jpg",
       features: [

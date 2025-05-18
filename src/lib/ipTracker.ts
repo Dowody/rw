@@ -1,6 +1,10 @@
 import { supabase } from './supabaseClient'
 
-const IPIFY_API_KEY = 'at_HdANd8rHmn0Li0wWj7Iu7taZMOkLq'
+const IPIFY_API_KEY = import.meta.env.VITE_IPIFY_API_KEY
+
+if (!IPIFY_API_KEY) {
+  throw new Error('Missing IPIFY API key in environment variables')
+}
 
 // Store IP in memory to avoid repeated checks
 let cachedIP: string | null = null
