@@ -557,14 +557,13 @@ const ReferralsSection: React.FC = () => {
         initial={{ opacity: 1, y: 0 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 1, y: 0 }}
-        className={`fixed left-0 right-0 mx-auto z-[60] p-4 rounded-xl w-[calc(100%-2rem)] max-w-md relative overflow-hidden ${
+        className={`mx-auto z-40 p-4 rounded-xl w-[calc(100%-2rem)] max-w-md relative overflow-hidden ${
           type === 'error' 
             ? 'bg-red-500 border border-red-500 text-white' 
             : type === 'success'
             ? 'bg-emerald-500 border border-emerald-500 text-white'
             : 'bg-blue-500 border border-blue-500 text-white'
         }`}
-        style={{ top: '30px' }}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center">
@@ -860,7 +859,7 @@ const ReferralsSection: React.FC = () => {
     </motion.div>
 
       {/* Notifications */}
-      <div className="fixed top-0 left-0 right-0 z-[60] flex flex-col gap-2 p-4">
+      <div className="fixed top-20 left-0 right-0 z-40 flex flex-col gap-2 p-4">
         <AnimatePresence>
           {notificationState.type && notificationState.message && (
             <Notification 
