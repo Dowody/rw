@@ -6,12 +6,34 @@
   <head>
     <style>
       html, body { background-color: #04011C; color: white; margin: 0; }
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
     </style>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="RollWithdraw - The fastest and most efficient CSGORoll withdrawal bot. Automate your skin withdrawals and maximize your profits with our advanced bot solution." />
     <title>RollWithdraw - Fastest CSGORoll Withdraw Bot</title>
+    <link rel="canonical" href="https://dowody.github.io/rw/" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:title" content="RollWithdraw - Fastest CSGORoll Withdraw Bot" />
+    <meta property="og:description" content="The fastest and most efficient CSGORoll withdrawal bot. Automate your skin withdrawals and maximize your profits with our advanced bot solution." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://dowody.github.io/rw/" />
+    <meta property="og:image" content="https://dowody.github.io/rw/logo.png" />
+    <meta name="discord:card" content="summary_large_image" />
+    <meta name="discord:title" content="RollWithdraw - Fastest CSGORoll Withdraw Bot" />
+    <meta name="discord:description" content="The fastest and most efficient CSGORoll withdrawal bot. Automate your skin withdrawals and maximize your profits with our advanced bot solution." />
+    <meta name="discord:image" content="https://dowody.github.io/rw/logo.png" />
     <script type="text/javascript">
       // Single Page Apps for GitHub Pages
       // MIT License
@@ -29,7 +51,14 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <header>
+        <h1 class="visually-hidden">RollWithdraw - Fastest CSGORoll Withdraw Bot</h1>
+      </header>
+      <main>
+        <div id="app"></div>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       (function () {

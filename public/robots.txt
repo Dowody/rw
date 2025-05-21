@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Sitemap: https://dowody.github.io/rw/sitemap.xml
+
+# Disallow admin and private routes
+Disallow: /admin/
+Disallow: /private/
+Disallow: /api/ 

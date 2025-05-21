@@ -1356,7 +1356,7 @@ const CheckoutPage: React.FC = () => {
 
                     {/* Skins Option */}
                     {paymentOptions.filter(p => p.type === 'skin').map((payment) => (
-                      <button
+                  <button
                         key={payment.id}
                         onClick={() => setSelectedPayment({
                           id: payment.id,
@@ -1379,7 +1379,7 @@ const CheckoutPage: React.FC = () => {
                           <SiTradingview className="w-6 h-6 text-[#1E73A4]" />
                           <SiSteam className="w-6 h-6 text-blue-500" />
                         </div>
-                      </button>
+                  </button>
                     ))}
                 </div>
               </div>
@@ -1398,9 +1398,9 @@ const CheckoutPage: React.FC = () => {
                 <div className="bg-gradient-to-br from-[#210746] to-[#2C095D] rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-[#8a4fff]/10">
                   {selectedPayment.type === 'skin' ? (
                     <>
-                      <h2 className="text-[18px] sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
+              <h2 className="text-[18px] sm:text-xl font-semibold text-[#8a4fff] mb-4 sm:mb-6 flex items-center">
                         <Gamepad2 className="mr-2 sm:mr-3 w-6 h-6 sm:w-6 sm:h-6" /> Select Marketplace
-                      </h2>
+              </h2>
                       <div className="space-y-3">
                         <div className="p-6 bg-[#1a0b2e]/50 rounded-xl ">
                           <div className="flex items-center justify-between mb-4">
@@ -1419,34 +1419,34 @@ const CheckoutPage: React.FC = () => {
                           </div>
                           
                           <div className="grid md:grid-cols-2 gap-3 mb-4">
-                            {[
-                              {
-                                id: 'bitskins',
-                                name: 'BitSkins',
-                                logo: <SiJoomla className="w-5 h-5 text-purple-500" />,
-                                description: "Trusted skin trading platform",
+                        {[
+                          {
+                            id: 'bitskins',
+                            name: 'BitSkins',
+                            logo: <SiJoomla className="w-5 h-5 text-purple-500" />,
+                            description: "Trusted skin trading platform",
                                 status: 'coming_soon'
-                              },
-                              {
-                                id: 'tradeit',
-                                name: 'TradeIt.gg',
-                                logo: <SiSteam className="w-5 h-5 text-blue-500" />,
-                                description: "Instant skin trading platform",
+                          },
+                          {
+                            id: 'tradeit',
+                            name: 'TradeIt.gg',
+                            logo: <SiSteam className="w-5 h-5 text-blue-500" />,
+                            description: "Instant skin trading platform",
                                 status: 'coming_soon'
-                              }
-                            ].map((marketplace) => (
+                          }
+                        ].map((marketplace) => (
                               <div 
-                                key={marketplace.id}
+                            key={marketplace.id}
                                 className="p-4 bg-[#2c1b4a] rounded-xl border border-[#8a4fff]/10 opacity-50"
-                              >
+                          >
                                 <div className="flex items-center space-x-3 mb-2">
-                                  {marketplace.logo}
+                              {marketplace.logo}
                                   <h4 className="text-base font-medium text-white">{marketplace.name}</h4>
-                                </div>
+                            </div>
                                 <p className="text-sm text-gray-400">{marketplace.description}</p>
-                              </div>
-                            ))}
-                          </div>
+                            </div>
+                        ))}
+                      </div>
 
                           <div className="bg-gradient-to-br from-[#8a4fff]/20 to-[#8a4fff]/5 rounded-xl  p-4">
                             <div className="flex items-center space-x-3 mb-2">
@@ -1454,8 +1454,8 @@ const CheckoutPage: React.FC = () => {
                               <h4 className="text-base font-medium text-white">Marketplace Security</h4>
                             </div>
                             <p className="text-sm text-gray-400">
-                              We only work with verified marketplaces. Double-check trade details and never accept offers from unofficial sources.
-                            </p>
+                            We only work with verified marketplaces. Double-check trade details and never accept offers from unofficial sources.
+                          </p>
                           </div>
 
                           <div className="mt-4 flex justify-center">
@@ -1700,10 +1700,10 @@ const CheckoutPage: React.FC = () => {
                               )
                             ) : (
                               <>
-                                <CreditCard className="w-4 h-4 mr-2" />
-                                <span className="text-base font-medium">
+                            <CreditCard className="w-4 h-4 mr-2" />
+                            <span className="text-base font-medium">
                                   Pay €{discountedTotal !== null ? discountedTotal.toFixed(2) : total.toFixed(2)}
-                                </span>
+                            </span>
                               </>
                             )}
                           </div>
