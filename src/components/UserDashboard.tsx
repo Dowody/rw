@@ -63,6 +63,24 @@ interface SidebarItem {
   component: JSX.Element | null;
 }
 
+// Add interface for bot configuration
+interface BotConfiguration {
+  id: string;
+  user_id: string;
+  bot_type: string;
+  min_price: number;
+  max_price: number;
+  max_percentage: number;
+  min_sticker_price?: number;
+  session_token: string;
+  blacklist: string[];
+  status: string;
+  bot_status: string;
+  bg_color: string;
+  valid_session_token: boolean;
+  timer_end?: string;
+}
+
 const UserDashboard: React.FC = () => {
   const [userData, setUserData] = useState<any>(null)
   const [activeSection, setActiveSection] = useState<DashboardSection>('overview')
@@ -140,6 +158,85 @@ const UserDashboard: React.FC = () => {
 
   // Add new state for existing configuration
   const [existingBotConfig, setExistingBotConfig] = useState<any>(null);
+
+  // Add new state for session token validation
+  const [isSessionTokenValid, setIsSessionTokenValid] = useState<boolean | null>(null);
+
+  // Add real-time subscription for session token validation
+  useEffect(() => {
+    if (!userData?.id || !existingBotConfig?.id) return;
+
+    // Subscribe to changes in the bot_configurations table
+    const subscription = supabase
+      .channel('bot_config_changes')
+      .on(
+        'postgres_changes' as any, // Type assertion to fix the channel type error
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'bot_configurations',
+          filter: `id=eq.${existingBotConfig.id}`
+        },
+        (payload: { new: BotConfiguration }) => {
+          console.log('Received real-time update:', payload);
+          
+          // Update session token validation status
+          if (payload.new && payload.new.valid_session_token !== undefined) {
+            console.log('Updating session token validation status:', payload.new.valid_session_token);
+            setIsSessionTokenValid(payload.new.valid_session_token);
+            setExistingBotConfig((prev: BotConfiguration) => ({
+              ...prev,
+              valid_session_token: payload.new.valid_session_token
+            }));
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
+
+    // Set initial validation status
+    setIsSessionTokenValid(existingBotConfig.valid_session_token);
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log('Cleaning up subscription');
+      subscription.unsubscribe();
+    };
+  }, [userData?.id, existingBotConfig?.id]);
+
+  // Add a separate effect to handle bot configuration updates
+  useEffect(() => {
+    const checkBotConfig = async () => {
+      if (!userData?.id || !existingBotConfig?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('bot_configurations')
+          .select('valid_session_token')
+          .eq('id', existingBotConfig.id)
+          .single();
+
+        if (error) throw error;
+
+        if ('valid_session_token' in data) {
+          console.log('Updating from periodic check:', data.valid_session_token);
+          setIsSessionTokenValid(data.valid_session_token);
+          setExistingBotConfig((prev: BotConfiguration) => ({
+            ...prev,
+            valid_session_token: data.valid_session_token
+          }));
+        }
+      } catch (error) {
+        console.error('Error checking bot configuration:', error);
+      }
+    };
+
+    // Check every 5 seconds as a fallback
+    const interval = setInterval(checkBotConfig, 5000);
+
+    return () => clearInterval(interval);
+  }, [userData?.id, existingBotConfig?.id]);
 
   // Add helper function to check subscription
   const hasStickerBotAccess = () => {
@@ -1433,7 +1530,7 @@ const UserDashboard: React.FC = () => {
           <div className="col-span-1 sm:col-span-2 bg-[#2c1b4a]/50 rounded-xl p-3 sm:p-4 border border-[#8a4fff]/10">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs sm:text-sm text-gray-400">Session Token</span>
-              {existingBotConfig?.valid_session_token === false && (
+              {isSessionTokenValid === false && (
                 <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full">
                   Invalid Session Token
                 </span>
@@ -1459,7 +1556,7 @@ const UserDashboard: React.FC = () => {
                 </button>
               )}
             </div>
-            {existingBotConfig?.valid_session_token === false && (
+            {isSessionTokenValid === false && (
               <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
@@ -2272,7 +2369,7 @@ const UserDashboard: React.FC = () => {
                                 <div className="col-span-1 sm:col-span-2 bg-[#2c1b4a]/50 rounded-xl p-3 sm:p-4 border border-[#8a4fff]/10">
                                   <div className="flex items-center justify-between mb-2">
                                     <span className="text-xs sm:text-sm text-gray-400">Session Token</span>
-                                    {existingBotConfig?.valid_session_token === false && (
+                                    {isSessionTokenValid === false && (
                                       <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full">
                                         Invalid Session Token
                                       </span>
@@ -2298,7 +2395,7 @@ const UserDashboard: React.FC = () => {
                                       </button>
                                     )}
                                   </div>
-                                  {existingBotConfig?.valid_session_token === false && (
+                                  {isSessionTokenValid === false && (
                                     <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                                       <div className="flex items-start gap-3">
                                         <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
