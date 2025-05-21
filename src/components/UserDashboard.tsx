@@ -2070,13 +2070,13 @@ const UserDashboard: React.FC = () => {
                                   Learn how to find your session token manually
                                 </Link>
                                 <a 
-                                  href="https://chrome.google.com/webstore/detail/rollwithdraw-session-token/your-extension-id" 
+                                  href="https://github.com/RollWithdraw/Cookie-Extractor" 
                                   target="_blank" 
                                   rel="noopener noreferrer"
                                   className="text-xs sm:text-sm text-[#8a4fff] hover:text-[#7a3ddf] transition-colors flex items-center gap-1"
                                 >
                                   <Download className="w-3 h-3" />
-                                  Install our Session Token Extension
+                                  Install our GitHub cookie extractor extension
                                 </a>
                               </div>
                             </div>

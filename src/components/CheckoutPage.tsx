@@ -670,6 +670,8 @@ const CheckoutPage: React.FC = () => {
     message: string | null;
   }>({ type: null, message: null })
 
+  const [isProcessingFreeTrial, setIsProcessingFreeTrial] = useState(false)
+
   useEffect(() => {
     return () => {
       if (confirmingTimer) {
@@ -921,6 +923,13 @@ const CheckoutPage: React.FC = () => {
 
     if (subscriptionCount > 1) {
       setShowSubscriptionError(true)
+      return
+    }
+
+    // For free trial, directly handle the order without wallet connection
+    if (isOnlyFreeTrialInCart) {
+      setIsProcessingFreeTrial(true)
+      handlePlaceOrder()
       return
     }
 
@@ -1675,19 +1684,30 @@ const CheckoutPage: React.FC = () => {
                           </div>
                         ) : (
                           <div className="flex items-center justify-center">
-                            <CreditCard className="w-4 h-4 mr-2" />
-                            <span className="text-base font-medium">
-                              {isOnlyFreeTrialInCart ? 'Activate Free Trial' : `Pay €${discountedTotal !== null ? discountedTotal.toFixed(2) : total.toFixed(2)}`}
-                            </span>
+                            {isOnlyFreeTrialInCart ? (
+                              isProcessingFreeTrial ? (
+                                <div className="flex items-center space-x-2">
+                                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/30">
+                                    <div className="absolute top-0 left-0 animate-spin rounded-full h-5 w-5 border-t-2 border-white"></div>
+                                  </div>
+                                  <span className="text-base font-medium">Activating...</span>
+                                </div>
+                              ) : (
+                                <>
+                                  <CheckCircle className="w-4 h-4 mr-2" />
+                                  <span className="text-base font-medium">Activate Free Trial</span>
+                                </>
+                              )
+                            ) : (
+                              <>
+                                <CreditCard className="w-4 h-4 mr-2" />
+                                <span className="text-base font-medium">
+                                  Pay €{discountedTotal !== null ? discountedTotal.toFixed(2) : total.toFixed(2)}
+                                </span>
+                              </>
+                            )}
                           </div>
                         )}
-                      </button>
-                      {/* DEV TESTING BUTTON - REMOVE IN PRODUCTION */}
-                      <button
-                        onClick={() => handlePlaceOrder()}
-                        className="w-full py-3.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-base"
-                      >
-                        [DEV] Bypass Payment
                       </button>
                     </>
                   )}

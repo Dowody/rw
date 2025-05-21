@@ -28,25 +28,25 @@ export const getUserIP = async () => {
 
   // Create a new promise for this IP fetch
   pendingIPPromise = (async () => {
-    try {
-      const response = await fetch(`https://geo.ipify.org/api/v2/country?apiKey=${IPIFY_API_KEY}`)
-      
-      if (!response.ok) {
-        throw new Error(`ipify API responded with status: ${response.status}`)
-      }
+  try {
+    const response = await fetch(`https://geo.ipify.org/api/v2/country?apiKey=${IPIFY_API_KEY}`)
+    
+    if (!response.ok) {
+      throw new Error(`ipify API responded with status: ${response.status}`)
+    }
 
-      const data = await response.json()
+    const data = await response.json()
       cachedIP = data.ip
       lastUpdateTime = Date.now()
-      return data.ip
-    } catch (error) {
-      return null
+    return data.ip
+  } catch (error) {
+    return null
     } finally {
       // Clear the pending promise after a short delay to prevent race conditions
       setTimeout(() => {
         pendingIPPromise = null
       }, 100)
-    }
+  }
   })()
 
   return pendingIPPromise
@@ -124,7 +124,7 @@ export const ensureIPUpdated = async (userId: string, forceUpdate: boolean = fal
   if (!forceUpdate && lastSessionUpdate) {
     const lastUpdate = parseInt(lastSessionUpdate)
     if (Date.now() - lastUpdate < UPDATE_COOLDOWN) {
-      return true
+    return true
     }
   }
 
