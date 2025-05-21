@@ -37,7 +37,9 @@ import {
   Info,
   Bot,
   Plus,
-  Copy
+  Copy,
+  Volume2,
+  VolumeX
 } from 'lucide-react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
@@ -109,6 +111,13 @@ const UserDashboard: React.FC = () => {
   const [showWithdrawalNotification, setShowWithdrawalNotification] = useState(false)
   const [withdrawalTimer, setWithdrawalTimer] = useState(30 * 60) // 30 minutes in seconds
   const [isTimerRunning, setIsTimerRunning] = useState(false)
+  const [hasPlayedSound, setHasPlayedSound] = useState(false)
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  const [audio] = useState(() => {
+    const audio = new Audio('/tick.mp3');
+    audio.preload = 'auto';
+    return audio;
+  });
   
   // Add notification state near other state declarations
   const [notificationState, setNotificationState] = useState<{
@@ -254,8 +263,8 @@ const UserDashboard: React.FC = () => {
             const now = new Date();
             
             if (timerEnd > now) {
-              const remainingSeconds = Math.floor((timerEnd.getTime() - now.getTime()) / 1000);
-              setWithdrawalTimer(remainingSeconds);
+              // Set timer to 30 minutes
+              setWithdrawalTimer(30 * 60);
               setIsTimerRunning(true);
               setShowWithdrawalNotification(true);
               setIsCaptchaCompleted(true);
@@ -272,12 +281,12 @@ const UserDashboard: React.FC = () => {
     }
   }, [userData?.id, activeBotTab]);
 
-  // Update handleCaptchaComplete to handle bot activation
+  // Update handleCaptchaComplete to use 30 minutes
   const handleCaptchaComplete = async () => {
     try {
-      // Reset timer every time CAPTCHA is completed
+      // Reset timer to 30 minutes
       const timerEnd = new Date();
-      timerEnd.setMinutes(timerEnd.getMinutes() + 30); // Set to 30 minutes instead of 60
+      timerEnd.setMinutes(timerEnd.getMinutes() + 30);
 
       // Get existing configuration
       const { data: existingConfigs, error: fetchError } = await supabase
@@ -328,7 +337,7 @@ const UserDashboard: React.FC = () => {
         return;
       }
 
-      setWithdrawalTimer(30 * 60); // Reset to 30 minutes
+      setWithdrawalTimer(30 * 60); // Set to 30 minutes
       setIsTimerRunning(true);
       setIsCaptchaCompleted(true);
       setShowWithdrawalNotification(true);
@@ -348,7 +357,7 @@ const UserDashboard: React.FC = () => {
     }
   };
 
-  // Update timer effect to handle expiration
+  // Update timer effect to handle expiration and sound
   useEffect(() => {
     let timerInterval: NodeJS.Timeout;
 
@@ -364,12 +373,45 @@ const UserDashboard: React.FC = () => {
       }, 1000);
     }
 
+    // Play sound when timer is less than 5 seconds and sound is enabled
+    if (withdrawalTimer <= 5 && withdrawalTimer > 0 && !hasPlayedSound && soundEnabled) {
+      try {
+        const audio = new Audio('tick.mp3');
+        audio.volume = 0.2; // Set volume to 20%
+        
+        // Add event listeners for better error handling
+        audio.addEventListener('canplaythrough', () => {
+          audio.play()
+            .then(() => {
+              setHasPlayedSound(true);
+            })
+            .catch(error => {
+              console.log('Audio playback failed:', error);
+            });
+        });
+
+        audio.addEventListener('error', (e) => {
+          console.log('Audio loading error:', e);
+        });
+
+        // Start loading the audio
+        audio.load();
+      } catch (error) {
+        console.log('Audio initialization error:', error);
+      }
+    }
+
+    // Reset hasPlayedSound when timer is reset
+    if (withdrawalTimer > 5) {
+      setHasPlayedSound(false);
+    }
+
     return () => {
       if (timerInterval) {
         clearInterval(timerInterval);
       }
     };
-  }, [isTimerRunning, withdrawalTimer]);
+  }, [isTimerRunning, withdrawalTimer, hasPlayedSound, soundEnabled]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -1179,6 +1221,24 @@ const UserDashboard: React.FC = () => {
                   <span className="text-sm text-gray-400">minutes</span>
                 </div>
               </div>
+
+              {/* Sound Toggle Button */}
+              <button
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                className="mt-4 flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2c1b4a] hover:bg-[#3a2b5c] transition-colors"
+              >
+                {soundEnabled ? (
+                  <>
+                    <Volume2 className="w-4 h-4 text-[#8a4fff]" />
+                    <span className="text-sm text-gray-300">Announce me when the timer ends</span>
+                  </>
+                ) : (
+                  <>
+                    <VolumeX className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-400">Muted</span>
+                  </>
+                )}
+              </button>
             </div>
           )}
 
